@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>El Grupo</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div id="pantalla-acceso">
+
+        <div id="pantalla-principal">
+
+            <div class="acceso-contenedor">
+
+                <h1>El Grupo</h1>
+
+                <section class="acceso-seccion">
+                    <h2>¿Eres nuevo?</h2>
+                    <p>Pon tu nombre aquí ↓</p>
+
+                    <input
+                        type="text"
+                        id="nombre-registro"
+                        placeholder="Tu nombre"
+                        maxlength="30"
+                    >
+
+                    <button id="boton-registro">
+                        Crear cuenta
+                    </button>
+                </section>
+
+                <div class="separador">
+                    <span>O</span>
+                </div>
+
+                <section class="acceso-seccion">
+                    <h2>¿Ya tienes una cuenta?</h2>
+                    <p>Escribe tu código ↓</p>
+
+                    <input
+                        type="password"
+                        id="codigo-login"
+                        placeholder="Tu código"
+                    >
+
+                    <button id="boton-login">
+                        Entrar
+                    </button>
+                </section>
+
+            </div>
+
+        </div>
+
+        <div id="pantalla-registro" style="display: none;">
+
+            <div class="acceso-contenedor">
+
+                <h1>Crear cuenta</h1>
+
+                <section class="acceso-seccion">
+
+                    <h2>Crea tu código</h2>
+
+                    <p>Escribe un código que puedas recordar ↓</p>
+
+                    <input
+                        type="password"
+                        id="codigo-registro"
+                        placeholder="Tu código"
+                        minlength="4"
+                    >
+
+                    <input
+                        type="password"
+                        id="codigo-registro-repetir"
+                        placeholder="Repite tu código"
+                        minlength="4"
+                    >
+
+                    <button id="boton-confirmar-registro">
+                        Crear cuenta
+                    </button>
+
+                    <button
+                        id="boton-volver-registro"
+                        type="button"
+                    >
+                        Volver
+                    </button>
+
+                </section>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div id="app-principal" style="display: none;">
+
+        <header class="barra-superior">
+
+            <h1>El Grupo</h1>
+
+            <button id="boton-perfil">
+                👤 Perfil
+            </button>
+
+        </header>
+
+
+        <nav class="navegacion">
+
+            <button class="boton-nav activo" data-seccion="chat">
+                💬 Chat
+            </button>
+
+            <button class="boton-nav" data-seccion="chismes">
+                👀 Chismes
+            </button>
+
+            <button class="boton-nav" data-seccion="privados">
+                💌 Privados
+            </button>
+
+            <button class="boton-nav" data-seccion="quedadas">
+                📅 Quedadas
+            </button>
+
+        </nav>
+
+
+        <main class="contenido-principal">
+
+            <section id="seccion-chat" class="seccion-app activa">
+
+                <h2>💬 Chat general</h2>
+
+                <p>Próximamente aparecerán los mensajes.</p>
+
+            </section>
+
+
+            <section id="seccion-chismes" class="seccion-app">
+
+                <h2>👀 Chismes</h2>
+
+                <p>Próximamente aparecerán los chismes.</p>
+
+            </section>
+
+
+            <section id="seccion-privados" class="seccion-app">
+
+                <h2>💌 Mensajes privados</h2>
+
+                <p>Próximamente aparecerán tus conversaciones.</p>
+
+            </section>
+
+
+            <section id="seccion-quedadas" class="seccion-app">
+
+                <h2>📅 Quedadas</h2>
+
+                <p>Próximamente aparecerán las quedadas.</p>
+
+            </section>
+
+        </main>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="script.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,190 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+
+    font-family: Arial, sans-serif;
+
+    background: #151515;
+    color: #ffffff;
+}
+
+#pantalla-acceso {
+    min-height: 100vh;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 20px;
+}
+
+.acceso-contenedor {
+    width: 100%;
+    max-width: 420px;
+
+    padding: 40px;
+
+    background: #202020;
+    border-radius: 18px;
+}
+
+.acceso-contenedor h1 {
+    margin-top: 0;
+    margin-bottom: 35px;
+
+    text-align: center;
+    font-size: 36px;
+}
+
+.acceso-seccion {
+    text-align: center;
+}
+
+.acceso-seccion h2 {
+    margin-bottom: 8px;
+}
+
+.acceso-seccion p {
+    margin-top: 0;
+    color: #aaaaaa;
+}
+
+.acceso-seccion input {
+    width: 100%;
+
+    padding: 13px 15px;
+    margin-top: 10px;
+
+    border: 1px solid #444;
+    border-radius: 10px;
+
+    background: #151515;
+    color: white;
+
+    font-size: 16px;
+}
+
+.acceso-seccion button {
+    width: 100%;
+
+    margin-top: 12px;
+    padding: 13px;
+
+    border: none;
+    border-radius: 10px;
+
+    background: #5865f2;
+    color: white;
+
+    font-size: 16px;
+    font-weight: bold;
+
+    cursor: pointer;
+}
+
+.acceso-seccion button:hover {
+    opacity: 0.9;
+}
+
+.separador {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+
+    margin: 30px 0;
+
+    color: #777777;
+}
+
+.separador::before,
+.separador::after {
+    content: "";
+
+    flex: 1;
+
+    height: 1px;
+
+    background: #444444;
+}
+
+.barra-superior {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 20px 30px;
+
+    border-bottom: 1px solid #333;
+}
+
+.barra-superior h1 {
+    margin: 0;
+}
+
+.barra-superior button {
+    padding: 10px 16px;
+
+    border: none;
+    border-radius: 8px;
+
+    background: #5865f2;
+    color: white;
+
+    cursor: pointer;
+}
+
+.navegacion {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+
+    padding: 15px;
+
+    border-bottom: 1px solid #333;
+
+    overflow-x: auto;
+}
+
+.boton-nav {
+    padding: 10px 16px;
+
+    border: none;
+    border-radius: 8px;
+
+    background: #252525;
+    color: #aaa;
+
+    cursor: pointer;
+
+    white-space: nowrap;
+}
+
+.boton-nav:hover {
+    background: #303030;
+    color: white;
+}
+
+.boton-nav.activo {
+    background: #5865f2;
+    color: white;
+}
+
+.contenido-principal {
+    max-width: 1000px;
+
+    margin: 0 auto;
+
+    padding: 30px;
+}
+
+.seccion-app {
+    display: none;
+}
+
+.seccion-app.activa {
+    display: block;
+}
