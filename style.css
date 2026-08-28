@@ -877,3 +877,387 @@ textarea {
     }
 
 }
+
+/* ========================================
+   PRIVADOS
+   ======================================== */
+
+.privados-contenedor {
+    width: 100%;
+    max-width: 900px;
+    min-height: calc(100vh - 60px);
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+}
+
+
+/* ========================================
+   LISTA DE USUARIOS
+   ======================================== */
+
+.privados-lista {
+    width: 100%;
+}
+
+.privados-cabecera {
+    margin-bottom: 25px;
+}
+
+.privados-cabecera h2 {
+    margin: 0;
+    font-size: 28px;
+}
+
+.privados-cabecera p {
+    margin: 8px 0 0;
+    color: #aaaaaa;
+}
+
+
+.lista-usuarios-privados {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+
+/* ========================================
+   USUARIO
+   ======================================== */
+
+.usuario-privado {
+    width: 100%;
+    min-height: 70px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 12px 15px;
+
+    border: none;
+    border-radius: 12px;
+
+    background: #202020;
+    color: #ffffff;
+
+    text-align: left;
+    cursor: pointer;
+
+    transition:
+        background 0.15s ease,
+        transform 0.15s ease;
+}
+
+.usuario-privado:hover {
+    background: #2a2a2a;
+    transform: translateY(-1px);
+}
+
+
+/* ========================================
+   AVATAR USUARIO
+   ======================================== */
+
+.usuario-privado-avatar {
+    width: 48px;
+    height: 48px;
+
+    flex-shrink: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    overflow: hidden;
+    border-radius: 50%;
+
+    background: #303030;
+
+    font-size: 22px;
+}
+
+.usuario-privado-avatar img {
+    width: 100%;
+    height: 100%;
+
+    display: block;
+
+    object-fit: cover;
+}
+
+
+/* ========================================
+   INFORMACIÓN USUARIO
+   ======================================== */
+
+.usuario-privado-info {
+    min-width: 0;
+}
+
+.usuario-privado-nombre {
+    font-size: 17px;
+    font-weight: bold;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.usuario-privado-descripcion {
+    margin-top: 4px;
+
+    color: #999999;
+
+    font-size: 14px;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+
+/* ========================================
+   CHAT PRIVADO
+   ======================================== */
+
+.privado-chat {
+    width: 100%;
+    height: calc(100vh - 120px);
+
+    display: none;
+    flex-direction: column;
+
+    overflow: hidden;
+
+    background: #202020;
+    border-radius: 15px;
+}
+
+
+/* ========================================
+   CABECERA CHAT
+   ======================================== */
+
+.privado-chat-cabecera {
+    min-height: 70px;
+
+    display: flex;
+    align-items: center;
+
+    gap: 12px;
+
+    padding: 10px 15px;
+
+    border-bottom: 1px solid #333333;
+
+    flex-shrink: 0;
+}
+
+.boton-volver-privados {
+    width: 40px;
+    height: 40px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: none;
+    border-radius: 9px;
+
+    background: #303030;
+    color: #ffffff;
+
+    font-size: 22px;
+
+    cursor: pointer;
+}
+
+.boton-volver-privados:hover {
+    background: #3a3a3a;
+}
+
+
+.privado-avatar {
+    width: 45px;
+    height: 45px;
+
+    flex-shrink: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    overflow: hidden;
+    border-radius: 50%;
+
+    background: #303030;
+
+    font-size: 21px;
+}
+
+.privado-avatar img {
+    width: 100%;
+    height: 100%;
+
+    display: block;
+
+    object-fit: cover;
+}
+
+
+.privado-info {
+    min-width: 0;
+}
+
+.privado-info h2 {
+    margin: 0;
+
+    font-size: 18px;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.privado-info span {
+    color: #999999;
+    font-size: 13px;
+}
+
+
+/* ========================================
+   MENSAJES
+   ======================================== */
+
+.privado-mensajes {
+    flex: 1;
+
+    min-height: 0;
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 8px;
+
+    padding: 20px;
+
+    overflow-y: auto;
+}
+
+
+/* ========================================
+   ESCRITURA
+   ======================================== */
+
+.privado-escritura {
+    display: flex;
+    align-items: flex-end;
+
+    gap: 10px;
+
+    padding: 12px 15px;
+
+    border-top: 1px solid #333333;
+
+    flex-shrink: 0;
+}
+
+#privado-input {
+    flex: 1;
+
+    min-width: 0;
+    max-height: 150px;
+
+    padding: 12px 14px;
+
+    border: 1px solid #444444;
+    border-radius: 10px;
+
+    outline: none;
+
+    background: #151515;
+    color: #ffffff;
+
+    font-size: 15px;
+
+    resize: none;
+}
+
+#privado-input:focus {
+    border-color: #5865f2;
+}
+
+
+#boton-enviar-privado {
+    width: 45px;
+    height: 45px;
+
+    flex-shrink: 0;
+
+    border: none;
+    border-radius: 10px;
+
+    background: #5865f2;
+    color: #ffffff;
+
+    font-size: 19px;
+
+    cursor: pointer;
+}
+
+#boton-enviar-privado:hover {
+    opacity: 0.9;
+}
+
+
+/* ========================================
+   MÓVIL
+   ======================================== */
+
+@media (max-width: 700px) {
+
+    .privados-contenedor {
+        max-width: none;
+        min-height: calc(100vh - 60px);
+    }
+
+    .privados-cabecera h2 {
+        font-size: 25px;
+    }
+
+    .privados-cabecera p {
+        font-size: 14px;
+    }
+
+    .usuario-privado {
+        min-height: 65px;
+        padding: 10px 12px;
+    }
+
+    .usuario-privado-avatar {
+        width: 45px;
+        height: 45px;
+    }
+
+    .usuario-privado-nombre {
+        font-size: 16px;
+    }
+
+    .usuario-privado-descripcion {
+        font-size: 13px;
+    }
+
+    .privado-chat {
+        height: calc(100vh - 80px);
+        border-radius: 12px;
+    }
+
+    .privado-mensajes {
+        padding: 15px 12px;
+    }
+
+    .privado-escritura {
+        padding: 10px;
+    }
+
+}

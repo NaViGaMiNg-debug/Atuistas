@@ -333,11 +333,119 @@
                     class="seccion-app"
                 >
 
-                    <h2>💌 Mensajes privados</h2>
+                    <div class="privados-contenedor">
 
-                    <p>
-                        Próximamente aparecerán tus conversaciones.
-                    </p>
+                        <!-- ====================================
+                            LISTA DE PERSONAS
+                            ==================================== -->
+
+                        <div
+                            id="privados-lista"
+                            class="privados-lista"
+                        >
+
+                            <div class="privados-cabecera">
+
+                                <h2>Privados</h2>
+
+                                <p>
+                                    Habla directamente con cualquier persona del grupo.
+                                </p>
+
+                            </div>
+
+
+                            <div
+                                id="lista-usuarios-privados"
+                                class="lista-usuarios-privados"
+                            >
+
+                                <!--
+                                    Aquí JavaScript colocará
+                                    automáticamente a los usuarios.
+                                -->
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- ====================================
+                            CHAT PRIVADO
+                            ==================================== -->
+
+                        <div
+                            id="privado-chat"
+                            class="privado-chat"
+                        >
+
+                            <div class="privado-chat-cabecera">
+
+                                <button
+                                    id="boton-volver-privados"
+                                    class="boton-volver-privados"
+                                >
+                                    ←
+                                </button>
+
+
+                                <div
+                                    id="privado-avatar"
+                                    class="privado-avatar"
+                                >
+                                    👤
+                                </div>
+
+
+                                <div class="privado-info">
+
+                                    <h2 id="privado-nombre">
+                                        Usuario
+                                    </h2>
+
+                                    <span id="privado-estado">
+                                        Usuario
+                                    </span>
+
+                                </div>
+
+                            </div>
+
+
+                            <div
+                                id="privado-mensajes"
+                                class="privado-mensajes"
+                            >
+
+                                <!--
+                                    Los mensajes aparecerán aquí.
+                                -->
+
+                            </div>
+
+
+                            <div class="privado-escritura">
+
+                                <textarea
+                                    id="privado-input"
+                                    placeholder="Escribe un mensaje..."
+                                    maxlength="2000"
+                                    rows="1"
+                                ></textarea>
+
+
+                                <button
+                                    id="boton-enviar-privado"
+                                    title="Enviar mensaje"
+                                >
+                                    ➤
+                                </button>
+
+                            </div>
+
+                        </div>
+
+                    </div>
 
                 </section>
 

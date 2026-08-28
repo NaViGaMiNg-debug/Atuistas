@@ -1479,3 +1479,656 @@ botonCerrarSesion.addEventListener(
 
     }
 );
+
+// ========================================
+// CHATS PRIVADOS
+// ========================================
+
+const privadosLista =
+    document.getElementById("privados-lista");
+
+const listaUsuariosPrivados =
+    document.getElementById("lista-usuarios-privados");
+
+const privadoChat =
+    document.getElementById("privado-chat");
+
+const privadoAvatar =
+    document.getElementById("privado-avatar");
+
+const privadoNombre =
+    document.getElementById("privado-nombre");
+
+const privadoEstado =
+    document.getElementById("privado-estado");
+
+const privadoMensajes =
+    document.getElementById("privado-mensajes");
+
+const privadoInput =
+    document.getElementById("privado-input");
+
+const botonEnviarPrivado =
+    document.getElementById("boton-enviar-privado");
+
+const botonVolverPrivados =
+    document.getElementById("boton-volver-privados");
+
+
+// Usuario con el que estamos hablando
+let usuarioPrivadoActual = null;
+
+// Chat actualmente abierto
+let chatPrivadoActual = null;
+
+
+// ========================================
+// CARGAR USUARIOS
+// ========================================
+
+async function cargarUsuariosPrivados() {
+
+    const navegadorId =
+        localStorage.getItem("navegador_id");
+
+    const token =
+        localStorage.getItem("sesion_token");
+
+
+    if (!navegadorId || !token) {
+        return;
+    }
+
+
+    const {
+        data,
+        error
+    } = await supabaseClient.rpc(
+        "obtener_usuarios_privados",
+        {
+            p_navegador_id: navegadorId,
+            p_token: token
+        }
+    );
+
+
+    if (error) {
+
+        console.error(
+            "Error al cargar usuarios privados:",
+            error
+        );
+
+        return;
+    }
+
+
+    listaUsuariosPrivados.innerHTML = "";
+
+
+    if (!data || data.length === 0) {
+
+        listaUsuariosPrivados.innerHTML = `
+            <p style="color:#999999;">
+                No hay otros usuarios en el grupo.
+            </p>
+        `;
+
+        return;
+    }
+
+
+    data.forEach(usuario => {
+
+        const boton =
+            document.createElement("button");
+
+        boton.className =
+            "usuario-privado";
+
+
+        // Avatar
+        const avatar =
+            document.createElement("div");
+
+        avatar.className =
+            "usuario-privado-avatar";
+
+
+        if (usuario.avatar_url) {
+
+            const imagen =
+                document.createElement("img");
+
+            imagen.src =
+                usuario.avatar_url;
+
+            avatar.appendChild(
+                imagen
+            );
+
+        } else {
+
+            avatar.textContent =
+                "👤";
+
+        }
+
+
+        // Información
+        const informacion =
+            document.createElement("div");
+
+        informacion.className =
+            "usuario-privado-info";
+
+
+        const nombre =
+            document.createElement("div");
+
+        nombre.className =
+            "usuario-privado-nombre";
+
+        nombre.textContent =
+            usuario.nombre;
+
+        nombre.style.color =
+            usuario.color_nombre || "#ffffff";
+
+
+        const descripcion =
+            document.createElement("div");
+
+        descripcion.className =
+            "usuario-privado-descripcion";
+
+        descripcion.textContent =
+            usuario.descripcion ||
+            "Sin descripción";
+
+
+        informacion.appendChild(
+            nombre
+        );
+
+        informacion.appendChild(
+            descripcion
+        );
+
+
+        boton.appendChild(
+            avatar
+        );
+
+        boton.appendChild(
+            informacion
+        );
+
+
+        // Abrir chat
+        boton.addEventListener(
+            "click",
+            () => {
+
+                abrirChatPrivado(
+                    usuario
+                );
+
+            }
+        );
+
+
+        listaUsuariosPrivados.appendChild(
+            boton
+        );
+
+    });
+
+}
+
+
+// ========================================
+// ABRIR CHAT
+// ========================================
+
+async function abrirChatPrivado(usuario) {
+
+    const navegadorId =
+        localStorage.getItem("navegador_id");
+
+    const token =
+        localStorage.getItem("sesion_token");
+
+
+    if (!navegadorId || !token) {
+        return;
+    }
+
+
+    usuarioPrivadoActual =
+        usuario;
+
+
+    // Crear u obtener chat
+    const {
+        data: chatId,
+        error
+    } = await supabaseClient.rpc(
+        "obtener_o_crear_chat",
+        {
+            p_navegador_id: navegadorId,
+            p_token: token,
+            p_otro_usuario: usuario.id
+        }
+    );
+
+
+    if (error) {
+
+        console.error(
+            "Error al abrir chat:",
+            error
+        );
+
+        alert(
+            "No se ha podido abrir el chat."
+        );
+
+        return;
+    }
+
+
+    if (!chatId) {
+
+        alert(
+            "No se ha podido abrir el chat."
+        );
+
+        return;
+    }
+
+
+    chatPrivadoActual =
+        chatId;
+
+
+    // ====================================
+    // CABECERA
+    // ====================================
+
+    privadoNombre.textContent =
+        usuario.nombre;
+
+    privadoNombre.style.color =
+        usuario.color_nombre || "#ffffff";
+
+
+    privadoEstado.textContent =
+        usuario.es_admin
+            ? "🛠️ Developer"
+            : "Usuario";
+
+
+    privadoAvatar.innerHTML = "";
+
+
+    if (usuario.avatar_url) {
+
+        const imagen =
+            document.createElement("img");
+
+        imagen.src =
+            usuario.avatar_url;
+
+        privadoAvatar.appendChild(
+            imagen
+        );
+
+    } else {
+
+        privadoAvatar.textContent =
+            "👤";
+
+    }
+
+
+    // ====================================
+    // CAMBIAR VISTA
+    // ====================================
+
+    privadosLista.style.display =
+        "none";
+
+    privadoChat.style.display =
+        "flex";
+
+
+    // Cargar mensajes
+    await cargarMensajesPrivados();
+
+
+    // Enfocar escritura
+    privadoInput.focus();
+
+}
+
+
+// ========================================
+// CARGAR MENSAJES
+// ========================================
+
+async function cargarMensajesPrivados() {
+
+    const navegadorId =
+        localStorage.getItem("navegador_id");
+
+    const token =
+        localStorage.getItem("sesion_token");
+
+
+    if (
+        !navegadorId ||
+        !token ||
+        !chatPrivadoActual
+    ) {
+        return;
+    }
+
+
+    const {
+        data,
+        error
+    } = await supabaseClient.rpc(
+        "obtener_mensajes_privados",
+        {
+            p_navegador_id: navegadorId,
+            p_token: token,
+            p_chat_id: chatPrivadoActual
+        }
+    );
+
+
+    if (error) {
+
+        console.error(
+            "Error al cargar mensajes:",
+            error
+        );
+
+        return;
+    }
+
+
+    privadoMensajes.innerHTML = "";
+
+
+    if (!data || data.length === 0) {
+
+        const vacio =
+            document.createElement("div");
+
+        vacio.style.color =
+            "#777777";
+
+        vacio.style.textAlign =
+            "center";
+
+        vacio.style.margin =
+            "auto";
+
+        vacio.textContent =
+            "Todavía no hay mensajes.";
+
+        privadoMensajes.appendChild(
+            vacio
+        );
+
+        return;
+    }
+
+
+    data.forEach(
+        mensaje => {
+
+            crearMensajePrivado(
+                mensaje
+            );
+
+        }
+    );
+
+
+    // Ir al último mensaje
+    privadoMensajes.scrollTop =
+        privadoMensajes.scrollHeight;
+
+}
+
+
+// ========================================
+// CREAR MENSAJE VISUAL
+// ========================================
+
+function crearMensajePrivado(mensaje) {
+
+    const mensajeElemento =
+        document.createElement("div");
+
+    const esMio =
+        mensaje.usuario_id ===
+        usuarioActualId;
+
+
+    mensajeElemento.className =
+        esMio
+            ? "mensaje-privado mio"
+            : "mensaje-privado otro";
+
+
+    const nombre =
+        document.createElement("div");
+
+    nombre.className =
+        "mensaje-privado-nombre";
+
+    nombre.textContent =
+        mensaje.nombre;
+
+    nombre.style.color =
+        mensaje.color_nombre || "#ffffff";
+
+
+    const contenido =
+        document.createElement("div");
+
+    contenido.className =
+        "mensaje-privado-contenido";
+
+    contenido.textContent =
+        mensaje.contenido;
+
+
+    mensajeElemento.appendChild(
+        nombre
+    );
+
+    mensajeElemento.appendChild(
+        contenido
+    );
+
+
+    privadoMensajes.appendChild(
+        mensajeElemento
+    );
+
+}
+
+
+// ========================================
+// ENVIAR MENSAJE
+// ========================================
+
+async function enviarMensajePrivado() {
+
+    const contenido =
+        privadoInput.value.trim();
+
+
+    if (
+        !contenido ||
+        !chatPrivadoActual
+    ) {
+        return;
+    }
+
+
+    const navegadorId =
+        localStorage.getItem("navegador_id");
+
+    const token =
+        localStorage.getItem("sesion_token");
+
+
+    if (!navegadorId || !token) {
+        return;
+    }
+
+
+    botonEnviarPrivado.disabled =
+        true;
+
+
+    const {
+        data,
+        error
+    } = await supabaseClient.rpc(
+        "enviar_mensaje_privado",
+        {
+            p_navegador_id: navegadorId,
+            p_token: token,
+            p_chat_id: chatPrivadoActual,
+            p_contenido: contenido
+        }
+    );
+
+
+    botonEnviarPrivado.disabled =
+        false;
+
+
+    if (error) {
+
+        console.error(
+            "Error al enviar mensaje:",
+            error
+        );
+
+        alert(
+            "No se ha podido enviar el mensaje."
+        );
+
+        return;
+    }
+
+
+    if (!data) {
+
+        alert(
+            "Tu sesión ya no es válida."
+        );
+
+        return;
+    }
+
+
+    privadoInput.value = "";
+
+
+    // Recargar mensajes
+    await cargarMensajesPrivados();
+
+}
+
+
+// ========================================
+// BOTÓN ENVIAR
+// ========================================
+
+botonEnviarPrivado.addEventListener(
+    "click",
+    enviarMensajePrivado
+);
+
+
+// ========================================
+// ENTER PARA ENVIAR
+// ========================================
+
+privadoInput.addEventListener(
+    "keydown",
+    event => {
+
+        if (
+            event.key === "Enter" &&
+            !event.shiftKey
+        ) {
+
+            event.preventDefault();
+
+            enviarMensajePrivado();
+
+        }
+
+    }
+);
+
+
+// ========================================
+// VOLVER A LA LISTA
+// ========================================
+
+botonVolverPrivados.addEventListener(
+    "click",
+    () => {
+
+        privadoChat.style.display =
+            "none";
+
+        privadosLista.style.display =
+            "block";
+
+        usuarioPrivadoActual =
+            null;
+
+        chatPrivadoActual =
+            null;
+
+        privadoMensajes.innerHTML =
+            "";
+
+    }
+);
+
+
+// ========================================
+// CARGAR PRIVADOS AL ENTRAR
+// ========================================
+
+const botonPrivados =
+    document.querySelector(
+        '[data-seccion="privados"]'
+    );
+
+
+if (botonPrivados) {
+
+    botonPrivados.addEventListener(
+        "click",
+        () => {
+
+            cargarUsuariosPrivados();
+
+        }
+    );
+
+}
