@@ -205,6 +205,7 @@ const botonPerfilMovil =
     document.getElementById("boton-perfil-movil");
 
 let usuarioActualId = null;
+let canalChatPrivado = null;
 
 // Avatar
 const avatarPerfil =
@@ -607,6 +608,16 @@ function mostrarSeccion(nombre) {
     if (window.innerWidth <= 700) {
 
         ocultarMenuMovil();
+
+    }
+
+    // ====================================
+    // PRIVADOS
+    // ====================================
+
+    if (nombre === "privados") {
+
+        cargarUsuariosPrivados();
 
     }
 
@@ -1963,6 +1974,61 @@ function crearMensajePrivado(mensaje) {
 
 }
 
+// ========================================
+// REALTIME — MENSAJES PRIVADOS
+// ========================================
+
+function escucharMensajesPrivados(chatId) {
+
+    // Eliminar canal anterior si existía
+    if (canalChatPrivado) {
+
+        supabaseClient.removeChannel(
+            canalChatPrivado
+        );
+
+        canalChatPrivado = null;
+    }
+
+
+    // Crear nuevo canal
+    canalChatPrivado =
+        supabaseClient
+            .channel(`chat-privado-${chatId}`)
+
+            .on(
+                "postgres_changes",
+                {
+                    event: "INSERT",
+                    schema: "public",
+                    table: "mensajes_privados",
+                    filter: `chat_id=eq.${chatId}`
+                },
+                payload => {
+
+                    console.log(
+                        "Nuevo mensaje recibido:",
+                        payload.new
+                    );
+
+
+                    // Añadir el mensaje a la interfaz
+                    mostrarMensajePrivado(
+                        payload.new
+                    );
+
+                }
+            )
+
+            .subscribe(status => {
+
+                console.log(
+                    "Realtime chat privado:",
+                    status
+                );
+
+            });
+}
 
 // ========================================
 // ENVIAR MENSAJE
