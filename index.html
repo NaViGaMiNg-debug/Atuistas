@@ -116,25 +116,100 @@
         </header>
 
 
-        <nav class="navegacion">
+        <aside class="menu-lateral">
 
-            <button class="boton-nav activo" data-seccion="chat">
-                💬 Chat
-            </button>
+    <div class="menu-logo">
+        <h1>El Grupo</h1>
+    </div>
 
-            <button class="boton-nav" data-seccion="chismes">
-                👀 Chismes
-            </button>
+    <nav class="menu-opciones">
 
-            <button class="boton-nav" data-seccion="privados">
-                💌 Privados
-            </button>
+        <button class="boton-nav activo" data-seccion="chat">
+            <span>💬</span>
+            <span>Chat</span>
+        </button>
 
-            <button class="boton-nav" data-seccion="quedadas">
-                📅 Quedadas
-            </button>
+        <button class="boton-nav" data-seccion="chismes">
+            <span>👀</span>
+            <span>Chismes</span>
+        </button>
 
-        </nav>
+        <button class="boton-nav" data-seccion="privados">
+            <span>💌</span>
+            <span>Privados</span>
+        </button>
+
+        <button class="boton-nav" data-seccion="quedadas">
+            <span>📅</span>
+            <span>Quedadas</span>
+        </button>
+
+    </nav>
+
+    <div class="menu-inferior">
+
+        <button id="boton-perfil">
+            👤 Mi perfil
+        </button>
+
+    </div>
+
+        </aside>
+
+
+        <div class="contenido-app">
+
+            <header class="cabecera-movil">
+
+                <button id="boton-menu-movil">
+                    ☰
+                </button>
+
+                <h1>El Grupo</h1>
+
+            </header>
+
+
+            <main class="contenido-principal">
+
+                <section id="seccion-chat" class="seccion-app activa">
+
+                    <h2>💬 Chat general</h2>
+
+                    <p>Próximamente aparecerán los mensajes.</p>
+
+                </section>
+
+
+                <section id="seccion-chismes" class="seccion-app">
+
+                    <h2>👀 Chismes</h2>
+
+                    <p>Próximamente aparecerán los chismes.</p>
+
+                </section>
+
+
+                <section id="seccion-privados" class="seccion-app">
+
+                    <h2>💌 Mensajes privados</h2>
+
+                    <p>Próximamente aparecerán tus conversaciones.</p>
+
+                </section>
+
+
+                <section id="seccion-quedadas" class="seccion-app">
+
+                    <h2>📅 Quedadas</h2>
+
+                    <p>Próximamente aparecerán las quedadas.</p>
+
+                </section>
+
+            </main>
+
+        </div>
 
 
         <main class="contenido-principal">

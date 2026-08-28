@@ -17,6 +17,8 @@ const pantallaPrincipal = document.getElementById("pantalla-principal");
 const pantallaRegistro = document.getElementById("pantalla-registro");
 const pantallaAcceso = document.getElementById("pantalla-acceso");
 const appPrincipal = document.getElementById("app-principal");
+const botonLogin = document.getElementById("boton-login");
+const codigoLogin = document.getElementById("codigo-login");
 
 const botonRegistro = document.getElementById("boton-registro");
 const nombreRegistro = document.getElementById("nombre-registro");
@@ -160,3 +162,75 @@ async function comprobarSesion() {
 }
 
 comprobarSesion();
+
+// ========================================
+// NAVEGACIÓN PRINCIPAL
+// ========================================
+
+const botonesNav = document.querySelectorAll(".boton-nav");
+const seccionesApp = document.querySelectorAll(".seccion-app");
+
+botonesNav.forEach(boton => {
+
+    boton.addEventListener("click", () => {
+
+        const seccion = boton.dataset.seccion;
+
+        // Quitar estado activo de todos los botones
+        botonesNav.forEach(b => {
+            b.classList.remove("activo");
+        });
+
+        // Activar el botón pulsado
+        boton.classList.add("activo");
+
+        // Ocultar todas las secciones
+        seccionesApp.forEach(s => {
+            s.classList.remove("activa");
+        });
+
+        // Mostrar la sección correspondiente
+        const seccionSeleccionada =
+            document.getElementById(`seccion-${seccion}`);
+
+        if (seccionSeleccionada) {
+            seccionSeleccionada.classList.add("activa");
+        }
+
+    });
+
+});
+
+// ========================================
+// INICIAR SESIÓN
+// ========================================
+
+botonLogin.addEventListener("click", async () => {
+
+    const codigo = codigoLogin.value;
+
+    if (!codigo) {
+        alert("Escribe tu código.");
+        return;
+    }
+
+    botonLogin.disabled = true;
+
+    const { data, error } = await supabaseClient.rpc(
+        "iniciar_sesion",
+        {
+            p_codigo: codigo
+        }
+    );
+
+    botonLogin.disabled = false;
+
+    if (error) {
+        console.error("Error al iniciar sesión:", error);
+        alert("Código incorrecto.");
+        return;
+    }
+
+    console.log("Sesión iniciada:", data);
+
+});

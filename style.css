@@ -111,56 +111,74 @@ body {
     background: #444444;
 }
 
-.barra-superior {
+/* ========================================
+   APLICACIÓN PRINCIPAL
+   ======================================== */
+
+#app-principal {
+    min-height: 100vh;
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-
-    padding: 20px 30px;
-
-    border-bottom: 1px solid #333;
 }
 
-.barra-superior h1 {
+
+/* ========================================
+   MENÚ LATERAL
+   ======================================== */
+
+.menu-lateral {
+    width: 240px;
+    min-height: 100vh;
+
+    display: flex;
+    flex-direction: column;
+
+    padding: 25px 15px;
+
+    background: #202020;
+    border-right: 1px solid #333;
+
+    flex-shrink: 0;
+}
+
+.menu-logo {
+    padding: 0 10px 30px;
+}
+
+.menu-logo h1 {
     margin: 0;
+    font-size: 25px;
 }
 
-.barra-superior button {
-    padding: 10px 16px;
-
-    border: none;
-    border-radius: 8px;
-
-    background: #5865f2;
-    color: white;
-
-    cursor: pointer;
-}
-
-.navegacion {
+.menu-opciones {
     display: flex;
-    justify-content: center;
-    gap: 8px;
-
-    padding: 15px;
-
-    border-bottom: 1px solid #333;
-
-    overflow-x: auto;
+    flex-direction: column;
+    gap: 6px;
 }
 
 .boton-nav {
-    padding: 10px 16px;
+    width: 100%;
+
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    padding: 12px;
 
     border: none;
-    border-radius: 8px;
+    border-radius: 10px;
 
-    background: #252525;
+    background: transparent;
     color: #aaa;
 
-    cursor: pointer;
+    font-size: 15px;
+    text-align: left;
 
-    white-space: nowrap;
+    cursor: pointer;
+}
+
+.boton-nav span:first-child {
+    width: 25px;
+    text-align: center;
 }
 
 .boton-nav:hover {
@@ -173,11 +191,37 @@ body {
     color: white;
 }
 
+.menu-inferior {
+    margin-top: auto;
+}
+
+.menu-inferior button {
+    width: 100%;
+
+    padding: 12px;
+
+    border: none;
+    border-radius: 10px;
+
+    background: #303030;
+    color: white;
+
+    cursor: pointer;
+}
+
+
+/* ========================================
+   CONTENIDO
+   ======================================== */
+
+.contenido-app {
+    flex: 1;
+    min-width: 0;
+}
+
 .contenido-principal {
-    max-width: 1000px;
-
+    max-width: 1100px;
     margin: 0 auto;
-
     padding: 30px;
 }
 
@@ -187,4 +231,78 @@ body {
 
 .seccion-app.activa {
     display: block;
+}
+
+
+/* ========================================
+   CABECERA MÓVIL
+   ======================================== */
+
+.cabecera-movil {
+    display: none;
+}
+
+.seccion-app {
+    display: none;
+}
+
+.seccion-app.activa {
+    display: block;
+}
+
+/* ========================================
+   NAVEGACIÓN MÓVIL
+   ======================================== */
+
+@media (max-width: 700px) {
+
+    #app-principal {
+        display: block;
+        min-height: 100vh;
+    }
+
+    .menu-lateral {
+        display: none;
+    }
+
+    .contenido-app {
+        width: 100%;
+    }
+
+    .cabecera-movil {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+
+        height: 60px;
+
+        padding: 0 15px;
+
+        border-bottom: 1px solid #333;
+    }
+
+    .cabecera-movil h1 {
+        margin: 0;
+        font-size: 20px;
+    }
+
+    #boton-menu-movil {
+        width: 40px;
+        height: 40px;
+
+        border: none;
+        border-radius: 8px;
+
+        background: #303030;
+        color: white;
+
+        font-size: 20px;
+
+        cursor: pointer;
+    }
+
+    .contenido-principal {
+        padding: 20px;
+    }
+
 }
