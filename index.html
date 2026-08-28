@@ -11,7 +11,13 @@
 
 <body>
 
+    <!-- ========================================
+         PANTALLA DE ACCESO
+         ======================================== -->
+
     <div id="pantalla-acceso">
+
+        <!-- Pantalla inicial -->
 
         <div id="pantalla-principal">
 
@@ -20,7 +26,9 @@
                 <h1>El Grupo</h1>
 
                 <section class="acceso-seccion">
+
                     <h2>¿Eres nuevo?</h2>
+
                     <p>Pon tu nombre aquí ↓</p>
 
                     <input
@@ -33,14 +41,19 @@
                     <button id="boton-registro">
                         Crear cuenta
                     </button>
+
                 </section>
+
 
                 <div class="separador">
                     <span>O</span>
                 </div>
 
+
                 <section class="acceso-seccion">
+
                     <h2>¿Ya tienes una cuenta?</h2>
+
                     <p>Escribe tu código ↓</p>
 
                     <input
@@ -52,11 +65,15 @@
                     <button id="boton-login">
                         Entrar
                     </button>
+
                 </section>
 
             </div>
 
         </div>
+
+
+        <!-- Pantalla de creación de cuenta -->
 
         <div id="pantalla-registro" style="display: none;">
 
@@ -91,6 +108,7 @@
                     <button
                         id="boton-volver-registro"
                         type="button"
+                        class="boton-secundario"
                     >
                         Volver
                     </button>
@@ -103,157 +121,272 @@
 
     </div>
 
+
+    <!-- ========================================
+         APLICACIÓN PRINCIPAL
+         ======================================== -->
+
     <div id="app-principal" style="display: none;">
 
-        <header class="barra-superior">
 
-            <h1>El Grupo</h1>
-
-            <button id="boton-perfil">
-                👤 Perfil
-            </button>
-
-        </header>
-
+        <!-- ====================================
+             MENÚ DE ESCRITORIO
+             ==================================== -->
 
         <aside class="menu-lateral">
 
-    <div class="menu-logo">
-        <h1>El Grupo</h1>
-    </div>
+            <div class="menu-logo">
 
-    <nav class="menu-opciones">
+                <h1>El Grupo</h1>
 
-        <button class="boton-nav activo" data-seccion="chat">
-            <span>💬</span>
-            <span>Chat</span>
-        </button>
+            </div>
 
-        <button class="boton-nav" data-seccion="chismes">
-            <span>👀</span>
-            <span>Chismes</span>
-        </button>
 
-        <button class="boton-nav" data-seccion="privados">
-            <span>💌</span>
-            <span>Privados</span>
-        </button>
+            <nav class="menu-opciones">
 
-        <button class="boton-nav" data-seccion="quedadas">
-            <span>📅</span>
-            <span>Quedadas</span>
-        </button>
+                <button
+                    class="boton-nav activo"
+                    data-seccion="chat"
+                >
+                    <span>💬</span>
+                    <span>Chat</span>
+                </button>
 
-    </nav>
 
-    <div class="menu-inferior">
+                <button
+                    class="boton-nav"
+                    data-seccion="chismes"
+                >
+                    <span>👀</span>
+                    <span>Chismes</span>
+                </button>
 
-        <button id="boton-perfil">
-            👤 Mi perfil
-        </button>
 
-    </div>
+                <button
+                    class="boton-nav"
+                    data-seccion="privados"
+                >
+                    <span>💌</span>
+                    <span>Privados</span>
+                </button>
+
+
+                <button
+                    class="boton-nav"
+                    data-seccion="quedadas"
+                >
+                    <span>📅</span>
+                    <span>Quedadas</span>
+                </button>
+
+            </nav>
+
+
+            <div class="menu-inferior">
+
+                <button id="boton-perfil">
+                    <span>👤</span>
+                    <span>Mi perfil</span>
+                </button>
+
+            </div>
 
         </aside>
 
 
+        <!-- ====================================
+             MENÚ DE MÓVIL
+             ==================================== -->
+
+        <div
+            id="menu-movil"
+            class="menu-movil"
+            style="display: none;"
+        >
+
+            <div class="menu-movil-contenido">
+
+                <h1>El Grupo</h1>
+
+                <p>¿Qué quieres hacer?</p>
+
+
+                <nav class="menu-movil-opciones">
+
+                    <button
+                        class="boton-nav-movil"
+                        data-seccion="chat"
+                    >
+                        <span>💬</span>
+                        <strong>Chat</strong>
+                    </button>
+
+
+                    <button
+                        class="boton-nav-movil"
+                        data-seccion="chismes"
+                    >
+                        <span>👀</span>
+                        <strong>Chismes</strong>
+                    </button>
+
+
+                    <button
+                        class="boton-nav-movil"
+                        data-seccion="privados"
+                    >
+                        <span>💌</span>
+                        <strong>Privados</strong>
+                    </button>
+
+
+                    <button
+                        class="boton-nav-movil"
+                        data-seccion="quedadas"
+                    >
+                        <span>📅</span>
+                        <strong>Quedadas</strong>
+                    </button>
+
+                </nav>
+
+
+                <button
+                    id="boton-perfil-movil"
+                    class="boton-perfil-movil"
+                >
+                    👤 Mi perfil
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <!-- ====================================
+             CONTENIDO DE LA APLICACIÓN
+             ==================================== -->
+
         <div class="contenido-app">
+
+
+            <!-- Cabecera móvil -->
 
             <header class="cabecera-movil">
 
-                <button id="boton-menu-movil">
-                    ☰
+                <button
+                    id="boton-volver-menu"
+                    aria-label="Volver al menú"
+                >
+                    ←
                 </button>
 
-                <h1>El Grupo</h1>
+
+                <h1 id="titulo-seccion-movil">
+                    Chat
+                </h1>
 
             </header>
 
 
+            <!-- Contenido -->
+
             <main class="contenido-principal">
 
-                <section id="seccion-chat" class="seccion-app activa">
+
+                <!-- CHAT -->
+
+                <section
+                    id="seccion-chat"
+                    class="seccion-app activa"
+                >
 
                     <h2>💬 Chat general</h2>
 
-                    <p>Próximamente aparecerán los mensajes.</p>
+                    <p>
+                        Próximamente aparecerán los mensajes.
+                    </p>
 
                 </section>
 
 
-                <section id="seccion-chismes" class="seccion-app">
+                <!-- CHISMES -->
+
+                <section
+                    id="seccion-chismes"
+                    class="seccion-app"
+                >
 
                     <h2>👀 Chismes</h2>
 
-                    <p>Próximamente aparecerán los chismes.</p>
+                    <p>
+                        Próximamente aparecerán los chismes.
+                    </p>
 
                 </section>
 
 
-                <section id="seccion-privados" class="seccion-app">
+                <!-- PRIVADOS -->
+
+                <section
+                    id="seccion-privados"
+                    class="seccion-app"
+                >
 
                     <h2>💌 Mensajes privados</h2>
 
-                    <p>Próximamente aparecerán tus conversaciones.</p>
+                    <p>
+                        Próximamente aparecerán tus conversaciones.
+                    </p>
 
                 </section>
 
 
-                <section id="seccion-quedadas" class="seccion-app">
+                <!-- QUEDADAS -->
+
+                <section
+                    id="seccion-quedadas"
+                    class="seccion-app"
+                >
 
                     <h2>📅 Quedadas</h2>
 
-                    <p>Próximamente aparecerán las quedadas.</p>
+                    <p>
+                        Próximamente aparecerán las quedadas.
+                    </p>
 
                 </section>
+
+
+                <!-- PERFIL -->
+
+                <section
+                    id="seccion-perfil"
+                    class="seccion-app"
+                >
+
+                    <h2>👤 Mi perfil</h2>
+
+                    <p>
+                        Próximamente aparecerá tu perfil.
+                    </p>
+
+                </section>
+
 
             </main>
 
         </div>
 
-
-        <main class="contenido-principal">
-
-            <section id="seccion-chat" class="seccion-app activa">
-
-                <h2>💬 Chat general</h2>
-
-                <p>Próximamente aparecerán los mensajes.</p>
-
-            </section>
-
-
-            <section id="seccion-chismes" class="seccion-app">
-
-                <h2>👀 Chismes</h2>
-
-                <p>Próximamente aparecerán los chismes.</p>
-
-            </section>
-
-
-            <section id="seccion-privados" class="seccion-app">
-
-                <h2>💌 Mensajes privados</h2>
-
-                <p>Próximamente aparecerán tus conversaciones.</p>
-
-            </section>
-
-
-            <section id="seccion-quedadas" class="seccion-app">
-
-                <h2>📅 Quedadas</h2>
-
-                <p>Próximamente aparecerán las quedadas.</p>
-
-            </section>
-
-        </main>
-
     </div>
 
+
+    <!-- ========================================
+         SCRIPTS
+         ======================================== -->
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
     <script src="script.js"></script>
 
 </body>
