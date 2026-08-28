@@ -365,11 +365,78 @@
                     class="seccion-app"
                 >
 
-                    <h2>👤 Mi perfil</h2>
+                    <div class="perfil-contenedor">
 
-                    <p>
-                        Próximamente aparecerá tu perfil.
-                    </p>
+                        <div class="perfil-cabecera">
+
+                            <div
+                                id="avatar-perfil"
+                                class="avatar-perfil"
+                                title="Cambiar avatar"
+                            >
+                                👤
+                            </div>
+
+                            <div class="perfil-info">
+
+                                <h2
+                                    id="nombre-perfil"
+                                    title="Pulsa para editar"
+                                >
+                                    Tu nombre
+                                </h2>
+
+                                <div
+                                    id="estado-perfil"
+                                    class="estado-perfil"
+                                >
+                                    Usuario
+                                </div>
+
+                                <p
+                                    id="descripcion-perfil"
+                                    title="Pulsa para editar"
+                                >
+                                    Tu perfil
+                                </p>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="perfil-configuracion">
+
+                            <label for="color-nombre">
+                                🎨 Color de tu nombre
+                            </label>
+
+                            <input
+                                type="color"
+                                id="color-nombre"
+                                value="#ffffff"
+                            >
+
+                        </div>
+
+
+                        <div class="perfil-acciones">
+
+                            <button id="boton-cerrar-sesion">
+                                🚪 Cerrar sesión
+                            </button>
+
+                        </div>
+
+
+                        <input
+                            type="file"
+                            id="input-avatar"
+                            accept="image/png,image/jpeg,image/webp"
+                            hidden
+                        >
+
+                    </div>
 
                 </section>
 
