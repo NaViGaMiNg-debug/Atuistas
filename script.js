@@ -2893,3 +2893,103 @@ botonVolverPrivados.addEventListener(
 // ========================================
 
 comprobarSesion();
+
+// ========================================
+// NOTIFICACIONES — SERVICE WORKER
+// ========================================
+
+async function registrarServiceWorker() {
+
+    if (!("serviceWorker" in navigator)) {
+
+        console.error(
+            "Este navegador no soporta Service Workers."
+        );
+
+        return null;
+    }
+
+
+    try {
+
+        const registro =
+            await navigator.serviceWorker.register(
+                "/sw.js"
+            );
+
+
+        console.log(
+            "✅ Service Worker registrado:",
+            registro
+        );
+
+
+        return registro;
+
+    } catch (error) {
+
+        console.error(
+            "❌ Error registrando Service Worker:",
+            error
+        );
+
+        return null;
+
+    }
+
+}
+
+registrarServiceWorker();
+
+async function pedirPermisoNotificaciones() {
+
+    if (!("Notification" in window)) {
+
+        console.error(
+            "Este navegador no soporta notificaciones."
+        );
+
+        return false;
+    }
+
+
+    if (Notification.permission === "granted") {
+
+        return true;
+
+    }
+
+
+    if (Notification.permission === "denied") {
+
+        console.warn(
+            "Las notificaciones están bloqueadas."
+        );
+
+        return false;
+
+    }
+
+
+    const permiso =
+        await Notification.requestPermission();
+
+
+    if (permiso === "granted") {
+
+        console.log(
+            "✅ Permiso para notificaciones concedido."
+        );
+
+        return true;
+
+    }
+
+
+    console.log(
+        "❌ Permiso para notificaciones rechazado."
+    );
+
+    return false;
+
+}
