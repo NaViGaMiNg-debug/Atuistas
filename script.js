@@ -2914,7 +2914,7 @@ async function registrarServiceWorker() {
 
         const registro =
             await navigator.serviceWorker.register(
-                "/sw.js"
+                "./sw.js"
             );
 
 
