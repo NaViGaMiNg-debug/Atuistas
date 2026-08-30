@@ -45,6 +45,129 @@ const botonVolverRegistro =
 const botonLogin = document.getElementById("boton-login");
 const codigoLogin = document.getElementById("codigo-login");
 
+
+// ========================================
+// VARIABLES GLOBALES
+// ========================================
+
+let usuarioActualId = null;
+let colorNombreActual = "#ffffff";
+let canalChatPrivado = null;
+
+let usuarioPrivadoActual = null;
+let chatPrivadoActual = null;
+
+// Actualización automática de respaldo
+let intervaloMensajesPrivados = null;
+
+// Evitar varias cargas simultáneas
+let cargandoMensajesPrivados = false;
+
+
+// ========================================
+// ELEMENTOS — NAVEGACIÓN
+// ========================================
+
+// Navegación PC
+const botonesNav =
+    document.querySelectorAll(".menu-lateral .boton-nav");
+
+// Navegación móvil
+const botonesNavMovil =
+    document.querySelectorAll(".boton-nav-movil");
+
+// Secciones
+const seccionesApp =
+    document.querySelectorAll(".seccion-app");
+
+// Menú móvil
+const menuMovil =
+    document.getElementById("menu-movil");
+
+const botonVolverMenu =
+    document.getElementById("boton-volver-menu");
+
+const tituloSeccionMovil =
+    document.getElementById("titulo-seccion-movil");
+
+const botonPerfil =
+    document.getElementById("boton-perfil");
+
+const botonPerfilMovil =
+    document.getElementById("boton-perfil-movil");
+
+
+// ========================================
+// ELEMENTOS — PERFIL
+// ========================================
+
+const avatarPerfil =
+    document.getElementById("avatar-perfil");
+
+const inputAvatar =
+    document.getElementById("input-avatar");
+
+const colorNombre =
+    document.getElementById("color-nombre");
+
+const nombrePerfil =
+    document.getElementById("nombre-perfil");
+
+const descripcionPerfil =
+    document.getElementById("descripcion-perfil");
+
+const botonCerrarSesion =
+    document.getElementById("boton-cerrar-sesion");
+
+
+// ========================================
+// ELEMENTOS — CHATS PRIVADOS
+// ========================================
+
+const privadosLista =
+    document.getElementById("privados-lista");
+
+const listaUsuariosPrivados =
+    document.getElementById("lista-usuarios-privados");
+
+const privadoChat =
+    document.getElementById("privado-chat");
+
+const privadoAvatar =
+    document.getElementById("privado-avatar");
+
+const privadoNombre =
+    document.getElementById("privado-nombre");
+
+const privadoEstado =
+    document.getElementById("privado-estado");
+
+const privadoMensajes =
+    document.getElementById("privado-mensajes");
+
+const privadoInput =
+    document.getElementById("privado-input");
+
+const botonEnviarPrivado =
+    document.getElementById("boton-enviar-privado");
+
+const botonVolverPrivados =
+    document.getElementById("boton-volver-privados");
+
+
+// ========================================
+// NOMBRES DE LAS SECCIONES
+// ========================================
+
+const nombresSecciones = {
+    chat: "Chat",
+    chismes: "Chismes",
+    privados: "Privados",
+    quedadas: "Quedadas",
+    perfil: "Mi perfil"
+};
+
+
 // ========================================
 // INICIAR SESIÓN
 // ========================================
@@ -56,19 +179,13 @@ botonLogin.addEventListener(
         const codigo =
             codigoLogin.value.trim();
 
-
         if (!codigo) {
-
             alert("Escribe tu código.");
-
             return;
         }
 
-
         botonLogin.disabled = true;
 
-
-        // Comprobar código
         const {
             data: usuarioId,
             error
@@ -78,7 +195,6 @@ botonLogin.addEventListener(
                 p_codigo: codigo
             }
         );
-
 
         if (error) {
 
@@ -94,7 +210,6 @@ botonLogin.addEventListener(
             return;
         }
 
-
         console.log(
             "Usuario identificado:",
             usuarioId
@@ -108,7 +223,6 @@ botonLogin.addEventListener(
         const navegadorId =
             crypto.randomUUID();
 
-
         const {
             data: token,
             error: errorSesion
@@ -119,7 +233,6 @@ botonLogin.addEventListener(
                 p_identificador: navegadorId
             }
         );
-
 
         if (errorSesion) {
 
@@ -158,11 +271,11 @@ botonLogin.addEventListener(
         botonLogin.disabled = false;
 
 
-        // Guardar usuario actual
+        // Usuario actual
         usuarioActualId = usuarioId;
 
 
-        // Entrar en la aplicación
+        // Entrar
         mostrarAplicacion();
 
 
@@ -176,98 +289,45 @@ botonLogin.addEventListener(
     }
 );
 
-// Navegación PC
-const botonesNav =
-    document.querySelectorAll(".menu-lateral .boton-nav");
-
-// Navegación móvil
-const botonesNavMovil =
-    document.querySelectorAll(".boton-nav-movil");
-
-// Secciones
-const seccionesApp =
-    document.querySelectorAll(".seccion-app");
-
-// Menú móvil
-const menuMovil =
-    document.getElementById("menu-movil");
-
-const botonVolverMenu =
-    document.getElementById("boton-volver-menu");
-
-const tituloSeccionMovil =
-    document.getElementById("titulo-seccion-movil");
-
-const botonPerfil =
-    document.getElementById("boton-perfil");
-
-const botonPerfilMovil =
-    document.getElementById("boton-perfil-movil");
-
-let usuarioActualId = null;
-let canalChatPrivado = null;
-
-// Avatar
-const avatarPerfil =
-    document.getElementById("avatar-perfil");
-
-const inputAvatar =
-    document.getElementById("input-avatar");
-
-const colorNombre =
-    document.getElementById("color-nombre");
-
-const nombrePerfil =
-    document.getElementById("nombre-perfil");
-
-const descripcionPerfil =
-    document.getElementById("descripcion-perfil");
-
-const botonCerrarSesion =
-    document.getElementById("boton-cerrar-sesion");
-
-// ========================================
-// NOMBRES DE LAS SECCIONES
-// ========================================
-
-const nombresSecciones = {
-    chat: "Chat",
-    chismes: "Chismes",
-    privados: "Privados",
-    quedadas: "Quedadas",
-    perfil: "Mi perfil"
-};
-
 
 // ========================================
 // REGISTRO — PRIMER PASO
 // ========================================
 
-botonRegistro.addEventListener("click", () => {
+botonRegistro.addEventListener(
+    "click",
+    () => {
 
-    const nombre = nombreRegistro.value.trim();
+        const nombre =
+            nombreRegistro.value.trim();
 
-    if (!nombre) {
-        alert("Escribe tu nombre.");
-        return;
+        if (!nombre) {
+
+            alert("Escribe tu nombre.");
+
+            return;
+        }
+
+        pantallaPrincipal.style.display = "none";
+        pantallaRegistro.style.display = "block";
+
     }
-
-    pantallaPrincipal.style.display = "none";
-    pantallaRegistro.style.display = "block";
-
-});
+);
 
 
 // ========================================
 // REGISTRO — VOLVER
 // ========================================
 
-botonVolverRegistro.addEventListener("click", () => {
+botonVolverRegistro.addEventListener(
+    "click",
+    () => {
 
-    pantallaRegistro.style.display = "none";
-    pantallaPrincipal.style.display = "block";
+        pantallaRegistro.style.display = "none";
+        pantallaPrincipal.style.display = "block";
 
-});
+    }
+);
 
 
 // ========================================
@@ -289,12 +349,15 @@ botonConfirmarRegistro.addEventListener(
 
 
         if (!nombre) {
+
             alert("Escribe tu nombre.");
+
             return;
         }
 
 
         if (codigo.length < 4) {
+
             alert(
                 "El código debe tener al menos 4 caracteres."
             );
@@ -304,7 +367,11 @@ botonConfirmarRegistro.addEventListener(
 
 
         if (codigo !== codigoRepetido) {
-            alert("Los códigos no coinciden.");
+
+            alert(
+                "Los códigos no coinciden."
+            );
+
             return;
         }
 
@@ -312,7 +379,6 @@ botonConfirmarRegistro.addEventListener(
         botonConfirmarRegistro.disabled = true;
 
 
-        // Crear usuario
         const {
             data,
             error
@@ -349,7 +415,7 @@ botonConfirmarRegistro.addEventListener(
 
 
         // ====================================
-        // CREAR SESIÓN DEL NAVEGADOR
+        // CREAR SESIÓN
         // ====================================
 
         const navegadorId =
@@ -404,8 +470,14 @@ botonConfirmarRegistro.addEventListener(
         botonConfirmarRegistro.disabled = false;
 
 
+        usuarioActualId = data;
+
+
         // Entrar directamente
         mostrarAplicacion();
+
+        // Cargar perfil
+        cargarPerfil(data);
 
     }
 );
@@ -484,9 +556,12 @@ async function comprobarSesion() {
         data
     );
 
+
     usuarioActualId = data;
 
+
     mostrarAplicacion();
+
 
     cargarPerfil(data);
 
@@ -517,7 +592,6 @@ function mostrarAplicacion() {
     appPrincipal.style.display = "flex";
 
 
-    // En móvil comenzamos mostrando el menú
     if (window.innerWidth <= 700) {
 
         mostrarMenuMovil();
@@ -539,7 +613,8 @@ function mostrarMenuMovil() {
 
     menuMovil.style.display = "flex";
 
-    tituloSeccionMovil.textContent = "El Grupo";
+    tituloSeccionMovil.textContent =
+        "El Grupo";
 
 }
 
@@ -561,15 +636,17 @@ function ocultarMenuMovil() {
 
 function mostrarSeccion(nombre) {
 
-    // Ocultar todas las secciones
-    seccionesApp.forEach(seccion => {
+    seccionesApp.forEach(
+        seccion => {
 
-        seccion.classList.remove("activa");
+            seccion.classList.remove(
+                "activa"
+            );
 
-    });
+        }
+    );
 
 
-    // Buscar la sección
     const seccionSeleccionada =
         document.getElementById(
             `seccion-${nombre}`
@@ -581,39 +658,34 @@ function mostrarSeccion(nombre) {
     }
 
 
-    // Mostrarla
     seccionSeleccionada.classList.add(
         "activa"
     );
 
 
-    // Actualizar botones PC
-    botonesNav.forEach(boton => {
+    botonesNav.forEach(
+        boton => {
 
-        boton.classList.toggle(
-            "activo",
-            boton.dataset.seccion === nombre
-        );
+            boton.classList.toggle(
+                "activo",
+                boton.dataset.seccion === nombre
+            );
 
-    });
+        }
+    );
 
 
-    // Actualizar título móvil
     tituloSeccionMovil.textContent =
-        nombresSecciones[nombre] || "El Grupo";
+        nombresSecciones[nombre] ||
+        "El Grupo";
 
 
-    // Si estamos en móvil,
-    // salir del menú
     if (window.innerWidth <= 700) {
 
         ocultarMenuMovil();
 
     }
 
-    // ====================================
-    // PRIVADOS
-    // ====================================
 
     if (nombre === "privados") {
 
@@ -628,42 +700,46 @@ function mostrarSeccion(nombre) {
 // NAVEGACIÓN PC
 // ========================================
 
-botonesNav.forEach(boton => {
+botonesNav.forEach(
+    boton => {
 
-    boton.addEventListener(
-        "click",
-        () => {
+        boton.addEventListener(
+            "click",
+            () => {
 
-            const seccion =
-                boton.dataset.seccion;
+                const seccion =
+                    boton.dataset.seccion;
 
-            mostrarSeccion(seccion);
+                mostrarSeccion(seccion);
 
-        }
-    );
+            }
+        );
 
-});
+    }
+);
 
 
 // ========================================
 // NAVEGACIÓN MÓVIL
 // ========================================
 
-botonesNavMovil.forEach(boton => {
+botonesNavMovil.forEach(
+    boton => {
 
-    boton.addEventListener(
-        "click",
-        () => {
+        boton.addEventListener(
+            "click",
+            () => {
 
-            const seccion =
-                boton.dataset.seccion;
+                const seccion =
+                    boton.dataset.seccion;
 
-            mostrarSeccion(seccion);
+                mostrarSeccion(seccion);
 
-        }
-    );
+            }
+        );
 
-});
+    }
+);
 
 
 // ========================================
@@ -747,29 +823,21 @@ async function cargarPerfil(usuarioId) {
     );
 
 
-    // ====================================
-    // NOMBRE
-    // ====================================
-
+    // Nombre
     document.getElementById(
         "nombre-perfil"
     ).textContent = data.nombre;
 
 
-    // ====================================
-    // DESCRIPCIÓN
-    // ====================================
-
+    // Descripción
     document.getElementById(
         "descripcion-perfil"
     ).textContent =
-        data.descripcion || "Sin descripción";
+        data.descripcion ||
+        "Sin descripción";
 
 
-    // ====================================
-    // ESTADO
-    // ====================================
-
+    // Estado
     const estadoPerfil =
         document.getElementById(
             "estado-perfil"
@@ -789,20 +857,17 @@ async function cargarPerfil(usuarioId) {
     }
 
 
-    // ====================================
-    // COLOR DEL NOMBRE
-    // ====================================
+    // Color
+    colorNombreActual =
+        data.color_nombre || "#ffffff";
 
     document.getElementById(
         "color-nombre"
     ).value =
-        data.color_nombre || "#ffffff";
+        colorNombreActual;
 
 
-    // ====================================
-    // AVATAR
-    // ====================================
-
+    // Avatar
     const avatar =
         document.getElementById(
             "avatar-perfil"
@@ -835,6 +900,7 @@ async function cargarPerfil(usuarioId) {
 
 }
 
+
 // ========================================
 // EDITAR NOMBRE
 // ========================================
@@ -843,24 +909,37 @@ nombrePerfil.addEventListener(
     "click",
     () => {
 
-        if (nombrePerfil.querySelector("input")) {
+        if (
+            nombrePerfil.querySelector(
+                "input"
+            )
+        ) {
             return;
         }
+
 
         const nombreActual =
             nombrePerfil.textContent.trim();
 
+
         const input =
             document.createElement("input");
+
 
         input.type = "text";
         input.value = nombreActual;
         input.maxLength = 30;
 
-        input.className = "editar-perfil-input";
+        input.className =
+            "editar-perfil-input";
+
 
         nombrePerfil.textContent = "";
-        nombrePerfil.appendChild(input);
+
+        nombrePerfil.appendChild(
+            input
+        );
+
 
         input.focus();
         input.select();
@@ -871,22 +950,34 @@ nombrePerfil.addEventListener(
             const nuevoNombre =
                 input.value.trim();
 
+
             if (!nuevoNombre) {
-                nombrePerfil.textContent = nombreActual;
+
+                nombrePerfil.textContent =
+                    nombreActual;
+
                 return;
             }
 
+
             if (nuevoNombre === nombreActual) {
-                nombrePerfil.textContent = nombreActual;
+
+                nombrePerfil.textContent =
+                    nombreActual;
+
                 return;
             }
 
 
             const navegadorId =
-                localStorage.getItem("navegador_id");
+                localStorage.getItem(
+                    "navegador_id"
+                );
 
             const token =
-                localStorage.getItem("sesion_token");
+                localStorage.getItem(
+                    "sesion_token"
+                );
 
 
             const {
@@ -936,6 +1027,7 @@ nombrePerfil.addEventListener(
             nombrePerfil.textContent =
                 nuevoNombre;
 
+
             console.log(
                 "Nombre actualizado:",
                 nuevoNombre
@@ -961,6 +1053,7 @@ nombrePerfil.addEventListener(
 
                 }
 
+
                 if (event.key === "Escape") {
 
                     nombrePerfil.textContent =
@@ -974,35 +1067,53 @@ nombrePerfil.addEventListener(
     }
 );
 
+
+// ========================================
+// EDITAR DESCRIPCIÓN
+// ========================================
+
 descripcionPerfil.addEventListener(
     "click",
     () => {
 
-        if (descripcionPerfil.querySelector("textarea")) {
+        if (
+            descripcionPerfil.querySelector(
+                "textarea"
+            )
+        ) {
             return;
         }
+
 
         const descripcionActual =
             descripcionPerfil.textContent.trim();
 
+
         const textarea =
-            document.createElement("textarea");
+            document.createElement(
+                "textarea"
+            );
+
 
         textarea.value =
-            descripcionActual === "Sin descripción"
+            descripcionActual ===
+            "Sin descripción"
                 ? ""
                 : descripcionActual;
+
 
         textarea.maxLength = 200;
 
         textarea.className =
             "editar-perfil-textarea";
 
+
         descripcionPerfil.textContent = "";
 
         descripcionPerfil.appendChild(
             textarea
         );
+
 
         textarea.focus();
 
@@ -1013,14 +1124,16 @@ descripcionPerfil.addEventListener(
                 textarea.value.trim();
 
 
+            const descripcionOriginal =
+                descripcionActual ===
+                "Sin descripción"
+                    ? ""
+                    : descripcionActual;
+
+
             if (
                 nuevaDescripcion ===
-                (
-                    descripcionActual ===
-                    "Sin descripción"
-                        ? ""
-                        : descripcionActual
-                )
+                descripcionOriginal
             ) {
 
                 descripcionPerfil.textContent =
@@ -1031,10 +1144,14 @@ descripcionPerfil.addEventListener(
 
 
             const navegadorId =
-                localStorage.getItem("navegador_id");
+                localStorage.getItem(
+                    "navegador_id"
+                );
 
             const token =
-                localStorage.getItem("sesion_token");
+                localStorage.getItem(
+                    "sesion_token"
+                );
 
 
             const {
@@ -1045,7 +1162,8 @@ descripcionPerfil.addEventListener(
                 {
                     p_navegador_id: navegadorId,
                     p_token: token,
-                    p_descripcion: nuevaDescripcion
+                    p_descripcion:
+                        nuevaDescripcion
                 }
             );
 
@@ -1129,6 +1247,7 @@ descripcionPerfil.addEventListener(
     }
 );
 
+
 // ========================================
 // CAMBIAR COLOR DEL NOMBRE
 // ========================================
@@ -1140,11 +1259,17 @@ colorNombre.addEventListener(
         const color =
             colorNombre.value;
 
+        colorNombreActual = color;
+
         const navegadorId =
-            localStorage.getItem("navegador_id");
+            localStorage.getItem(
+                "navegador_id"
+            );
 
         const token =
-            localStorage.getItem("sesion_token");
+            localStorage.getItem(
+                "sesion_token"
+            );
 
 
         if (!navegadorId || !token) {
@@ -1194,6 +1319,7 @@ colorNombre.addEventListener(
     }
 );
 
+
 // ========================================
 // CAMBIAR AVATAR
 // ========================================
@@ -1215,6 +1341,7 @@ inputAvatar.addEventListener(
         const archivo =
             inputAvatar.files[0];
 
+
         if (!archivo) {
             return;
         }
@@ -1222,20 +1349,26 @@ inputAvatar.addEventListener(
 
         if (!usuarioActualId) {
 
-            alert("No se ha podido identificar tu cuenta.");
+            alert(
+                "No se ha podido identificar tu cuenta."
+            );
 
             return;
         }
 
 
-        // Comprobar tipo de archivo
         const tiposPermitidos = [
             "image/png",
             "image/jpeg",
             "image/webp"
         ];
 
-        if (!tiposPermitidos.includes(archivo.type)) {
+
+        if (
+            !tiposPermitidos.includes(
+                archivo.type
+            )
+        ) {
 
             alert(
                 "Solo puedes utilizar imágenes PNG, JPG o WEBP."
@@ -1247,8 +1380,10 @@ inputAvatar.addEventListener(
         }
 
 
-        // Comprobar tamaño
-        if (archivo.size > 5 * 1024 * 1024) {
+        if (
+            archivo.size >
+            5 * 1024 * 1024
+        ) {
 
             alert(
                 "La imagen no puede superar los 5 MB."
@@ -1266,15 +1401,16 @@ inputAvatar.addEventListener(
         );
 
 
-        // Nombre único para el archivo
         const extension =
-            archivo.name.split(".").pop();
+            archivo.name
+                .split(".")
+                .pop();
+
 
         const nombreArchivo =
             `${usuarioActualId}.${extension}`;
 
 
-        // Subir imagen
         const {
             error: errorSubida
         } = await supabaseClient.storage
@@ -1304,24 +1440,28 @@ inputAvatar.addEventListener(
         }
 
 
-        // Obtener URL pública
         const {
             data: urlData
         } = supabaseClient.storage
             .from("avatars")
-            .getPublicUrl(nombreArchivo);
+            .getPublicUrl(
+                nombreArchivo
+            );
 
 
         const avatarUrl =
             urlData.publicUrl;
 
 
-        // Guardar URL en usuarios
         const navegadorId =
-            localStorage.getItem("navegador_id");
+            localStorage.getItem(
+                "navegador_id"
+            );
 
         const token =
-            localStorage.getItem("sesion_token");
+            localStorage.getItem(
+                "sesion_token"
+            );
 
 
         const {
@@ -1354,10 +1494,6 @@ inputAvatar.addEventListener(
 
         if (!avatarGuardado) {
 
-            console.error(
-                "La sesión no es válida."
-            );
-
             alert(
                 "Tu sesión ya no es válida."
             );
@@ -1366,14 +1502,16 @@ inputAvatar.addEventListener(
         }
 
 
-        // Mostrar inmediatamente el nuevo avatar
         avatarPerfil.innerHTML = "";
+
 
         const imagen =
             document.createElement("img");
 
+
         imagen.src =
             `${avatarUrl}?t=${Date.now()}`;
+
 
         avatarPerfil.appendChild(
             imagen
@@ -1385,18 +1523,11 @@ inputAvatar.addEventListener(
         );
 
 
-        // Limpiar input
         inputAvatar.value = "";
 
     }
 );
 
-
-// ========================================
-// COMPROBAR SESIÓN AL CARGAR
-// ========================================
-
-comprobarSesion();
 
 // ========================================
 // CERRAR SESIÓN
@@ -1407,21 +1538,42 @@ botonCerrarSesion.addEventListener(
     async () => {
 
         const confirmar =
-            confirm("¿Seguro que quieres cerrar sesión?");
+            confirm(
+                "¿Seguro que quieres cerrar sesión?"
+            );
+
 
         if (!confirmar) {
             return;
         }
 
 
+        // Cerrar Realtime y actualización automática
+        detenerActualizacionMensajesPrivados();
+
+
+        if (canalChatPrivado) {
+
+            await supabaseClient.removeChannel(
+                canalChatPrivado
+            );
+
+            canalChatPrivado = null;
+
+        }
+
+
         const navegadorId =
-            localStorage.getItem("navegador_id");
+            localStorage.getItem(
+                "navegador_id"
+            );
 
         const token =
-            localStorage.getItem("sesion_token");
+            localStorage.getItem(
+                "sesion_token"
+            );
 
 
-        // Eliminar avatar del perfil
         if (navegadorId && token) {
 
             const {
@@ -1450,19 +1602,9 @@ botonCerrarSesion.addEventListener(
                 return;
             }
 
-
-            if (!data) {
-
-                console.error(
-                    "La sesión ya no es válida."
-                );
-
-            }
-
         }
 
 
-        // Borrar sesión del navegador
         localStorage.removeItem(
             "navegador_id"
         );
@@ -1472,15 +1614,12 @@ botonCerrarSesion.addEventListener(
         );
 
 
-        // Limpiar usuario actual
         usuarioActualId = null;
 
 
-        // Volver a la pantalla de acceso
         mostrarPantallaAcceso();
 
 
-        // Limpiar código de acceso
         codigoLogin.value = "";
 
 
@@ -1491,59 +1630,27 @@ botonCerrarSesion.addEventListener(
     }
 );
 
+
 // ========================================
 // CHATS PRIVADOS
 // ========================================
 
-const privadosLista =
-    document.getElementById("privados-lista");
-
-const listaUsuariosPrivados =
-    document.getElementById("lista-usuarios-privados");
-
-const privadoChat =
-    document.getElementById("privado-chat");
-
-const privadoAvatar =
-    document.getElementById("privado-avatar");
-
-const privadoNombre =
-    document.getElementById("privado-nombre");
-
-const privadoEstado =
-    document.getElementById("privado-estado");
-
-const privadoMensajes =
-    document.getElementById("privado-mensajes");
-
-const privadoInput =
-    document.getElementById("privado-input");
-
-const botonEnviarPrivado =
-    document.getElementById("boton-enviar-privado");
-
-const botonVolverPrivados =
-    document.getElementById("boton-volver-privados");
-
-
-// Usuario con el que estamos hablando
-let usuarioPrivadoActual = null;
-
-// Chat actualmente abierto
-let chatPrivadoActual = null;
-
 
 // ========================================
-// CARGAR USUARIOS
+// CARGAR USUARIOS PRIVADOS
 // ========================================
 
 async function cargarUsuariosPrivados() {
 
     const navegadorId =
-        localStorage.getItem("navegador_id");
+        localStorage.getItem(
+            "navegador_id"
+        );
 
     const token =
-        localStorage.getItem("sesion_token");
+        localStorage.getItem(
+            "sesion_token"
+        );
 
 
     if (!navegadorId || !token) {
@@ -1577,7 +1684,10 @@ async function cargarUsuariosPrivados() {
     listaUsuariosPrivados.innerHTML = "";
 
 
-    if (!data || data.length === 0) {
+    if (
+        !data ||
+        data.length === 0
+    ) {
 
         listaUsuariosPrivados.innerHTML = `
             <p style="color:#999999;">
@@ -1589,126 +1699,154 @@ async function cargarUsuariosPrivados() {
     }
 
 
-    data.forEach(usuario => {
+    data.forEach(
+        usuario => {
 
-        const boton =
-            document.createElement("button");
-
-        boton.className =
-            "usuario-privado";
-
-
-        // Avatar
-        const avatar =
-            document.createElement("div");
-
-        avatar.className =
-            "usuario-privado-avatar";
-
-
-        if (usuario.avatar_url) {
-
-            const imagen =
-                document.createElement("img");
-
-            imagen.src =
-                usuario.avatar_url;
-
-            avatar.appendChild(
-                imagen
-            );
-
-        } else {
-
-            avatar.textContent =
-                "👤";
-
-        }
-
-
-        // Información
-        const informacion =
-            document.createElement("div");
-
-        informacion.className =
-            "usuario-privado-info";
-
-
-        const nombre =
-            document.createElement("div");
-
-        nombre.className =
-            "usuario-privado-nombre";
-
-        nombre.textContent =
-            usuario.nombre;
-
-        nombre.style.color =
-            usuario.color_nombre || "#ffffff";
-
-
-        const descripcion =
-            document.createElement("div");
-
-        descripcion.className =
-            "usuario-privado-descripcion";
-
-        descripcion.textContent =
-            usuario.descripcion ||
-            "Sin descripción";
-
-
-        informacion.appendChild(
-            nombre
-        );
-
-        informacion.appendChild(
-            descripcion
-        );
-
-
-        boton.appendChild(
-            avatar
-        );
-
-        boton.appendChild(
-            informacion
-        );
-
-
-        // Abrir chat
-        boton.addEventListener(
-            "click",
-            () => {
-
-                abrirChatPrivado(
-                    usuario
+            const boton =
+                document.createElement(
+                    "button"
                 );
 
+
+            boton.className =
+                "usuario-privado";
+
+
+            // Avatar
+            const avatar =
+                document.createElement(
+                    "div"
+                );
+
+
+            avatar.className =
+                "usuario-privado-avatar";
+
+
+            if (usuario.avatar_url) {
+
+                const imagen =
+                    document.createElement(
+                        "img"
+                    );
+
+
+                imagen.src =
+                    usuario.avatar_url;
+
+
+                avatar.appendChild(
+                    imagen
+                );
+
+            } else {
+
+                avatar.textContent =
+                    "👤";
+
             }
-        );
 
 
-        listaUsuariosPrivados.appendChild(
-            boton
-        );
+            // Información
+            const informacion =
+                document.createElement(
+                    "div"
+                );
 
-    });
+
+            informacion.className =
+                "usuario-privado-info";
+
+
+            const nombre =
+                document.createElement(
+                    "div"
+                );
+
+
+            nombre.className =
+                "usuario-privado-nombre";
+
+
+            nombre.textContent =
+                usuario.nombre;
+
+
+            nombre.style.color =
+                usuario.color_nombre ||
+                "#ffffff";
+
+
+            const descripcion =
+                document.createElement(
+                    "div"
+                );
+
+
+            descripcion.className =
+                "usuario-privado-descripcion";
+
+
+            descripcion.textContent =
+                usuario.descripcion ||
+                "Sin descripción";
+
+
+            informacion.appendChild(
+                nombre
+            );
+
+            informacion.appendChild(
+                descripcion
+            );
+
+
+            boton.appendChild(
+                avatar
+            );
+
+            boton.appendChild(
+                informacion
+            );
+
+
+            boton.addEventListener(
+                "click",
+                () => {
+
+                    abrirChatPrivado(
+                        usuario
+                    );
+
+                }
+            );
+
+
+            listaUsuariosPrivados.appendChild(
+                boton
+            );
+
+        }
+    );
 
 }
 
 
 // ========================================
-// ABRIR CHAT
+// ABRIR CHAT PRIVADO
 // ========================================
 
 async function abrirChatPrivado(usuario) {
 
     const navegadorId =
-        localStorage.getItem("navegador_id");
+        localStorage.getItem(
+            "navegador_id"
+        );
 
     const token =
-        localStorage.getItem("sesion_token");
+        localStorage.getItem(
+            "sesion_token"
+        );
 
 
     if (!navegadorId || !token) {
@@ -1716,11 +1854,38 @@ async function abrirChatPrivado(usuario) {
     }
 
 
+    // ====================================
+    // CERRAR CHAT ANTERIOR
+    // ====================================
+
+    detenerActualizacionMensajesPrivados();
+
+
+    if (canalChatPrivado) {
+
+        console.log(
+            "Cerrando canal anterior..."
+        );
+
+
+        await supabaseClient.removeChannel(
+            canalChatPrivado
+        );
+
+
+        canalChatPrivado = null;
+
+    }
+
+
     usuarioPrivadoActual =
         usuario;
 
 
-    // Crear u obtener chat
+    // ====================================
+    // CREAR U OBTENER CHAT
+    // ====================================
+
     const {
         data: chatId,
         error
@@ -1770,8 +1935,10 @@ async function abrirChatPrivado(usuario) {
     privadoNombre.textContent =
         usuario.nombre;
 
+
     privadoNombre.style.color =
-        usuario.color_nombre || "#ffffff";
+        usuario.color_nombre ||
+        "#ffffff";
 
 
     privadoEstado.textContent =
@@ -1786,10 +1953,14 @@ async function abrirChatPrivado(usuario) {
     if (usuario.avatar_url) {
 
         const imagen =
-            document.createElement("img");
+            document.createElement(
+                "img"
+            );
+
 
         imagen.src =
             usuario.avatar_url;
+
 
         privadoAvatar.appendChild(
             imagen
@@ -1814,27 +1985,53 @@ async function abrirChatPrivado(usuario) {
         "flex";
 
 
-    // Cargar mensajes
+    // ====================================
+    // CARGAR MENSAJES
+    // ====================================
+
     await cargarMensajesPrivados();
 
 
-    // Enfocar escritura
+    // ====================================
+    // ACTIVAR REALTIME
+    // ====================================
+
+    escucharMensajesPrivados(
+        chatPrivadoActual
+    );
+
+
+    // ====================================
+    // ACTIVAR ACTUALIZACIÓN AUTOMÁTICA
+    // ====================================
+
+    iniciarActualizacionMensajesPrivados();
+
+
+    // ====================================
+    // ENFOCAR
+    // ====================================
+
     privadoInput.focus();
 
 }
 
 
 // ========================================
-// CARGAR MENSAJES
+// CARGAR MENSAJES PRIVADOS
 // ========================================
 
 async function cargarMensajesPrivados() {
 
     const navegadorId =
-        localStorage.getItem("navegador_id");
+        localStorage.getItem(
+            "navegador_id"
+        );
 
     const token =
-        localStorage.getItem("sesion_token");
+        localStorage.getItem(
+            "sesion_token"
+        );
 
 
     if (
@@ -1846,72 +2043,135 @@ async function cargarMensajesPrivados() {
     }
 
 
-    const {
-        data,
-        error
-    } = await supabaseClient.rpc(
-        "obtener_mensajes_privados",
-        {
-            p_navegador_id: navegadorId,
-            p_token: token,
-            p_chat_id: chatPrivadoActual
-        }
-    );
+    // Evitar dos cargas simultáneas
+    if (cargandoMensajesPrivados) {
+        return;
+    }
 
 
-    if (error) {
+    cargandoMensajesPrivados = true;
 
-        console.error(
-            "Error al cargar mensajes:",
+
+    try {
+
+        const {
+            data,
             error
+        } = await supabaseClient.rpc(
+            "obtener_mensajes_privados",
+            {
+                p_navegador_id: navegadorId,
+                p_token: token,
+                p_chat_id: chatPrivadoActual
+            }
         );
 
-        return;
-    }
 
+        if (error) {
 
-    privadoMensajes.innerHTML = "";
-
-
-    if (!data || data.length === 0) {
-
-        const vacio =
-            document.createElement("div");
-
-        vacio.style.color =
-            "#777777";
-
-        vacio.style.textAlign =
-            "center";
-
-        vacio.style.margin =
-            "auto";
-
-        vacio.textContent =
-            "Todavía no hay mensajes.";
-
-        privadoMensajes.appendChild(
-            vacio
-        );
-
-        return;
-    }
-
-
-    data.forEach(
-        mensaje => {
-
-            crearMensajePrivado(
-                mensaje
+            console.error(
+                "Error al cargar mensajes:",
+                error
             );
 
+            return;
         }
-    );
 
 
-    // Ir al último mensaje
-    privadoMensajes.scrollTop =
-        privadoMensajes.scrollHeight;
+        if (!data) {
+            return;
+        }
+
+
+        // ====================================
+        // SI ES LA PRIMERA CARGA
+        // ====================================
+
+        if (
+            privadoMensajes.children.length === 0
+        ) {
+
+            privadoMensajes.innerHTML = "";
+
+
+            if (data.length === 0) {
+
+                const vacio =
+                    document.createElement(
+                        "div"
+                    );
+
+
+                vacio.className =
+                    "mensajes-privados-vacio";
+
+
+                vacio.textContent =
+                    "Todavía no hay mensajes.";
+
+
+                privadoMensajes.appendChild(
+                    vacio
+                );
+
+            } else {
+
+                data.forEach(
+                    mensaje => {
+
+                        crearMensajePrivado(
+                            mensaje
+                        );
+
+                    }
+                );
+
+            }
+
+        } else {
+
+            // ====================================
+            // ACTUALIZACIÓN INCREMENTAL
+            // ====================================
+
+            data.forEach(
+                mensaje => {
+
+                    crearMensajePrivado(
+                        mensaje
+                    );
+
+                }
+            );
+
+
+            const vacio =
+                privadoMensajes.querySelector(
+                    ".mensajes-privados-vacio"
+                );
+
+
+            if (
+                vacio &&
+                data.length > 0
+            ) {
+
+                vacio.remove();
+
+            }
+
+        }
+
+
+        // Scroll al final
+        privadoMensajes.scrollTop =
+            privadoMensajes.scrollHeight;
+
+    } finally {
+
+        cargandoMensajesPrivados = false;
+
+    }
 
 }
 
@@ -1922,12 +2182,66 @@ async function cargarMensajesPrivados() {
 
 function crearMensajePrivado(mensaje) {
 
-    const mensajeElemento =
-        document.createElement("div");
+    // ====================================
+    // Evitar duplicados
+    // ====================================
+
+    if (mensaje.id) {
+
+        const existente =
+            privadoMensajes.querySelector(
+                `[data-mensaje-id="${mensaje.id}"]`
+            );
+
+        if (existente) {
+            return;
+        }
+
+    }
+
+
+    // ====================================
+    // ¿ES MÍO?
+    // ====================================
 
     const esMio =
-        mensaje.usuario_id ===
-        usuarioActualId;
+        String(mensaje.usuario_id) ===
+        String(usuarioActualId);
+
+
+    // ====================================
+    // COMPROBAR MENSAJE ANTERIOR
+    // ====================================
+
+    const mensajesAnteriores =
+        privadoMensajes.querySelectorAll(
+            ".mensaje-privado"
+        );
+
+    const ultimoMensaje =
+        mensajesAnteriores[
+            mensajesAnteriores.length - 1
+        ];
+
+
+    let mismoRemitente = false;
+
+
+    if (ultimoMensaje) {
+
+        mismoRemitente =
+            ultimoMensaje.dataset.usuarioId ===
+            String(mensaje.usuario_id);
+
+    }
+
+
+    // ====================================
+    // CREAR ELEMENTO
+    // ====================================
+
+    const mensajeElemento =
+        document.createElement("div");
 
 
     mensajeElemento.className =
@@ -1936,18 +2250,71 @@ function crearMensajePrivado(mensaje) {
             : "mensaje-privado otro";
 
 
-    const nombre =
-        document.createElement("div");
+    // Guardar ID
+    if (mensaje.id) {
 
-    nombre.className =
-        "mensaje-privado-nombre";
+        mensajeElemento.dataset.mensajeId =
+            mensaje.id;
 
-    nombre.textContent =
-        mensaje.nombre;
+    }
 
-    nombre.style.color =
-        mensaje.color_nombre || "#ffffff";
 
+    // Guardar usuario que envió el mensaje
+    mensajeElemento.dataset.usuarioId =
+        String(mensaje.usuario_id);
+
+
+    // ====================================
+    // NOMBRE
+    // ====================================
+
+    if (!mismoRemitente) {
+
+        const nombre =
+            document.createElement("div");
+
+        nombre.className =
+            "mensaje-privado-nombre";
+
+
+        // ==================================
+        // TEXTO DEL NOMBRE
+        // ==================================
+
+        nombre.textContent =
+            esMio
+                ? "Tú"
+                : (
+                    mensaje.nombre ||
+                    usuarioPrivadoActual?.nombre ||
+                    "Usuario"
+                );
+
+
+        // ==================================
+        // COLOR DEL NOMBRE
+        // ==================================
+
+        nombre.style.color =
+            esMio
+                ? colorNombreActual
+                : (
+                    mensaje.color_nombre ||
+                    usuarioPrivadoActual?.color_nombre ||
+                    "#ffffff"
+                );
+
+
+        mensajeElemento.appendChild(
+            nombre
+        );
+
+    }
+
+
+    // ====================================
+    // CONTENIDO
+    // ====================================
 
     const contenido =
         document.createElement("div");
@@ -1955,18 +2322,19 @@ function crearMensajePrivado(mensaje) {
     contenido.className =
         "mensaje-privado-contenido";
 
+
     contenido.textContent =
         mensaje.contenido;
 
 
     mensajeElemento.appendChild(
-        nombre
-    );
-
-    mensajeElemento.appendChild(
         contenido
     );
 
+
+    // ====================================
+    // AÑADIR AL CHAT
+    // ====================================
 
     privadoMensajes.appendChild(
         mensajeElemento
@@ -1980,21 +2348,47 @@ function crearMensajePrivado(mensaje) {
 
 function escucharMensajesPrivados(chatId) {
 
-    // Eliminar canal anterior si existía
+    // ====================================
+    // CERRAR CANAL ANTERIOR
+    // ====================================
+
     if (canalChatPrivado) {
+
+        console.log(
+            "Cerrando canal Realtime anterior..."
+        );
+
 
         supabaseClient.removeChannel(
             canalChatPrivado
         );
 
+
         canalChatPrivado = null;
+
     }
 
 
-    // Crear nuevo canal
+    console.log(
+        "Activando Realtime para chat:",
+        chatId
+    );
+
+
+    // ====================================
+    // CREAR CANAL
+    // ====================================
+
     canalChatPrivado =
         supabaseClient
-            .channel(`chat-privado-${chatId}`)
+            .channel(
+                `chat-privado-${chatId}-${Date.now()}`
+            )
+
+
+            // ==================================
+            // ESCUCHAR INSERTS
+            // ==================================
 
             .on(
                 "postgres_changes",
@@ -2002,36 +2396,241 @@ function escucharMensajesPrivados(chatId) {
                     event: "INSERT",
                     schema: "public",
                     table: "mensajes_privados",
-                    filter: `chat_id=eq.${chatId}`
+                    filter:
+                        `chat_id=eq.${chatId}`
                 },
+
+
                 payload => {
 
                     console.log(
-                        "Nuevo mensaje recibido:",
+                        "🔥 REALTIME RECIBIDO:",
                         payload.new
                     );
 
 
-                    // Añadir el mensaje a la interfaz
-                    mostrarMensajePrivado(
-                        payload.new
+                    const nuevoMensaje =
+                        payload.new;
+
+
+                    if (!nuevoMensaje) {
+                        return;
+                    }
+
+
+                    // ==================================
+                    // COMPROBAR CHAT ACTUAL
+                    // ==================================
+
+                    if (
+                        String(
+                            nuevoMensaje.chat_id
+                        ) !==
+                        String(
+                            chatPrivadoActual
+                        )
+                    ) {
+
+                        return;
+
+                    }
+
+
+                    // ==================================
+                    // COMPROBAR SI ES MÍO
+                    // ==================================
+
+                    const esMio =
+                        String(
+                            nuevoMensaje.usuario_id
+                        ) ===
+                        String(
+                            usuarioActualId
+                        );
+
+
+                    // ==================================
+                    // DATOS VISUALES
+                    // ==================================
+
+                    const mensajeCompleto = {
+
+                        id:
+                            nuevoMensaje.id,
+
+                        chat_id:
+                            nuevoMensaje.chat_id,
+
+                        usuario_id:
+                            nuevoMensaje.usuario_id,
+
+                        contenido:
+                            nuevoMensaje.contenido,
+
+                        creado_en:
+                            nuevoMensaje.creado_en,
+
+                        nombre:
+                            esMio
+                                ? "Tú"
+                                : usuarioPrivadoActual?.nombre ||
+                                  "Usuario",
+
+                        color_nombre:
+                            esMio
+                                ? colorNombreActual
+                                : usuarioPrivadoActual?.color_nombre ||
+                                "#ffffff"
+
+                    };
+
+
+                    // ==================================
+                    // MOSTRAR
+                    // ==================================
+
+                    crearMensajePrivado(
+                        mensajeCompleto
                     );
+
+
+                    // ==================================
+                    // ELIMINAR "SIN MENSAJES"
+                    // ==================================
+
+                    const vacio =
+                        privadoMensajes.querySelector(
+                            ".mensajes-privados-vacio"
+                        );
+
+
+                    if (vacio) {
+                        vacio.remove();
+                    }
+
+
+                    // ==================================
+                    // SCROLL
+                    // ==================================
+
+                    privadoMensajes.scrollTop =
+                        privadoMensajes.scrollHeight;
 
                 }
             )
 
-            .subscribe(status => {
 
-                console.log(
-                    "Realtime chat privado:",
-                    status
-                );
+            // ==================================
+            // SUSCRIBIR
+            // ==================================
 
-            });
+            .subscribe(
+                status => {
+
+                    console.log(
+                        "Realtime chat privado:",
+                        status
+                    );
+
+
+                    if (status === "SUBSCRIBED") {
+
+                        console.log(
+                            "✅ Realtime conectado correctamente."
+                        );
+
+                    }
+
+
+                    if (status === "CHANNEL_ERROR") {
+
+                        console.error(
+                            "❌ Error en el canal Realtime."
+                        );
+
+                    }
+
+
+                    if (status === "TIMED_OUT") {
+
+                        console.error(
+                            "⏱️ Realtime agotó el tiempo de espera."
+                        );
+
+                    }
+
+                }
+            );
+
 }
 
+
 // ========================================
-// ENVIAR MENSAJE
+// ACTUALIZACIÓN AUTOMÁTICA DE RESPALDO
+// ========================================
+
+function iniciarActualizacionMensajesPrivados() {
+
+    // Por seguridad, detener cualquier intervalo anterior
+    detenerActualizacionMensajesPrivados();
+
+
+    console.log(
+        "🔄 Activando actualización automática de mensajes."
+    );
+
+
+    intervaloMensajesPrivados =
+        setInterval(
+            async () => {
+
+                // Si ya no estamos dentro de un chat,
+                // no hacer nada
+                if (!chatPrivadoActual) {
+                    return;
+                }
+
+
+                // Cargar mensajes nuevos
+                await cargarMensajesPrivados();
+
+            },
+            2000
+        );
+
+}
+
+
+// ========================================
+// DETENER ACTUALIZACIÓN AUTOMÁTICA
+// ========================================
+
+function detenerActualizacionMensajesPrivados() {
+
+    if (
+        intervaloMensajesPrivados
+    ) {
+
+        clearInterval(
+            intervaloMensajesPrivados
+        );
+
+
+        intervaloMensajesPrivados =
+            null;
+
+
+        console.log(
+            "🛑 Actualización automática detenida."
+        );
+
+    }
+
+}
+
+
+// ========================================
+// ENVIAR MENSAJE PRIVADO
 // ========================================
 
 async function enviarMensajePrivado() {
@@ -2039,6 +2638,10 @@ async function enviarMensajePrivado() {
     const contenido =
         privadoInput.value.trim();
 
+
+    // ====================================
+    // COMPROBACIONES
+    // ====================================
 
     if (
         !contenido ||
@@ -2049,69 +2652,135 @@ async function enviarMensajePrivado() {
 
 
     const navegadorId =
-        localStorage.getItem("navegador_id");
+        localStorage.getItem(
+            "navegador_id"
+        );
 
     const token =
-        localStorage.getItem("sesion_token");
+        localStorage.getItem(
+            "sesion_token"
+        );
 
 
     if (!navegadorId || !token) {
+
+        console.error(
+            "No existe sesión."
+        );
+
         return;
     }
 
+
+    // ====================================
+    // DESACTIVAR BOTÓN
+    // ====================================
 
     botonEnviarPrivado.disabled =
         true;
 
 
-    const {
-        data,
-        error
-    } = await supabaseClient.rpc(
-        "enviar_mensaje_privado",
-        {
-            p_navegador_id: navegadorId,
-            p_token: token,
-            p_chat_id: chatPrivadoActual,
-            p_contenido: contenido
+    try {
+
+        // ====================================
+        // ENVIAR A SUPABASE
+        // ====================================
+
+        const {
+            data,
+            error
+        } = await supabaseClient.rpc(
+            "enviar_mensaje_privado",
+            {
+                p_navegador_id: navegadorId,
+                p_token: token,
+                p_chat_id: chatPrivadoActual,
+                p_contenido: contenido
+            }
+        );
+
+
+        // ====================================
+        // ERROR
+        // ====================================
+
+        if (error) {
+
+            console.error(
+                "Error al enviar mensaje:",
+                error
+            );
+
+
+            alert(
+                "No se ha podido enviar el mensaje."
+            );
+
+
+            return;
         }
-    );
 
 
-    botonEnviarPrivado.disabled =
-        false;
+        // ====================================
+        // SESIÓN INVÁLIDA
+        // ====================================
+
+        if (!data) {
+
+            alert(
+                "Tu sesión ya no es válida."
+            );
 
 
-    if (error) {
+            return;
+        }
+
+
+        // ====================================
+        // LIMPIAR INPUT
+        // ====================================
+
+        privadoInput.value = "";
+
+
+        // ====================================
+        // ACTUALIZACIÓN INMEDIATA
+        // ====================================
+
+        // No dependemos únicamente de Realtime.
+        //
+        // Si Realtime tarda o no funciona,
+        // esta carga recuperará el mensaje
+        // automáticamente.
+
+        await cargarMensajesPrivados();
+
+
+        privadoMensajes.scrollTop =
+            privadoMensajes.scrollHeight;
+
+
+        console.log(
+            "✅ Mensaje enviado correctamente."
+        );
+
+    } catch (error) {
 
         console.error(
-            "Error al enviar mensaje:",
+            "Error inesperado al enviar mensaje:",
             error
         );
 
         alert(
-            "No se ha podido enviar el mensaje."
+            "Ha ocurrido un error al enviar el mensaje."
         );
 
-        return;
+    } finally {
+
+        botonEnviarPrivado.disabled =
+            false;
+
     }
-
-
-    if (!data) {
-
-        alert(
-            "Tu sesión ya no es válida."
-        );
-
-        return;
-    }
-
-
-    privadoInput.value = "";
-
-
-    // Recargar mensajes
-    await cargarMensajesPrivados();
 
 }
 
@@ -2150,18 +2819,57 @@ privadoInput.addEventListener(
 
 
 // ========================================
-// VOLVER A LA LISTA
+// VOLVER A LA LISTA DE PRIVADOS
 // ========================================
 
 botonVolverPrivados.addEventListener(
     "click",
-    () => {
+    async () => {
+
+        // ==================================
+        // DETENER ACTUALIZACIÓN AUTOMÁTICA
+        // ==================================
+
+        detenerActualizacionMensajesPrivados();
+
+
+        // ==================================
+        // CERRAR REALTIME
+        // ==================================
+
+        if (canalChatPrivado) {
+
+            console.log(
+                "Cerrando Realtime del chat..."
+            );
+
+
+            await supabaseClient.removeChannel(
+                canalChatPrivado
+            );
+
+
+            canalChatPrivado =
+                null;
+
+        }
+
+
+        // ==================================
+        // CAMBIAR VISTA
+        // ==================================
 
         privadoChat.style.display =
             "none";
 
+
         privadosLista.style.display =
             "block";
+
+
+        // ==================================
+        // LIMPIAR ESTADO
+        // ==================================
 
         usuarioPrivadoActual =
             null;
@@ -2169,7 +2877,11 @@ botonVolverPrivados.addEventListener(
         chatPrivadoActual =
             null;
 
+
         privadoMensajes.innerHTML =
+            "";
+
+        privadoInput.value =
             "";
 
     }
@@ -2177,24 +2889,7 @@ botonVolverPrivados.addEventListener(
 
 
 // ========================================
-// CARGAR PRIVADOS AL ENTRAR
+// COMPROBAR SESIÓN AL CARGAR
 // ========================================
 
-const botonPrivados =
-    document.querySelector(
-        '[data-seccion="privados"]'
-    );
-
-
-if (botonPrivados) {
-
-    botonPrivados.addEventListener(
-        "click",
-        () => {
-
-            cargarUsuariosPrivados();
-
-        }
-    );
-
-}
+comprobarSesion();
