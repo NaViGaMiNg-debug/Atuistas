@@ -71,3 +71,25 @@ self.addEventListener("notificationclick", event => {
     );
 
 });
+
+self.addEventListener("push", event => {
+
+    const datos = event.data
+        ? event.data.json()
+        : {
+            titulo: "Atuistas",
+            mensaje: "Tienes un nuevo mensaje."
+        };
+
+    event.waitUntil(
+        self.registration.showNotification(
+            datos.titulo,
+            {
+                body: datos.mensaje,
+                icon: "/Atuistas/assets/icono.png",
+                badge: "/Atuistas/assets/icono.png"
+            }
+        )
+    );
+
+});

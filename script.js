@@ -2894,6 +2894,10 @@ botonVolverPrivados.addEventListener(
 
 comprobarSesion();
 
+setTimeout(() => {
+    pedirPermisoNotificaciones();
+}, 1000);
+
 // ========================================
 // NOTIFICACIONES — SERVICE WORKER
 // ========================================
@@ -2991,5 +2995,72 @@ async function pedirPermisoNotificaciones() {
     );
 
     return false;
+
+}
+
+// ========================================
+// NOTIFICACIONES — SUSCRIPCIÓN PUSH
+// ========================================
+
+const VAPID_PUBLIC_KEY = "BGl6iWRTlAgUesQA3Y5d8SFPylipUJ9uKSFjiR_nAqhhUtzLK81OXc0a6fu2v_lVDX5vjt0U2UicYX6b-C_73gI";
+
+
+async function suscribirseANotificaciones() {
+
+    try {
+
+        // Pedir permiso
+        const permiso =
+            await pedirPermisoNotificaciones();
+
+        if (!permiso) {
+            return null;
+        }
+
+
+        // Obtener Service Worker
+        const registro =
+            await navigator.serviceWorker.ready;
+
+
+        // Comprobar si ya existe una suscripción
+        let suscripcion =
+            await registro.pushManager.getSubscription();
+
+
+        // Crear una nueva si no existe
+        if (!suscripcion) {
+
+            suscripcion =
+                await registro.pushManager.subscribe({
+
+                    userVisibleOnly: true,
+
+                    applicationServerKey:
+                        VAPID_PUBLIC_KEY
+
+                });
+
+        }
+
+
+        console.log(
+            "✅ Suscripción Push creada:",
+            suscripcion
+        );
+
+
+        return suscripcion;
+
+    } catch (error) {
+
+        console.error(
+            "❌ Error creando suscripción Push:",
+            error
+        );
+
+        return null;
+
+    }
 
 }
