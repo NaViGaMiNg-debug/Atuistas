@@ -2894,8 +2894,15 @@ botonVolverPrivados.addEventListener(
 
 comprobarSesion();
 
-setTimeout(() => {
-    pedirPermisoNotificaciones();
+setTimeout(async () => {
+
+    const permiso =
+        await pedirPermisoNotificaciones();
+
+    if (permiso) {
+        await registrarSuscripcionPush();
+    }
+
 }, 1000);
 
 // ========================================
@@ -2944,6 +2951,188 @@ async function registrarServiceWorker() {
 }
 
 registrarServiceWorker();
+
+// ========================================
+// NOTIFICACIONES — GUARDAR SUSCRIPCIÓN
+// ========================================
+
+async function registrarSuscripcionPush() {
+
+    if (!("serviceWorker" in navigator)) {
+        console.error("Service Worker no disponible.");
+        return;
+    }
+
+    if (!("PushManager" in window)) {
+        console.error("Push API no disponible.");
+        return;
+    }
+
+    if (Notification.permission !== "granted") {
+        console.log("Permiso de notificaciones no concedido.");
+        return;
+    }
+
+    try {
+
+        const registro =
+            await navigator.serviceWorker.ready;
+
+        // ====================================
+        // CLAVE PÚBLICA VAPID
+        // ====================================
+
+        const clavePublica =
+            "BGl6iWRTlAgUesQA3Y5d8SFPylipUJ9uKSFjiR_nAqhhUtzLK81OXc0a6fu2v_lVDX5vjt0U2UicYX6b-C_73gI";
+
+
+        // ====================================
+        // CONVERTIR CLAVE VAPID
+        // ====================================
+
+        function urlBase64ToUint8Array(base64String) {
+
+            const padding =
+                "=".repeat(
+                    (4 - base64String.length % 4) % 4
+                );
+
+            const base64 =
+                (
+                    base64String +
+                    padding
+                )
+                    .replace(/-/g, "+")
+                    .replace(/_/g, "/");
+
+            const rawData =
+                window.atob(base64);
+
+            return Uint8Array.from(
+                [...rawData].map(
+                    char => char.charCodeAt(0)
+                )
+            );
+
+        }
+
+
+        // ====================================
+        // CREAR SUSCRIPCIÓN
+        // ====================================
+
+        let suscripcion =
+            await registro.pushManager.getSubscription();
+
+
+        if (!suscripcion) {
+
+            suscripcion =
+                await registro.pushManager.subscribe({
+
+                    userVisibleOnly: true,
+
+                    applicationServerKey:
+                        urlBase64ToUint8Array(
+                            clavePublica
+                        )
+
+                });
+
+        }
+
+
+        const datos =
+            suscripcion.toJSON();
+
+
+        console.log(
+            "📱 Suscripción Push:",
+            datos
+        );
+
+
+        // ====================================
+        // COMPROBAR SESIÓN
+        // ====================================
+
+        const navegadorId =
+            localStorage.getItem(
+                "navegador_id"
+            );
+
+        const token =
+            localStorage.getItem(
+                "sesion_token"
+            );
+
+
+        if (!navegadorId || !token) {
+
+            console.error(
+                "No hay una sesión válida."
+            );
+
+            return;
+
+        }
+
+
+        // ====================================
+        // GUARDAR EN SUPABASE
+        // ====================================
+
+        const {
+            data,
+            error
+        } = await supabaseClient.rpc(
+            "guardar_suscripcion_push",
+            {
+                p_navegador_id:
+                    navegadorId,
+
+                p_token:
+                    token,
+
+                p_endpoint:
+                    datos.endpoint,
+
+                p_p256dh:
+                    datos.keys.p256dh,
+
+                p_auth:
+                    datos.keys.auth
+            }
+        );
+
+
+        if (error) {
+
+            console.error(
+                "❌ Error guardando suscripción:",
+                error
+            );
+
+            return;
+
+        }
+
+
+        console.log(
+            "✅ Suscripción Push guardada:",
+            data
+        );
+
+    } catch (error) {
+
+        console.error(
+            "❌ Error configurando Push:",
+            error
+        );
+
+    }
+
+}
 
 async function pedirPermisoNotificaciones() {
 
