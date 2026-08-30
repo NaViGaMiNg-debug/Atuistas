@@ -614,7 +614,7 @@ function mostrarMenuMovil() {
     menuMovil.style.display = "flex";
 
     tituloSeccionMovil.textContent =
-        "El Grupo";
+        "Atuistas";
 
 }
 
@@ -677,7 +677,7 @@ function mostrarSeccion(nombre) {
 
     tituloSeccionMovil.textContent =
         nombresSecciones[nombre] ||
-        "El Grupo";
+        "Atuistas";
 
 
     if (window.innerWidth <= 700) {
