@@ -14,3 +14,7 @@ data/push-vapid.*.tmp
 # Ruido del entorno local.
 *.log
 .vscode/
+
+# Secretos de produccion: nunca al repositorio.
+clave-produccion.txt
+env-produccion.txt
