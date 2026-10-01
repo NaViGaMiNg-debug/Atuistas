@@ -94,6 +94,12 @@ if (botonVolverChat) {
    COMPOSER DE MENSAJES: MICRÓFONO, ENVÍO Y ADJUNTOS
    ======================================== */
 
+// Estas dos variables se declujan aqui, y no junto al resto del estado de
+// abajo, porque los composers se crean al principio del script y un "let"
+// declarado mas abajo todavia no existiria en ese momento.
+let composerChat = null;
+let composerServidor = null;
+
 const ICONO_COMPOSER_ENVIAR = `
     <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
         <path d="M3.4 20.4 21 12 3.4 3.6 3.4 10l12 2-12 2Z" fill="currentColor"></path>
@@ -743,8 +749,6 @@ let canalesGrupo = [];
 let canalActual = null;
 let ocultoServidorActivo = false;
 let miembrosServidorActual = null;
-let composerChat = null;
-let composerServidor = null;
 let socketTiempoReal = null;
 let temporizadorReconexionWs = null;
 let intentosReconexionWs = 0;
