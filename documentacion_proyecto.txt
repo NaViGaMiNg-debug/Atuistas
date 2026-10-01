@@ -1,0 +1,4595 @@
+﻿
+
+============================================================
+ARCHIVO: package.json
+============================================================
+
+{
+  "name": "atuistas",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "dev": "tsx src/app.ts",
+    "build": "tsc",
+    "start": "node dist/app.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "@fastify/cors": "^11.3.0",
+    "@fastify/multipart": "^10.1.1",
+    "@fastify/static": "^10.1.3",
+    "argon2": "^0.45.1",
+    "dotenv": "^17.4.2",
+    "fastify": "^5.12.1",
+    "pg": "^8.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.4.0",
+    "@types/pg": "^8.23.1",
+    "tsx": "^4.23.13",
+    "typescript": "^7.0.2"
+  }
+}
+
+
+
+============================================================
+ARCHIVO: tsconfig.json
+============================================================
+
+{
+  "compilerOptions": {
+    "target": "ES2023",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "sourceMap": true
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}
+
+
+============================================================
+ARCHIVO: src\app.ts
+============================================================
+
+import Fastify from "fastify";
+import cors from "@fastify/cors";
+import { env } from "./config/env.js";
+import { db } from "./db/database.js";
+import { authRoutes } from "./routes/auth.routes.js";
+import { amigosRoutes } from "./routes/amigos.routes.js";
+import { mensajesRoutes } from "./routes/mensajes.routes.js";
+import multipart from "@fastify/multipart";
+import fastifyStatic from "@fastify/static";
+import path from "node:path";
+
+const app = Fastify({
+    logger: true
+});
+
+await app.register(cors, {
+    origin: true,
+    methods: [
+        "GET",
+        "POST",
+        "PUT",
+        "PATCH",
+        "DELETE",
+        "OPTIONS"
+    ],
+    allowedHeaders: [
+        "Content-Type",
+        "Authorization"
+    ]
+});
+
+await app.register(multipart);
+
+await app.register(fastifyStatic, {
+    root: path.join(
+        process.cwd(),
+        "uploads"
+    ),
+    prefix: "/uploads/"
+});
+
+app.get("/", async () => {
+    return {
+        mensaje: "Atuistas estÃ¡ funcionando"
+    };
+});
+
+await app.register(authRoutes);
+await app.register(amigosRoutes);
+await app.register(mensajesRoutes);
+
+const start = async () => {
+    try {
+        await db.query("SELECT 1");
+
+        console.log("ConexiÃ³n con PostgreSQL correcta");
+
+        await app.listen({
+            port: env.port,
+            host: env.host
+        });
+
+        console.log(
+            `Atuistas escuchando en http://${env.host}:${env.port}`
+        );
+
+    } catch (error) {
+        app.log.error(error);
+        process.exit(1);
+    }
+};
+
+start();
+
+
+============================================================
+ARCHIVO: src\config\env.ts
+============================================================
+
+import "dotenv/config";
+
+const port = Number(process.env.PORT ?? 3000);
+const host = process.env.HOST ?? "127.0.0.1";
+
+const dbPort = Number(process.env.DB_PORT ?? 5432);
+
+export const env = {
+    port,
+    host,
+
+    codigoEncryptionKey:
+        process.env.ATUISTAS_CODE_ENCRYPTION_KEY ?? "",
+
+    database: {
+        host: process.env.DB_HOST ?? "127.0.0.1",
+        port: dbPort,
+        name: process.env.DB_NAME ?? "atuistas",
+        user: process.env.DB_USER ?? "postgres",
+        password: process.env.DB_PASSWORD ?? ""
+    }
+};
+
+
+============================================================
+ARCHIVO: src\db\database.ts
+============================================================
+
+import { Pool } from "pg";
+import { env } from "../config/env.js";
+
+export const db = new Pool({
+  host: env.database.host,
+  port: env.database.port,
+  database: env.database.name,
+  user: env.database.user,
+  password: env.database.password
+});
+
+
+============================================================
+ARCHIVO: src\db\schema.sql
+============================================================
+
+-- ============================================================
+-- ATUISTAS
+-- ESQUEMA PRINCIPAL DE BASE DE DATOS
+-- ============================================================
+
+-- Necesario para generar UUIDs de forma segura
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+
+-- ============================================================
+-- USUARIOS
+-- ============================================================
+
+CREATE TABLE usuarios (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    nombre VARCHAR(24) NOT NULL,
+    nombre_normalizado VARCHAR(24) NOT NULL UNIQUE,
+
+    descripcion VARCHAR(500),
+
+    avatar_archivo_id UUID,
+
+    color_nombre VARCHAR(7) NOT NULL DEFAULT '#FFFFFF',
+
+    codigo_hash TEXT NOT NULL,
+
+    creado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    activo BOOLEAN NOT NULL DEFAULT TRUE,
+
+    CONSTRAINT usuarios_nombre_no_vacio
+        CHECK (length(trim(nombre)) > 0),
+
+    CONSTRAINT usuarios_nombre_normalizado_no_vacio
+        CHECK (length(trim(nombre_normalizado)) > 0),
+
+    CONSTRAINT usuarios_color_nombre_check
+        CHECK (color_nombre ~ '^#[0-9A-Fa-f]{6}$')
+);
+
+
+-- ============================================================
+-- ARCHIVOS
+-- ============================================================
+
+CREATE TABLE archivos (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    propietario_id UUID NOT NULL
+        REFERENCES usuarios(id)
+        ON DELETE CASCADE,
+
+    tipo VARCHAR(30) NOT NULL,
+
+    mime_type VARCHAR(100) NOT NULL,
+
+    nombre_original VARCHAR(255) NOT NULL,
+
+    tamano BIGINT NOT NULL,
+
+    ruta TEXT NOT NULL UNIQUE,
+
+    creado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT archivos_tamano_check
+        CHECK (tamano >= 0),
+
+    CONSTRAINT archivos_tipo_check
+        CHECK (
+            tipo IN (
+                'avatar',
+                'grupo_imagen',
+                'publicacion_imagen',
+                'publicacion_video',
+                'mensaje_imagen',
+                'mensaje_audio',
+                'estado_imagen',
+                'estado_video'
+            )
+        )
+);
+
+
+-- ============================================================
+-- FK DEL AVATAR DEL USUARIO
+-- ============================================================
+
+ALTER TABLE usuarios
+ADD CONSTRAINT usuarios_avatar_archivo_fk
+FOREIGN KEY (avatar_archivo_id)
+REFERENCES archivos(id)
+ON DELETE SET NULL;
+
+
+-- ============================================================
+-- SESIONES
+-- ============================================================
+
+CREATE TABLE sesiones (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    usuario_id UUID NOT NULL
+        REFERENCES usuarios(id)
+        ON DELETE CASCADE,
+
+    token_hash TEXT NOT NULL UNIQUE,
+
+    creado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    expira_en TIMESTAMPTZ NOT NULL,
+
+    ultimo_uso TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    revocado_en TIMESTAMPTZ
+);
+
+
+-- ============================================================
+-- DISPOSITIVOS
+-- ============================================================
+
+CREATE TABLE dispositivos (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    usuario_id UUID NOT NULL
+        REFERENCES usuarios(id)
+        ON DELETE CASCADE,
+
+    identificador TEXT NOT NULL,
+
+    nombre VARCHAR(100),
+
+    plataforma VARCHAR(30),
+
+    push_token TEXT,
+
+    creado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    ultimo_uso TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    UNIQUE (usuario_id, identificador)
+);
+
+
+-- ============================================================
+-- NOTIFICACIONES
+-- ============================================================
+
+CREATE TABLE notificaciones (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    usuario_id UUID NOT NULL
+        REFERENCES usuarios(id)
+        ON DELETE CASCADE,
+
+    tipo VARCHAR(50) NOT NULL,
+
+    titulo VARCHAR(150) NOT NULL,
+
+    contenido VARCHAR(500),
+
+    datos JSONB,
+
+    leida BOOLEAN NOT NULL DEFAULT FALSE,
+
+    creada_en TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+
+-- ============================================================
+-- CONFIGURACIÃ“N DE NOTIFICACIONES
+-- ============================================================
+
+CREATE TABLE configuracion_notificaciones (
+    usuario_id UUID PRIMARY KEY
+        REFERENCES usuarios(id)
+        ON DELETE CASCADE,
+
+    solicitudes_amistad BOOLEAN NOT NULL DEFAULT TRUE,
+
+    amistades_aceptadas BOOLEAN NOT NULL DEFAULT TRUE,
+
+    mensajes_privados BOOLEAN NOT NULL DEFAULT TRUE,
+
+    mensajes_grupo BOOLEAN NOT NULL DEFAULT TRUE,
+
+    respuestas BOOLEAN NOT NULL DEFAULT TRUE,
+
+    corazones BOOLEAN NOT NULL DEFAULT TRUE,
+
+    comentarios BOOLEAN NOT NULL DEFAULT TRUE,
+
+    encuestas BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+
+-- ============================================================
+-- SOLICITUDES DE AMISTAD
+-- ============================================================
+
+CREATE TABLE solicitudes_amistad (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    emisor_id UUID NOT NULL
+        REFERENCES usuarios(id)
+        ON DELETE CASCADE,
+
+    receptor_id UUID NOT NULL
+        REFERENCES usuarios(id)
+        ON DELETE CASCADE,
+
+    estado VARCHAR(20) NOT NULL DEFAULT 'pendiente',
+
+    creado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    respondido_en TIMESTAMPTZ,
+
+    CONSTRAINT solicitudes_amistad_estado_check
+        CHECK (estado IN ('pendiente', 'aceptada', 'rechazada')),
+
+    CONSTRAINT solicitudes_amistad_no_self
+        CHECK (emisor_id <> receptor_id)
+);
+
+
+-- ============================================================
+-- AMISTADES
+-- ============================================================
+
+CREATE TABLE amistades (
+    usuario_a_id UUID NOT NULL
+        REFERENCES usuarios(id)
+        ON DELETE CASCADE,
+
+    usuario_b_id UUID NOT NULL
+        REFERENCES usuarios(id)
+        ON DELETE CASCADE,
+
+    creada_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    PRIMARY KEY (usuario_a_id, usuario_b_id),
+
+    CONSTRAINT amistades_no_self
+        CHECK (usuario_a_id <> usuario_b_id),
+
+    CONSTRAINT amistades_orden
+        CHECK (usuario_a_id < usuario_b_id)
+);
+
+
+-- ============================================================
+-- BLOQUEOS
+-- ============================================================
+
+CREATE TABLE bloqueos (
+    bloqueador_id UUID NOT NULL
+        REFERENCES usuarios(id)
+        ON DELETE CASCADE,
+
+    bloqueado_id UUID NOT NULL
+        REFERENCES usuarios(id)
+        ON DELETE CASCADE,
+
+    creado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    PRIMARY KEY (bloqueador_id, bloqueado_id),
+
+    CONSTRAINT bloqueos_no_self
+        CHECK (bloqueador_id <> bloqueado_id)
+);
+
+
+-- ============================================================
+-- CONVERSACIONES PRIVADAS
+-- ============================================================
+
+CREATE TABLE conversaciones_privadas (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    usuario_a_id UUID NOT NULL
+        REFERENCES usuarios(id)
+        ON DELETE CASCADE,
+
+    usuario_b_id UUID NOT NULL
+        REFERENCES usuarios(id)
+        ON DELETE CASCADE,
+
+    creada_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT conversaciones_privadas_no_self
+        CHECK (usuario_a_id <> usuario_b_id),
+
+    CONSTRAINT conversaciones_privadas_orden
+        CHECK (usuario_a_id < usuario_b_id),
+
+    UNIQUE (usuario_a_id, usuario_b_id)
+);
+
+
+-- ============================================================
+-- MENSAJES PRIVADOS
+-- ============================================================
+
+CREATE TABLE mensajes_privados (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    conversacion_id UUID NOT NULL
+        REFERENCES conversaciones_privadas(id)
+        ON DELETE CASCADE,
+
+    autor_id UUID NOT NULL
+        REFERENCES usuarios(id)
+        ON DELETE CASCADE,
+
+    tipo VARCHAR(20) NOT NULL,
+
+    contenido TEXT,
+
+    archivo_id UUID
+        REFERENCES archivos(id)
+        ON DELETE SET NULL,
+
+    mensaje_respondiendo_id UUID
+        REFERENCES mensajes_privados(id)
+        ON DELETE SET NULL,
+
+    creado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    editado_en TIMESTAMPTZ,
+
+    CONSTRAINT mensajes_privados_tipo_check
+        CHECK (tipo IN ('texto', 'imagen', 'audio')),
+
+    CONSTRAINT mensajes_privados_contenido_check
+        CHECK (
+            (tipo = 'texto' AND contenido IS NOT NULL AND length(trim(contenido)) > 0)
+            OR
+            (tipo IN ('imagen', 'audio') AND archivo_id IS NOT NULL)
+        )
+);
+
+
+-- ============================================================
+-- GRUPOS / SERVIDORES
+-- ============================================================
+
+CREATE TABLE grupos (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    creador_id UUID NOT NULL
+        REFERENCES usuarios(id)
+        ON DELETE CASCADE,
+
+    nombre VARCHAR(25) NOT NULL UNIQUE,
+
+    descripcion VARCHAR(500),
+
+    imagen_archivo_id UUID,
+
+    tipo VARCHAR(20) NOT NULL,
+
+    encuesta_fijada BOOLEAN NOT NULL DEFAULT FALSE,
+
+    creado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    desaparece_en TIMESTAMPTZ,
+
+    CONSTRAINT grupos_nombre_no_vacio
+        CHECK (length(trim(nombre)) > 0),
+
+    CONSTRAINT grupos_tipo_check
+        CHECK (tipo IN ('normal', 'amistades')),
+
+    CONSTRAINT grupos_duracion_check
+        CHECK (
+            desaparece_en IS NULL
+            OR desaparece_en > creado_en
+        )
+);
+
+
+-- ============================================================
+-- FK DE LA IMAGEN DEL GRUPO
+-- ============================================================
+
+ALTER TABLE grupos
+ADD CONSTRAINT grupos_imagen_archivo_fk
+FOREIGN KEY (imagen_archivo_id)
+REFERENCES archivos(id)
+ON DELETE SET NULL;
+
+
+-- ============================================================
+-- MIEMBROS DE GRUPO
+-- ============================================================
+
+CREATE TABLE miembros_grupo (
+    grupo_id UUID NOT NULL
+        REFERENCES grupos(id)
+        ON DELETE CASCADE,
+
+    usuario_id UUID NOT NULL
+        REFERENCES usuarios(id)
+        ON DELETE CASCADE,
+
+    origen VARCHAR(20) NOT NULL DEFAULT 'manual',
+
+    rol VARCHAR(20) NOT NULL DEFAULT 'miembro',
+
+    unido_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    PRIMARY KEY (grupo_id, usuario_id),
+
+    CONSTRAINT miembros_grupo_origen_check
+        CHECK (origen IN ('manual', 'amistad')),
+
+    CONSTRAINT miembros_grupo_rol_check
+        CHECK (rol IN ('creador', 'miembro'))
+);
+
+
+-- ============================================================
+-- MENSAJES DE GRUPO
+-- ============================================================
+
+CREATE TABLE mensajes_grupo (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    grupo_id UUID NOT NULL
+        REFERENCES grupos(id)
+        ON DELETE CASCADE,
+
+    autor_id UUID NOT NULL
+        REFERENCES usuarios(id)
+        ON DELETE CASCADE,
+
+    tipo VARCHAR(20) NOT NULL,
+
+    contenido TEXT,
+
+    archivo_id UUID
+        REFERENCES archivos(id)
+        ON DELETE SET NULL,
+
+    mensaje_respondiendo_id UUID
+        REFERENCES mensajes_grupo(id)
+        ON DELETE SET NULL,
+
+    creado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT mensajes_grupo_tipo_check
+        CHECK (tipo IN ('texto', 'imagen', 'audio')),
+
+    CONSTRAINT mensajes_grupo_contenido_check
+        CHECK (
+            (tipo = 'texto' AND contenido IS NOT NULL AND length(trim(contenido)) > 0)
+            OR
+            (tipo IN ('imagen', 'audio') AND archivo_id IS NOT NULL)
+        )
+);
+
+
+-- ============================================================
+-- ENCUESTAS
+-- ============================================================
+
+CREATE TABLE encuestas (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    grupo_id UUID NOT NULL
+        REFERENCES grupos(id)
+        ON DELETE CASCADE,
+
+    creador_id UUID NOT NULL
+        REFERENCES usuarios(id)
+        ON DELETE CASCADE,
+
+    pregunta VARCHAR(500) NOT NULL,
+
+    tipo_votacion VARCHAR(20) NOT NULL,
+
+    creada_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    cierra_en TIMESTAMPTZ,
+
+    cerrada_en TIMESTAMPTZ,
+
+    CONSTRAINT encuestas_pregunta_no_vacia
+        CHECK (length(trim(pregunta)) > 0),
+
+    CONSTRAINT encuestas_tipo_votacion_check
+        CHECK (tipo_votacion IN ('una', 'varias')),
+
+    CONSTRAINT encuestas_cierre_check
+        CHECK (
+            cierra_en IS NULL
+            OR cierra_en > creada_en
+        )
+);
+
+
+-- ============================================================
+-- SOLO UNA ENCUESTA ACTIVA POR GRUPO
+-- ============================================================
+
+CREATE UNIQUE INDEX encuestas_una_activa_por_grupo
+ON encuestas (grupo_id)
+WHERE cerrada_en IS NULL;
+
+
+-- ============================================================
+-- OPCIONES DE ENCUESTA
+-- ============================================================
+
+CREATE TABLE opciones_encuesta (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    encuesta_id UUID NOT NULL
+        REFERENCES encuestas(id)
+        ON DELETE CASCADE,
+
+    texto VARCHAR(200) NOT NULL,
+
+    orden INTEGER NOT NULL DEFAULT 0,
+
+    CONSTRAINT opciones_encuesta_texto_no_vacio
+        CHECK (length(trim(texto)) > 0),
+
+    UNIQUE (encuesta_id, orden)
+);
+
+
+-- ============================================================
+-- VOTOS DE ENCUESTA
+-- ============================================================
+
+CREATE TABLE votos_encuesta (
+    encuesta_id UUID NOT NULL
+        REFERENCES encuestas(id)
+        ON DELETE CASCADE,
+
+    opcion_id UUID NOT NULL
+        REFERENCES opciones_encuesta(id)
+        ON DELETE CASCADE,
+
+    usuario_id UUID NOT NULL
+        REFERENCES usuarios(id)
+        ON DELETE CASCADE,
+
+    creado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    PRIMARY KEY (encuesta_id, opcion_id, usuario_id)
+);
+
+
+-- ============================================================
+-- PUBLICACIONES
+-- ============================================================
+
+CREATE TABLE publicaciones (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    autor_id UUID NOT NULL
+        REFERENCES usuarios(id)
+        ON DELETE CASCADE,
+
+    texto TEXT,
+
+    visibilidad VARCHAR(20) NOT NULL DEFAULT 'amigos',
+
+    creada_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT publicaciones_visibilidad_check
+        CHECK (visibilidad IN ('amigos', 'publica'))
+);
+
+
+-- ============================================================
+-- MULTIMEDIA DE PUBLICACIONES
+-- ============================================================
+
+CREATE TABLE multimedia_publicacion (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    publicacion_id UUID NOT NULL
+        REFERENCES publicaciones(id)
+        ON DELETE CASCADE,
+
+    archivo_id UUID NOT NULL
+        REFERENCES archivos(id)
+        ON DELETE CASCADE,
+
+    tipo VARCHAR(20) NOT NULL,
+
+    orden INTEGER NOT NULL DEFAULT 0,
+
+    CONSTRAINT multimedia_publicacion_tipo_check
+        CHECK (tipo IN ('imagen', 'video')),
+
+    UNIQUE (publicacion_id, orden)
+);
+
+
+-- ============================================================
+-- COMENTARIOS
+-- ============================================================
+
+CREATE TABLE comentarios (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    publicacion_id UUID NOT NULL
+        REFERENCES publicaciones(id)
+        ON DELETE CASCADE,
+
+    autor_id UUID NOT NULL
+        REFERENCES usuarios(id)
+        ON DELETE CASCADE,
+
+    texto VARCHAR(1000) NOT NULL,
+
+    creado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT comentarios_texto_no_vacio
+        CHECK (length(trim(texto)) > 0)
+);
+
+
+-- ============================================================
+-- CORAZONES
+-- ============================================================
+
+CREATE TABLE corazones_publicacion (
+    publicacion_id UUID NOT NULL
+        REFERENCES publicaciones(id)
+        ON DELETE CASCADE,
+
+    usuario_id UUID NOT NULL
+        REFERENCES usuarios(id)
+        ON DELETE CASCADE,
+
+    creado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    PRIMARY KEY (publicacion_id, usuario_id)
+);
+
+
+-- ============================================================
+-- ESTADOS
+-- ============================================================
+
+CREATE TABLE estados (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    autor_id UUID NOT NULL
+        REFERENCES usuarios(id)
+        ON DELETE CASCADE,
+
+    texto VARCHAR(500),
+
+    visibilidad VARCHAR(20) NOT NULL DEFAULT 'amigos',
+
+    creado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    expira_en TIMESTAMPTZ NOT NULL,
+
+    CONSTRAINT estados_visibilidad_check
+        CHECK (visibilidad IN ('amigos', 'publica')),
+
+    CONSTRAINT estados_expiracion_check
+        CHECK (expira_en > creado_en)
+);
+
+
+-- ============================================================
+-- MULTIMEDIA DE ESTADOS
+-- ============================================================
+
+CREATE TABLE multimedia_estado (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    estado_id UUID NOT NULL
+        REFERENCES estados(id)
+        ON DELETE CASCADE,
+
+    archivo_id UUID NOT NULL
+        REFERENCES archivos(id)
+        ON DELETE CASCADE,
+
+    tipo VARCHAR(20) NOT NULL,
+
+    orden INTEGER NOT NULL DEFAULT 0,
+
+    CONSTRAINT multimedia_estado_tipo_check
+        CHECK (tipo IN ('imagen', 'video')),
+
+    UNIQUE (estado_id, orden)
+);
+
+
+-- ============================================================
+-- ÃNDICES
+-- ============================================================
+
+CREATE INDEX idx_sesiones_usuario
+    ON sesiones(usuario_id);
+
+CREATE INDEX idx_sesiones_expira_en
+    ON sesiones(expira_en);
+
+CREATE INDEX idx_dispositivos_usuario
+    ON dispositivos(usuario_id);
+
+CREATE INDEX idx_notificaciones_usuario
+    ON notificaciones(usuario_id);
+
+CREATE INDEX idx_notificaciones_usuario_no_leidas
+    ON notificaciones(usuario_id, leida)
+    WHERE leida = FALSE;
+
+CREATE INDEX idx_solicitudes_receptor_estado
+    ON solicitudes_amistad(receptor_id, estado);
+
+CREATE INDEX idx_solicitudes_emisor_estado
+    ON solicitudes_amistad(emisor_id, estado);
+
+CREATE INDEX idx_bloqueos_bloqueado
+    ON bloqueos(bloqueado_id);
+
+CREATE INDEX idx_conversaciones_usuario_a
+    ON conversaciones_privadas(usuario_a_id);
+
+CREATE INDEX idx_conversaciones_usuario_b
+    ON conversaciones_privadas(usuario_b_id);
+
+CREATE INDEX idx_mensajes_privados_conversacion
+    ON mensajes_privados(conversacion_id, creado_en);
+
+CREATE INDEX idx_mensajes_privados_autor
+    ON mensajes_privados(autor_id);
+
+CREATE INDEX idx_miembros_grupo_usuario
+    ON miembros_grupo(usuario_id);
+
+CREATE INDEX idx_mensajes_grupo_grupo
+    ON mensajes_grupo(grupo_id, creado_en);
+
+CREATE INDEX idx_mensajes_grupo_autor
+    ON mensajes_grupo(autor_id);
+
+CREATE INDEX idx_encuestas_grupo
+    ON encuestas(grupo_id);
+
+CREATE INDEX idx_opciones_encuesta_encuesta
+    ON opciones_encuesta(encuesta_id);
+
+CREATE INDEX idx_votos_encuesta_usuario
+    ON votos_encuesta(usuario_id);
+
+CREATE INDEX idx_publicaciones_autor
+    ON publicaciones(autor_id, creada_en);
+
+CREATE INDEX idx_multimedia_publicacion_publicacion
+    ON multimedia_publicacion(publicacion_id, orden);
+
+CREATE INDEX idx_comentarios_publicacion
+    ON comentarios(publicacion_id, creado_en);
+
+CREATE INDEX idx_corazones_publicacion
+    ON corazones_publicacion(publicacion_id);
+
+CREATE INDEX idx_estados_autor
+    ON estados(autor_id, creado_en);
+
+CREATE INDEX idx_estados_expira_en
+    ON estados(expira_en);
+
+CREATE INDEX idx_multimedia_estado_estado
+    ON multimedia_estado(estado_id, orden);
+
+CREATE INDEX idx_archivos_propietario
+    ON archivos(propietario_id);
+
+CREATE INDEX idx_archivos_tipo
+    ON archivos(tipo);
+    
+
+-- ============================================================
+-- SOLICITUDES DE AMISTAD PENDIENTES
+-- EVITA DUPLICADOS EN AMBOS SENTIDOS
+-- ============================================================
+
+CREATE UNIQUE INDEX solicitudes_amistad_pendiente_unica
+ON solicitudes_amistad (
+    LEAST(emisor_id, receptor_id),
+    GREATEST(emisor_id, receptor_id)
+)
+WHERE estado = 'pendiente';
+
+
+============================================================
+ARCHIVO: src\middleware\auth.middleware.ts
+============================================================
+
+import crypto from "node:crypto";
+import argon2 from "argon2";
+import { FastifyReply, FastifyRequest } from "fastify";
+import { db } from "../db/database.js";
+
+export interface UsuarioAutenticado {
+    id: string;
+    nombre: string;
+}
+
+declare module "fastify" {
+    interface FastifyRequest {
+        usuario?: UsuarioAutenticado;
+    }
+}
+
+export async function autenticar(
+    request: FastifyRequest,
+    reply: FastifyReply
+) {
+    const autorizacion = request.headers.authorization;
+
+    if (!autorizacion) {
+        return reply.status(401).send({
+            error: "No autenticado"
+        });
+    }
+
+    const partes = autorizacion.split(" ");
+
+    if (
+        partes.length !== 2 ||
+        partes[0] !== "Bearer" ||
+        !partes[1]
+    ) {
+        return reply.status(401).send({
+            error: "Token de autenticaciÃ³n invÃ¡lido"
+        });
+    }
+
+    const token = partes[1];
+
+    const partesToken = token.split(".");
+
+    if (
+        partesToken.length !== 2 ||
+        !partesToken[0] ||
+        !partesToken[1]
+    ) {
+        return reply.status(401).send({
+            error: "Token de autenticaciÃ³n invÃ¡lido"
+        });
+    }
+
+    const identificadorSesion = partesToken[0];
+    const secretoSesion = partesToken[1];
+
+    const resultado = await db.query(
+        `
+        SELECT
+            s.id,
+            s.usuario_id,
+            s.token_hash,
+            s.expira_en,
+            u.nombre
+        FROM sesiones s
+        INNER JOIN usuarios u
+            ON u.id = s.usuario_id
+        WHERE s.identificador = $1
+        AND s.revocado_en IS NULL
+        AND s.expira_en > NOW()
+        AND u.activo = TRUE
+        `,
+        [identificadorSesion]
+    );
+
+    if (resultado.rowCount === 1) {
+        const sesion = resultado.rows[0];
+
+        const coincide = await argon2.verify(
+            sesion.token_hash,
+            secretoSesion
+        );
+
+        if (coincide) {
+            await db.query(
+                `
+                UPDATE sesiones
+                SET ultimo_uso = NOW()
+                WHERE id = $1
+                `,
+                [sesion.id]
+            );
+
+            request.usuario = {
+                id: sesion.usuario_id,
+                nombre: sesion.nombre
+            };
+
+            return;
+        }
+    }
+
+    return reply.status(401).send({
+        error: "SesiÃ³n invÃ¡lida o expirada"
+    });
+}
+
+
+============================================================
+ARCHIVO: src\routes\amigos.routes.ts
+============================================================
+
+import { FastifyInstance } from "fastify";
+import { autenticar } from "../middleware/auth.middleware.js";
+import {
+    buscarUsuarios,
+    enviarSolicitudAmistad,
+    obtenerSolicitudesRecibidas,
+    aceptarSolicitudAmistad,
+    rechazarSolicitudAmistad,
+    obtenerAmigos
+} from "../services/amigos.service.js";
+
+export async function amigosRoutes(app: FastifyInstance) {
+
+    app.get("/api/amigos/buscar", {
+        preHandler: autenticar
+    }, async (request, reply) => {
+
+        const query = request.query as {
+            texto?: string;
+        };
+
+        if (!query.texto) {
+            return reply.status(400).send({
+                error: "El texto de bÃºsqueda es obligatorio"
+            });
+        }
+
+        const usuarios = await buscarUsuarios(
+            query.texto,
+            request.usuario!.id
+        );
+
+        return {
+            usuarios
+        };
+    });
+
+    app.post("/api/amigos/solicitud", {
+        preHandler: autenticar
+    }, async (request, reply) => {
+
+        try {
+            const body = request.body as {
+                destinatarioId?: string;
+            };
+
+            if (!body.destinatarioId) {
+                return reply.status(400).send({
+                    error: "El destinatario es obligatorio"
+                });
+            }
+
+            const resultado = await enviarSolicitudAmistad(
+                request.usuario!.id,
+                body.destinatarioId
+            );
+
+            return reply.status(201).send(resultado);
+
+        } catch (error) {
+
+            const mensaje =
+                error instanceof Error
+                    ? error.message
+                    : "Error al enviar la solicitud";
+
+            return reply.status(400).send({
+                error: mensaje
+            });
+        }
+    });
+
+    app.get("/api/amigos/solicitudes/recibidas", {
+        preHandler: autenticar
+    }, async (request) => {
+
+        const solicitudes = await obtenerSolicitudesRecibidas(
+            request.usuario!.id
+        );
+
+        return {
+            solicitudes
+        };
+    });
+    
+    app.post("/api/amigos/solicitudes/aceptar", {
+        preHandler: autenticar
+    }, async (request, reply) => {
+        try {
+            const body = request.body as {
+                solicitudId?: string;
+            };
+
+            if (!body.solicitudId) {
+                return reply.status(400).send({
+                    error: "El ID de la solicitud es obligatorio"
+                });
+            }
+
+            const resultado = await aceptarSolicitudAmistad(
+                request.usuario!.id,
+                body.solicitudId
+            );
+
+            return reply.send(resultado);
+        } catch (error) {
+            const mensaje =
+                error instanceof Error
+                    ? error.message
+                    : "Error al aceptar la solicitud";
+
+            return reply.status(400).send({
+                error: mensaje
+            });
+        }
+    });
+
+    app.post("/api/amigos/solicitudes/rechazar", {
+        preHandler: autenticar
+    }, async (request, reply) => {
+        try {
+            const body = request.body as {
+                solicitudId?: string;
+            };
+
+            if (!body.solicitudId) {
+                return reply.status(400).send({
+                    error: "El ID de la solicitud es obligatorio"
+                });
+            }
+
+            const resultado = await rechazarSolicitudAmistad(
+                request.usuario!.id,
+                body.solicitudId
+            );
+
+            return reply.send(resultado);
+        } catch (error) {
+            const mensaje =
+                error instanceof Error
+                    ? error.message
+                    : "Error al rechazar la solicitud";
+
+            return reply.status(400).send({
+                error: mensaje
+            });
+        }
+    });
+
+    app.get("/api/amigos", {
+        preHandler: autenticar
+    }, async (request) => {
+        const amigos = await obtenerAmigos(
+            request.usuario!.id
+        );
+
+        return {
+            amigos
+        };
+    });
+
+}
+
+
+============================================================
+ARCHIVO: src\routes\auth.routes.ts
+============================================================
+
+import { FastifyInstance } from "fastify";
+import {
+    registrarUsuario,
+    vincularDispositivo,
+    obtenerCuenta,
+    actualizarCuenta,
+    regenerarCodigoVinculacion
+} from "../services/auth.service.js";
+import { autenticar } from "../middleware/auth.middleware.js";
+import { db } from "../db/database.js";
+import fs from "node:fs/promises";
+import path from "node:path";
+import crypto from "node:crypto";
+
+
+export async function authRoutes(app: FastifyInstance) {
+
+    /* ==============================
+       REGISTRO
+       ============================== */
+
+    app.post("/api/auth/registro", async (request, reply) => {
+
+        try {
+
+            const body = request.body as {
+                nombre?: string;
+                dispositivo_id?: string;
+            };
+
+
+            if (!body.nombre || !body.dispositivo_id) {
+
+                return reply.status(400).send({
+                    error: "El nombre es obligatorio"
+                });
+
+            }
+
+
+            const usuario = await registrarUsuario(
+                body.nombre,
+                body.dispositivo_id
+            );
+
+
+            return reply.status(201).send({
+                mensaje: "Usuario registrado correctamente",
+                usuario
+            });
+
+
+        } catch (error) {
+
+            const mensaje =
+                error instanceof Error
+                    ? error.message
+                    : "Error al registrar el usuario";
+
+
+            return reply.status(400).send({
+                error: mensaje
+            });
+
+        }
+
+    });
+
+
+    /* ==============================
+       VINCULAR DISPOSITIVO
+       ============================== */
+
+    app.post("/api/auth/vincular", async (request, reply) => {
+
+        try {
+
+            const body = request.body as {
+                codigo?: string;
+                dispositivo_id?: string;
+            };
+
+
+            if (!body.codigo || !body.dispositivo_id) {
+
+                return reply.status(400).send({
+                    error: "El cÃ³digo de vinculaciÃ³n es obligatorio"
+                });
+
+            }
+
+
+            const usuario = await vincularDispositivo(
+                body.codigo,
+                body.dispositivo_id
+            );
+
+
+            return reply.status(200).send({
+                mensaje: "Dispositivo vinculado correctamente",
+                usuario
+            });
+
+
+        } catch (error) {
+
+            const mensaje =
+                error instanceof Error
+                    ? error.message
+                    : "Error al vincular el dispositivo";
+
+
+            return reply.status(401).send({
+                error: mensaje
+            });
+
+        }
+
+    });
+
+
+    /* ==============================
+       OBTENER CUENTA
+       ============================== */
+
+    app.get("/api/auth/me", {
+        preHandler: autenticar
+    }, async (request, reply) => {
+
+        try {
+
+            if (!request.usuario) {
+                return reply.code(401).send({
+                    error: "No autenticado"
+                });
+            }
+
+            const usuario =
+                await obtenerCuenta(request.usuario.id);
+
+
+            return {
+                usuario
+            };
+
+
+        } catch (error) {
+
+            const mensaje =
+                error instanceof Error
+                    ? error.message
+                    : "Error al obtener la cuenta";
+
+
+            return reply.status(500).send({
+                error: mensaje
+            });
+
+        }
+
+    });
+
+
+    /* ==============================
+       ACTUALIZAR CUENTA
+       ============================== */
+
+    app.put("/api/auth/cuenta", {
+        preHandler: autenticar
+    }, async (request, reply) => {
+
+        try {
+
+            const body = request.body as {
+                descripcion?: string;
+                color_nombre?: string;
+            };
+
+            if (!request.usuario) {
+                return reply.code(401).send({
+                    error: "No autenticado"
+                });
+            }
+
+            const cuenta =
+                await actualizarCuenta(
+                    request.usuario.id,
+                    body.descripcion,
+                    body.color_nombre
+                );
+
+
+            return {
+                mensaje: "Cuenta actualizada correctamente",
+                usuario: cuenta
+            };
+
+
+        } catch (error) {
+
+            const mensaje =
+                error instanceof Error
+                    ? error.message
+                    : "Error al actualizar la cuenta";
+
+
+            return reply.status(400).send({
+                error: mensaje
+            });
+
+        }
+
+    });
+
+
+    /* ==============================
+       REGENERAR CÃ“DIGO
+       ============================== */
+
+    app.post("/api/auth/codigo/regenerar", {
+        preHandler: autenticar
+    }, async (request, reply) => {
+
+        try {
+                    
+            if (!request.usuario) {
+                return reply.code(401).send({
+                    error: "No autenticado"
+                });
+            }
+
+            const codigo =
+                await regenerarCodigoVinculacion(
+                    request.usuario.id
+                );
+
+
+            return {
+                mensaje: "CÃ³digo regenerado correctamente",
+                codigo_vinculacion: codigo
+            };
+
+
+        } catch (error) {
+
+            const mensaje =
+                error instanceof Error
+                    ? error.message
+                    : "Error al regenerar el cÃ³digo";
+
+
+            return reply.status(500).send({
+                error: mensaje
+            });
+
+        }
+
+    });
+
+    /* ==============================
+    SUBIR AVATAR
+    ============================== */
+
+    app.post("/api/auth/avatar", {
+        preHandler: autenticar
+    }, async (request, reply) => {
+
+        try {
+
+            if (!request.usuario) {
+                return reply.code(401).send({
+                    error: "No autenticado"
+                });
+            }
+
+            /*
+            * OBTENER AVATAR ANTERIOR
+            */
+
+            const avatarAnterior =
+                await db.query(
+                    `
+                    SELECT
+                        u.avatar_archivo_id,
+                        a.ruta
+                    FROM usuarios u
+                    LEFT JOIN archivos a
+                        ON a.id = u.avatar_archivo_id
+                    WHERE u.id = $1
+                    AND u.activo = TRUE
+                    `,
+                    [request.usuario.id]
+                );
+
+            const avatarAnteriorId =
+                avatarAnterior.rows[0]?.avatar_archivo_id;
+
+            const avatarAnteriorRuta =
+                avatarAnterior.rows[0]?.ruta;
+
+
+            /*
+            * RECIBIR IMAGEN
+            */
+
+            const archivo =
+                await request.file();
+
+            if (!archivo) {
+                return reply.status(400).send({
+                    error: "No se ha enviado ninguna imagen"
+                });
+            }
+
+
+            if (!archivo.mimetype.startsWith("image/")) {
+                return reply.status(400).send({
+                    error: "El archivo debe ser una imagen"
+                });
+            }
+
+
+            const buffer =
+                await archivo.toBuffer();
+
+
+            if (buffer.length > 12 * 1024 * 1024) {
+                return reply.status(400).send({
+                    error: "La imagen no puede superar los 12 MB"
+                });
+            }
+
+
+            /*
+            * GUARDAR ARCHIVO FÃSICO
+            */
+
+            const extension =
+                path.extname(
+                    archivo.filename
+                ).toLowerCase();
+
+
+            const nombreArchivo =
+                `${crypto.randomUUID()}${extension}`;
+
+
+            const carpetaAvatares =
+                path.join(
+                    process.cwd(),
+                    "uploads",
+                    "avatars"
+                );
+
+
+            await fs.mkdir(
+                carpetaAvatares,
+                {
+                    recursive: true
+                }
+            );
+
+
+            const rutaArchivo =
+                path.join(
+                    carpetaAvatares,
+                    nombreArchivo
+                );
+
+
+            await fs.writeFile(
+                rutaArchivo,
+                buffer
+            );
+
+
+            /*
+            * RUTA PARA BASE DE DATOS
+            */
+
+            const rutaRelativa =
+                path.join(
+                    "uploads",
+                    "avatars",
+                    nombreArchivo
+                );
+
+
+            /*
+            * CREAR REGISTRO DEL NUEVO ARCHIVO
+            */
+
+            const archivoResultado =
+                await db.query(
+                    `
+                    INSERT INTO archivos (
+                        propietario_id,
+                        tipo,
+                        mime_type,
+                        nombre_original,
+                        tamano,
+                        ruta
+                    )
+                    VALUES ($1, $2, $3, $4, $5, $6)
+                    RETURNING id
+                    `,
+                    [
+                        request.usuario.id,
+                        "avatar",
+                        archivo.mimetype,
+                        archivo.filename,
+                        buffer.length,
+                        rutaRelativa
+                    ]
+                );
+
+
+            const archivoId =
+                archivoResultado.rows[0].id;
+
+
+            /*
+            * ASIGNAR NUEVO AVATAR AL USUARIO
+            */
+
+            await db.query(
+                `
+                UPDATE usuarios
+                SET avatar_archivo_id = $1
+                WHERE id = $2
+                AND activo = TRUE
+                `,
+                [
+                    archivoId,
+                    request.usuario.id
+                ]
+            );
+
+
+            /*
+            * BORRAR AVATAR ANTERIOR DE LA BASE DE DATOS
+            */
+
+            if (avatarAnteriorId) {
+
+                await db.query(
+                    `
+                    DELETE FROM archivos
+                    WHERE id = $1
+                    `,
+                    [avatarAnteriorId]
+                );
+
+            }
+
+
+            /*
+            * BORRAR AVATAR ANTERIOR DEL DISCO
+            */
+
+            if (avatarAnteriorRuta) {
+
+                const rutaAnterior =
+                    path.join(
+                        process.cwd(),
+                        avatarAnteriorRuta
+                    );
+
+
+                try {
+
+                    await fs.unlink(
+                        rutaAnterior
+                    );
+
+                } catch (error) {
+
+                    console.warn(
+                        "No se pudo borrar el avatar anterior:",
+                        error
+                    );
+
+                }
+
+            }
+
+
+            return {
+                mensaje: "Avatar guardado correctamente",
+                archivo_id: archivoId
+            };
+
+
+        } catch (error) {
+
+            const mensaje =
+                error instanceof Error
+                    ? error.message
+                    : "Error al subir el avatar";
+
+
+            return reply.status(500).send({
+                error: mensaje
+            });
+
+        }
+
+    });
+
+    /* ==============================
+       CERRAR SESIÃ“N
+       ============================== */
+
+    app.post("/api/auth/logout", {
+        preHandler: autenticar
+    }, async (request, reply) => {
+
+        const autorizacion =
+            request.headers.authorization;
+
+
+        if (!autorizacion) {
+
+            return reply.status(401).send({
+                error: "No autenticado"
+            });
+
+        }
+
+
+        const token =
+            autorizacion.split(" ")[1];
+
+
+        const partesToken =
+            token.split(".");
+
+
+        const identificadorSesion =
+            partesToken[0];
+
+
+        await db.query(
+            `
+            UPDATE sesiones
+            SET revocado_en = NOW()
+            WHERE identificador = $1
+            `,
+            [identificadorSesion]
+        );
+
+
+        return {
+            mensaje: "SesiÃ³n cerrada correctamente"
+        };
+
+    });
+
+}
+
+
+============================================================
+ARCHIVO: src\routes\mensajes.routes.ts
+============================================================
+
+import { FastifyInstance } from "fastify";
+import { autenticar } from "../middleware/auth.middleware.js";
+import {
+    obtenerOCrearConversacion,
+    obtenerMensajesConversacion,
+    enviarMensajeTexto
+} from "../services/mensajes.service.js";
+
+export async function mensajesRoutes(app: FastifyInstance) {
+
+    // Crear u obtener una conversaciÃ³n con un amigo
+    app.post("/api/mensajes/conversacion", {
+        preHandler: autenticar
+    }, async (request, reply) => {
+        try {
+            const body = request.body as {
+                destinatarioId?: string;
+            };
+
+            if (!body.destinatarioId) {
+                return reply.status(400).send({
+                    error: "El destinatario es obligatorio"
+                });
+            }
+
+            const conversacionId =
+                await obtenerOCrearConversacion(
+                    request.usuario!.id,
+                    body.destinatarioId
+                );
+
+            return {
+                conversacionId
+            };
+
+        } catch (error) {
+            const mensaje =
+                error instanceof Error
+                    ? error.message
+                    : "Error al obtener la conversaciÃ³n";
+
+            return reply.status(400).send({
+                error: mensaje
+            });
+        }
+    });
+
+    // Obtener mensajes de una conversaciÃ³n
+    app.get("/api/mensajes/conversacion/:usuarioId", {
+        preHandler: autenticar
+    }, async (request, reply) => {
+        try {
+            const params = request.params as {
+                usuarioId: string;
+            };
+
+            if (!params.usuarioId) {
+                return reply.status(400).send({
+                    error: "El usuario es obligatorio"
+                });
+            }
+
+            const mensajes =
+                await obtenerMensajesConversacion(
+                    request.usuario!.id,
+                    params.usuarioId
+                );
+
+            return {
+                mensajes
+            };
+
+        } catch (error) {
+            const mensaje =
+                error instanceof Error
+                    ? error.message
+                    : "Error al obtener los mensajes";
+
+            return reply.status(400).send({
+                error: mensaje
+            });
+        }
+    });
+
+    // Enviar mensaje de texto
+    app.post("/api/mensajes/conversacion/:usuarioId", {
+        preHandler: autenticar
+    }, async (request, reply) => {
+        try {
+            const params = request.params as {
+                usuarioId: string;
+            };
+
+            const body = request.body as {
+                contenido?: string;
+            };
+
+            if (!params.usuarioId) {
+                return reply.status(400).send({
+                    error: "El usuario es obligatorio"
+                });
+            }
+
+            if (!body.contenido) {
+                return reply.status(400).send({
+                    error: "El contenido es obligatorio"
+                });
+            }
+
+            const mensaje =
+                await enviarMensajeTexto(
+                    request.usuario!.id,
+                    params.usuarioId,
+                    body.contenido
+                );
+
+            return reply.status(201).send({
+                mensaje
+            });
+
+        } catch (error) {
+            const mensaje =
+                error instanceof Error
+                    ? error.message
+                    : "Error al enviar el mensaje";
+
+            return reply.status(400).send({
+                error: mensaje
+            });
+        }
+    });
+}
+
+
+============================================================
+ARCHIVO: src\services\amigos.service.ts
+============================================================
+
+import { db } from "../db/database.js";
+
+export async function buscarUsuarios(
+    texto: string,
+    usuarioId: string
+) {
+    const textoLimpio = texto.trim();
+
+    if (!textoLimpio) {
+        return [];
+    }
+
+    const resultado = await db.query(
+        `
+        SELECT
+            u.id,
+            u.nombre,
+            u.descripcion,
+            u.avatar_archivo_id,
+            u.color_nombre,
+
+            CASE
+                WHEN EXISTS (
+                    SELECT 1
+                    FROM amistades am
+                    WHERE am.usuario_a_id = LEAST(u.id, $1::uuid)
+                    AND am.usuario_b_id = GREATEST(u.id, $1::uuid)
+                )
+                THEN 'amigo'
+
+                WHEN EXISTS (
+                    SELECT 1
+                    FROM solicitudes_amistad s
+                    WHERE s.emisor_id = $1::uuid
+                    AND s.receptor_id = u.id
+                    AND s.estado = 'pendiente'
+                )
+                THEN 'solicitud_enviada'
+
+                WHEN EXISTS (
+                    SELECT 1
+                    FROM solicitudes_amistad s
+                    WHERE s.emisor_id = u.id
+                    AND s.receptor_id = $1::uuid
+                    AND s.estado = 'pendiente'
+                )
+                THEN 'solicitud_recibida'
+
+                ELSE 'ninguno'
+            END AS estado_amistad,
+
+            CASE
+                WHEN a.ruta IS NOT NULL
+                THEN REPLACE(a.ruta, '\', '/')
+                ELSE NULL
+            END AS avatar_url
+
+        FROM usuarios u
+
+        LEFT JOIN archivos a
+            ON a.id = u.avatar_archivo_id
+
+        WHERE u.activo = TRUE
+        AND u.id <> $1
+        AND u.nombre ILIKE $2
+
+        ORDER BY u.nombre
+
+        LIMIT 20
+        `,
+        [
+            usuarioId,
+            `%${textoLimpio}%`
+        ]
+    );
+
+    return resultado.rows;
+}
+
+export async function enviarSolicitudAmistad(
+    usuarioId: string,
+    destinatarioId: string
+) {
+    // No puedes enviarte una solicitud a ti mismo
+    if (usuarioId === destinatarioId) {
+        throw new Error("No puedes enviarte una solicitud a ti mismo");
+    }
+
+    // Comprobar que el destinatario existe y estÃ¡ activo
+    const usuario = await db.query(
+        `
+        SELECT id
+        FROM usuarios
+        WHERE id = $1
+          AND activo = TRUE
+        `,
+        [destinatarioId]
+    );
+
+    if (usuario.rowCount === 0) {
+        throw new Error("El usuario no existe");
+    }
+
+    // Comprobar si existe un bloqueo en cualquier direcciÃ³n
+    const bloqueo = await db.query(
+        `
+        SELECT bloqueador_id
+        FROM bloqueos
+        WHERE (bloqueador_id = $1 AND bloqueado_id = $2)
+           OR (bloqueador_id = $2 AND bloqueado_id = $1)
+        LIMIT 1
+        `,
+        [usuarioId, destinatarioId]
+    );
+
+    if ((bloqueo.rowCount ?? 0) > 0) {
+        throw new Error("No puedes enviar una solicitud a este usuario");
+    }
+
+    // Comprobar si ya son amigos
+    const amistad = await db.query(
+        `
+        SELECT usuario_a_id
+        FROM amistades
+        WHERE usuario_a_id = LEAST($1::uuid, $2::uuid)
+          AND usuario_b_id = GREATEST($1::uuid, $2::uuid)
+        LIMIT 1
+        `,
+        [usuarioId, destinatarioId]
+    );
+
+    if ((amistad.rowCount ?? 0) > 0) {
+        throw new Error("Ya sois amigos");
+    }
+
+    // Comprobar si ya existe una solicitud pendiente
+    const pendiente = await db.query(
+        `
+        SELECT
+            emisor_id,
+            receptor_id
+        FROM solicitudes_amistad
+        WHERE (
+            (emisor_id = $1 AND receptor_id = $2)
+            OR
+            (emisor_id = $2 AND receptor_id = $1)
+        )
+        AND estado = 'pendiente'
+        LIMIT 1
+        `,
+        [usuarioId, destinatarioId]
+    );
+
+    if ((pendiente.rowCount ?? 0) > 0) {
+        throw new Error(
+            "Ya existe una solicitud de amistad pendiente entre vosotros"
+        );
+    }
+
+    // Comprobar si el usuario rechazÃ³ una solicitud anteriormente
+    const rechazo = await db.query(
+        `
+        SELECT respondido_en
+        FROM solicitudes_amistad
+        WHERE emisor_id = $1
+          AND receptor_id = $2
+          AND estado = 'rechazada'
+        ORDER BY respondido_en DESC
+        LIMIT 1
+        `,
+        [usuarioId, destinatarioId]
+    );
+
+    if (
+        (rechazo.rowCount ?? 0) > 0 &&
+        rechazo.rows[0].respondido_en
+    ) {
+        const fechaRechazo = new Date(
+            rechazo.rows[0].respondido_en
+        );
+
+        const cincoDias = 5 * 24 * 60 * 60 * 1000;
+        const tiempoTranscurrido =
+            Date.now() - fechaRechazo.getTime();
+
+        if (tiempoTranscurrido < cincoDias) {
+            throw new Error(
+                "Debes esperar 5 dÃ­as antes de volver a enviar una solicitud"
+            );
+        }
+    }
+
+    // Crear la nueva solicitud
+    await db.query(
+        `
+        INSERT INTO solicitudes_amistad (
+            emisor_id,
+            receptor_id,
+            estado
+        )
+        VALUES ($1, $2, 'pendiente')
+        `,
+        [usuarioId, destinatarioId]
+    );
+
+    return {
+        mensaje: "Solicitud de amistad enviada"
+    };
+}
+
+export async function obtenerSolicitudesRecibidas(
+    usuarioId: string
+) {
+    const resultado = await db.query(
+        `
+        SELECT
+            s.id,
+            s.emisor_id,
+            s.creado_en,
+            u.nombre,
+            u.descripcion,
+            u.avatar_archivo_id,
+            u.color_nombre,
+            CASE
+                WHEN a.ruta IS NOT NULL
+                THEN REPLACE(a.ruta, '\', '/')
+                ELSE NULL
+            END AS avatar_url
+        FROM solicitudes_amistad s
+        INNER JOIN usuarios u
+            ON u.id = s.emisor_id
+        LEFT JOIN archivos a
+            ON a.id = u.avatar_archivo_id
+        WHERE s.receptor_id = $1
+          AND s.estado = 'pendiente'
+          AND u.activo = TRUE
+        ORDER BY s.creado_en DESC
+        `,
+        [usuarioId]
+    );
+
+    return resultado.rows;
+}
+
+export async function aceptarSolicitudAmistad(
+    usuarioId: string,
+    solicitudId: string
+) {
+    const solicitud = await db.query(
+        `
+        SELECT
+            id,
+            emisor_id,
+            receptor_id
+        FROM solicitudes_amistad
+        WHERE id = $1
+          AND receptor_id = $2
+          AND estado = 'pendiente'
+        LIMIT 1
+        `,
+        [solicitudId, usuarioId]
+    );
+
+    if ((solicitud.rowCount ?? 0) === 0) {
+        throw new Error("La solicitud no existe o ya no estÃ¡ pendiente");
+    }
+
+    const emisorId = solicitud.rows[0].emisor_id;
+    const receptorId = solicitud.rows[0].receptor_id;
+
+    await db.query("BEGIN");
+
+    try {
+        await db.query(
+            `
+            INSERT INTO amistades (
+                usuario_a_id,
+                usuario_b_id
+            )
+            VALUES (
+                LEAST($1::uuid, $2::uuid),
+                GREATEST($1::uuid, $2::uuid)
+            )
+            `,
+            [emisorId, receptorId]
+        );
+
+        await db.query(
+            `
+            UPDATE solicitudes_amistad
+            SET
+                estado = 'aceptada',
+                respondido_en = NOW()
+            WHERE id = $1
+            `,
+            [solicitudId]
+        );
+
+        await db.query("COMMIT");
+
+        return {
+            mensaje: "Solicitud aceptada"
+        };
+    } catch (error) {
+        await db.query("ROLLBACK");
+        throw error;
+    }
+}
+
+export async function rechazarSolicitudAmistad(
+    usuarioId: string,
+    solicitudId: string
+) {
+    const resultado = await db.query(
+        `
+        UPDATE solicitudes_amistad
+        SET
+            estado = 'rechazada',
+            respondido_en = NOW()
+        WHERE id = $1
+          AND receptor_id = $2
+          AND estado = 'pendiente'
+        RETURNING id
+        `,
+        [solicitudId, usuarioId]
+    );
+
+    if ((resultado.rowCount ?? 0) === 0) {
+        throw new Error("La solicitud no existe o ya no estÃ¡ pendiente");
+    }
+
+    return {
+        mensaje: "Solicitud rechazada"
+    };
+}
+
+export async function obtenerAmigos(usuarioId: string) {
+    const resultado = await db.query(
+        `
+        SELECT
+            u.id,
+            u.nombre,
+            u.descripcion,
+            u.avatar_archivo_id,
+            u.color_nombre,
+            CASE
+                WHEN ar.ruta IS NOT NULL
+                THEN REPLACE(ar.ruta, '\', '/')
+                ELSE NULL
+            END AS avatar_url
+        FROM amistades a
+        INNER JOIN usuarios u
+            ON (
+                a.usuario_a_id = $1::uuid
+                AND u.id = a.usuario_b_id
+            )
+            OR (
+                a.usuario_b_id = $1::uuid
+                AND u.id = a.usuario_a_id
+            )
+        LEFT JOIN archivos ar
+            ON ar.id = u.avatar_archivo_id
+        WHERE u.activo = TRUE
+        ORDER BY u.nombre
+        `,
+        [usuarioId]
+    );
+
+    return resultado.rows;
+}
+
+
+============================================================
+ARCHIVO: src\services\auth.service.ts
+============================================================
+
+import argon2 from "argon2";
+import crypto from "node:crypto";
+import { db } from "../db/database.js";
+import {
+    generarCodigoVinculacion,
+    cifrarCodigo,
+    obtenerHashCodigo,
+    descifrarCodigo
+} from "./codigo.service.js";
+
+
+/* ==============================
+   CREAR SESIÃ“N
+   ============================== */
+
+async function crearSesion(
+    usuarioId: string,
+    dispositivoIdentificador: string
+): Promise<{
+    token: string;
+    expira_en: Date;
+}> {
+
+    const dispositivoResultado = await db.query(
+        `
+        INSERT INTO dispositivos (
+            usuario_id,
+            identificador
+        )
+        VALUES ($1, $2)
+        ON CONFLICT (usuario_id, identificador)
+        DO UPDATE SET ultimo_uso = NOW()
+        RETURNING id
+        `,
+        [
+            usuarioId,
+            dispositivoIdentificador
+        ]
+    );
+
+
+    const dispositivoId =
+        dispositivoResultado.rows[0].id;
+
+
+    const identificadorSesion =
+        crypto.randomBytes(16).toString("hex");
+
+
+    const secretoSesion =
+        crypto.randomBytes(32).toString("hex");
+
+
+    const token =
+        `${identificadorSesion}.${secretoSesion}`;
+
+
+    const tokenHash =
+        await argon2.hash(secretoSesion);
+
+
+    const expiraEn = new Date(
+        Date.now() + 30 * 24 * 60 * 60 * 1000
+    );
+
+
+    await db.query(
+        `
+        INSERT INTO sesiones (
+            usuario_id,
+            dispositivo_id,
+            identificador,
+            token_hash,
+            expira_en
+        )
+        VALUES ($1, $2, $3, $4, $5)
+        `,
+        [
+            usuarioId,
+            dispositivoId,
+            identificadorSesion,
+            tokenHash,
+            expiraEn
+        ]
+    );
+
+
+    return {
+        token,
+        expira_en: expiraEn
+    };
+
+}
+
+
+/* ==============================
+   REGISTRAR USUARIO
+   ============================== */
+
+export async function registrarUsuario(
+    nombre: string,
+    dispositivoId: string
+) {
+
+    const nombreLimpio =
+        nombre.trim();
+
+
+    if (!nombreLimpio) {
+
+        throw new Error(
+            "El nombre no puede estar vacÃ­o"
+        );
+
+    }
+
+
+    if (nombreLimpio.length > 24) {
+
+        throw new Error(
+            "El nombre no puede superar los 24 caracteres"
+        );
+
+    }
+
+
+    const nombreNormalizado =
+        nombreLimpio.toLocaleLowerCase();
+
+
+    const usuarioExistente =
+        await db.query(
+            `
+            SELECT id
+            FROM usuarios
+            WHERE nombre_normalizado = $1
+            `,
+            [nombreNormalizado]
+        );
+
+
+    if (
+        usuarioExistente.rowCount &&
+        usuarioExistente.rowCount > 0
+    ) {
+
+        throw new Error(
+            "Ese nombre ya estÃ¡ en uso"
+        );
+
+    }
+
+
+    const codigoVinculacion =
+        generarCodigoVinculacion();
+
+
+    const codigoVinculacionCifrado =
+        cifrarCodigo(codigoVinculacion);
+
+
+    const codigoVinculacionHash =
+        obtenerHashCodigo(codigoVinculacion);
+
+
+    const resultado =
+        await db.query(
+            `
+            INSERT INTO usuarios (
+                nombre,
+                nombre_normalizado,
+                codigo_vinculacion_cifrado,
+                codigo_vinculacion_hash
+            )
+            VALUES ($1, $2, $3, $4)
+            RETURNING id, nombre, creado_en
+            `,
+            [
+                nombreLimpio,
+                nombreNormalizado,
+                codigoVinculacionCifrado,
+                codigoVinculacionHash
+            ]
+        );
+
+
+    const usuario =
+        resultado.rows[0];
+
+
+    const sesion =
+        await crearSesion(
+            usuario.id,
+            dispositivoId
+        );
+
+
+    return {
+        id: usuario.id,
+        nombre: usuario.nombre,
+        token: sesion.token,
+        expira_en: sesion.expira_en,
+        codigo_vinculacion:
+            codigoVinculacion
+    };
+
+}
+
+
+/* ==============================
+   VINCULAR DISPOSITIVO
+   ============================== */
+
+export async function vincularDispositivo(
+    codigo: string,
+    dispositivoId: string
+) {
+
+    if (!codigo) {
+
+        throw new Error(
+            "El cÃ³digo de vinculaciÃ³n es obligatorio"
+        );
+
+    }
+
+
+    const codigoHash =
+        obtenerHashCodigo(
+            codigo.trim()
+        );
+
+
+    const resultado =
+        await db.query(
+            `
+            SELECT id, nombre
+            FROM usuarios
+            WHERE activo = TRUE
+            AND codigo_vinculacion_hash = $1
+            LIMIT 1
+            `,
+            [codigoHash]
+        );
+
+
+    if (resultado.rowCount === 0) {
+
+        throw new Error(
+            "CÃ³digo de vinculaciÃ³n incorrecto"
+        );
+
+    }
+
+
+    const usuario =
+        resultado.rows[0];
+
+
+    const sesion =
+        await crearSesion(
+            usuario.id,
+            dispositivoId
+        );
+
+
+    return {
+        id: usuario.id,
+        nombre: usuario.nombre,
+        token: sesion.token,
+        expira_en: sesion.expira_en
+    };
+
+}
+
+
+/* ==============================
+   OBTENER CUENTA
+   ============================== */
+
+export async function obtenerCuenta(
+    usuarioId: string
+) {
+
+    const resultado =
+        await db.query(
+            `
+            SELECT
+                u.id,
+                u.nombre,
+                u.descripcion,
+                u.color_nombre,
+                u.avatar_archivo_id,
+                u.creado_en,
+                u.codigo_vinculacion_cifrado,
+                a.ruta AS avatar_ruta
+            FROM usuarios u
+            LEFT JOIN archivos a
+                ON a.id = u.avatar_archivo_id
+            WHERE u.id = $1
+            AND u.activo = TRUE
+            `,
+            [usuarioId]
+        );
+
+
+    if (resultado.rowCount === 0) {
+
+        throw new Error(
+            "Usuario no encontrado"
+        );
+
+    }
+
+
+    const usuario =
+        resultado.rows[0];
+
+
+    if (!usuario.codigo_vinculacion_cifrado) {
+
+        throw new Error(
+            "El cÃ³digo de vinculaciÃ³n no estÃ¡ disponible"
+        );
+
+    }
+
+
+    const codigo =
+        descifrarCodigo(
+            usuario.codigo_vinculacion_cifrado
+        );
+
+
+    return {
+        id: usuario.id,
+        nombre: usuario.nombre,
+        descripcion: usuario.descripcion,
+        color_nombre: usuario.color_nombre,
+        avatar_archivo_id:
+            usuario.avatar_archivo_id,
+        avatar_ruta:
+            usuario.avatar_ruta,
+        creado_en: usuario.creado_en,
+        codigo_vinculacion: codigo
+    };
+
+}
+
+
+/* ==============================
+   ACTUALIZAR CUENTA
+   ============================== */
+
+export async function actualizarCuenta(
+    usuarioId: string,
+    descripcion?: string,
+    colorNombre?: string
+) {
+
+    const descripcionLimpia =
+        (descripcion ?? "").trim();
+
+
+    if (descripcionLimpia.length > 500) {
+
+        throw new Error(
+            "La descripciÃ³n no puede superar los 500 caracteres"
+        );
+
+    }
+
+
+    const color =
+        (colorNombre ?? "").trim();
+
+
+    if (!/^#[0-9A-Fa-f]{6}$/.test(color)) {
+
+        throw new Error(
+            "El color del nombre no es vÃ¡lido"
+        );
+
+    }
+
+
+    const resultado =
+        await db.query(
+            `
+            UPDATE usuarios
+            SET
+                descripcion = $1,
+                color_nombre = $2
+            WHERE id = $3
+            AND activo = TRUE
+            RETURNING
+                id,
+                nombre,
+                descripcion,
+                color_nombre,
+                avatar_archivo_id,
+                creado_en
+            `,
+            [
+                descripcionLimpia || null,
+                color,
+                usuarioId
+            ]
+        );
+
+
+    if (resultado.rowCount === 0) {
+
+        throw new Error(
+            "Usuario no encontrado"
+        );
+
+    }
+
+
+    return resultado.rows[0];
+
+}
+
+
+/* ==============================
+   REGENERAR CÃ“DIGO DE VINCULACIÃ“N
+   ============================== */
+
+export async function regenerarCodigoVinculacion(
+    usuarioId: string
+) {
+
+    const codigo =
+        generarCodigoVinculacion();
+
+
+    const codigoCifrado =
+        cifrarCodigo(codigo);
+
+
+    const codigoHash =
+        obtenerHashCodigo(codigo);
+
+
+    const resultado =
+        await db.query(
+            `
+            UPDATE usuarios
+            SET
+                codigo_vinculacion_cifrado = $1,
+                codigo_vinculacion_hash = $2
+            WHERE id = $3
+            AND activo = TRUE
+            RETURNING id
+            `,
+            [
+                codigoCifrado,
+                codigoHash,
+                usuarioId
+            ]
+        );
+
+
+    if (resultado.rowCount === 0) {
+
+        throw new Error(
+            "Usuario no encontrado"
+        );
+
+    }
+
+
+    return codigo;
+
+}
+
+
+============================================================
+ARCHIVO: src\services\codigo.service.ts
+============================================================
+
+import crypto from "node:crypto";
+import { env } from "../config/env.js";
+
+const CARACTERES = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+function generarBloque(): string {
+    let bloque = "";
+
+    for (let i = 0; i < 4; i++) {
+        const indice = crypto.randomInt(0, CARACTERES.length);
+        bloque += CARACTERES[indice];
+    }
+
+    return bloque;
+}
+
+export function generarCodigoVinculacion(): string {
+    return `ATU-${generarBloque()}-${generarBloque()}`;
+}
+
+function obtenerClave(): Buffer {
+    return Buffer.from(
+        env.codigoEncryptionKey,
+        "hex"
+    );
+}
+
+export function cifrarCodigo(codigo: string): string {
+    const iv = crypto.randomBytes(12);
+
+    const cipher = crypto.createCipheriv(
+        "aes-256-gcm",
+        obtenerClave(),
+        iv
+    );
+
+    const cifrado = Buffer.concat([
+        cipher.update(codigo, "utf8"),
+        cipher.final()
+    ]);
+
+    const authTag = cipher.getAuthTag();
+
+    return [
+        iv.toString("base64"),
+        authTag.toString("base64"),
+        cifrado.toString("base64")
+    ].join(".");
+}
+
+export function descifrarCodigo(codigoCifrado: string): string {
+    const partes = codigoCifrado.split(".");
+
+    if (partes.length !== 3) {
+        throw new Error("CÃ³digo cifrado invÃ¡lido");
+    }
+
+    const iv = Buffer.from(partes[0], "base64");
+    const authTag = Buffer.from(partes[1], "base64");
+    const cifrado = Buffer.from(partes[2], "base64");
+
+    const decipher = crypto.createDecipheriv(
+        "aes-256-gcm",
+        obtenerClave(),
+        iv
+    );
+
+    decipher.setAuthTag(authTag);
+
+    const descifrado = Buffer.concat([
+        decipher.update(cifrado),
+        decipher.final()
+    ]);
+
+    return descifrado.toString("utf8");
+}
+
+export function obtenerHashCodigo(codigo: string): string {
+    return crypto
+        .createHmac(
+            "sha256",
+            obtenerClave()
+        )
+        .update(codigo)
+        .digest("hex");
+}
+
+
+============================================================
+ARCHIVO: src\services\mensajes.service.ts
+============================================================
+
+import { db } from "../db/database.js";
+
+async function comprobarAmistad(
+    usuarioId: string,
+    otroUsuarioId: string
+) {
+    const resultado = await db.query(
+        `
+        SELECT 1
+        FROM amistades
+        WHERE
+            (
+                usuario_a_id = $1::uuid
+                AND usuario_b_id = $2::uuid
+            )
+            OR
+            (
+                usuario_a_id = $2::uuid
+                AND usuario_b_id = $1::uuid
+            )
+        LIMIT 1
+        `,
+        [usuarioId, otroUsuarioId]
+    );
+
+    return resultado.rowCount === 1;
+}
+
+async function comprobarBloqueo(
+    usuarioId: string,
+    otroUsuarioId: string
+) {
+    const resultado = await db.query(
+        `
+        SELECT 1
+        FROM bloqueos
+        WHERE
+            (
+                bloqueador_id = $1::uuid
+                AND bloqueado_id = $2::uuid
+            )
+            OR
+            (
+                bloqueador_id = $2::uuid
+                AND bloqueado_id = $1::uuid
+            )
+        LIMIT 1
+        `,
+        [usuarioId, otroUsuarioId]
+    );
+
+    return resultado.rowCount === 1;
+}
+
+export async function obtenerOCrearConversacion(
+    usuarioId: string,
+    otroUsuarioId: string
+) {
+    if (usuarioId === otroUsuarioId) {
+        throw new Error("No puedes crear una conversaciÃ³n contigo mismo");
+    }
+
+    const sonAmigos = await comprobarAmistad(
+        usuarioId,
+        otroUsuarioId
+    );
+
+    if (!sonAmigos) {
+        throw new Error("Solo puedes hablar con tus amigos");
+    }
+
+    const hayBloqueo = await comprobarBloqueo(
+        usuarioId,
+        otroUsuarioId
+    );
+
+    if (hayBloqueo) {
+        throw new Error("No puedes hablar con este usuario");
+    }
+
+    const resultado = await db.query(
+        `
+        INSERT INTO conversaciones_privadas (
+            usuario_a_id,
+            usuario_b_id
+        )
+        VALUES (
+            LEAST($1::uuid, $2::uuid),
+            GREATEST($1::uuid, $2::uuid)
+        )
+        ON CONFLICT (usuario_a_id, usuario_b_id)
+        DO NOTHING
+        RETURNING id
+        `,
+        [usuarioId, otroUsuarioId]
+    );
+
+    if (resultado.rowCount === 1) {
+        return resultado.rows[0].id;
+    }
+
+    const conversacion = await db.query(
+        `
+        SELECT id
+        FROM conversaciones_privadas
+        WHERE
+            usuario_a_id = LEAST($1::uuid, $2::uuid)
+            AND usuario_b_id = GREATEST($1::uuid, $2::uuid)
+        LIMIT 1
+        `,
+        [usuarioId, otroUsuarioId]
+    );
+
+    if (conversacion.rowCount !== 1) {
+        throw new Error("No se pudo obtener la conversaciÃ³n");
+    }
+
+    return conversacion.rows[0].id;
+}
+
+export async function obtenerMensajesConversacion(
+    usuarioId: string,
+    otroUsuarioId: string
+) {
+    const sonAmigos = await comprobarAmistad(
+        usuarioId,
+        otroUsuarioId
+    );
+
+    if (!sonAmigos) {
+        throw new Error("Solo puedes ver conversaciones con tus amigos");
+    }
+
+    const hayBloqueo = await comprobarBloqueo(
+        usuarioId,
+        otroUsuarioId
+    );
+
+    if (hayBloqueo) {
+        throw new Error("No puedes ver esta conversaciÃ³n");
+    }
+
+    const resultado = await db.query(
+        `
+        SELECT
+            mp.id,
+            mp.autor_id,
+            mp.tipo,
+            mp.contenido,
+            mp.archivo_id,
+            mp.mensaje_respondiendo_id,
+            mp.creado_en,
+            mp.editado_en
+        FROM mensajes_privados mp
+        INNER JOIN conversaciones_privadas cp
+            ON cp.id = mp.conversacion_id
+        WHERE
+            cp.usuario_a_id = LEAST($1::uuid, $2::uuid)
+            AND cp.usuario_b_id = GREATEST($1::uuid, $2::uuid)
+        ORDER BY mp.creado_en ASC
+        `,
+        [usuarioId, otroUsuarioId]
+    );
+
+    return resultado.rows;
+}
+
+export async function enviarMensajeTexto(
+    usuarioId: string,
+    otroUsuarioId: string,
+    contenido: string
+) {
+    if (usuarioId === otroUsuarioId) {
+        throw new Error("No puedes enviarte mensajes a ti mismo");
+    }
+
+    const texto = contenido.trim();
+
+    if (!texto) {
+        throw new Error("El mensaje no puede estar vacÃ­o");
+    }
+
+    const sonAmigos = await comprobarAmistad(
+        usuarioId,
+        otroUsuarioId
+    );
+
+    if (!sonAmigos) {
+        throw new Error("Solo puedes enviar mensajes a tus amigos");
+    }
+
+    const hayBloqueo = await comprobarBloqueo(
+        usuarioId,
+        otroUsuarioId
+    );
+
+    if (hayBloqueo) {
+        throw new Error("No puedes enviar mensajes a este usuario");
+    }
+
+    const conversacionId = await obtenerOCrearConversacion(
+        usuarioId,
+        otroUsuarioId
+    );
+
+    const resultado = await db.query(
+        `
+        INSERT INTO mensajes_privados (
+            conversacion_id,
+            autor_id,
+            tipo,
+            contenido
+        )
+        VALUES (
+            $1,
+            $2,
+            'texto',
+            $3
+        )
+        RETURNING
+            id,
+            autor_id,
+            tipo,
+            contenido,
+            archivo_id,
+            mensaje_respondiendo_id,
+            creado_en,
+            editado_en
+        `,
+        [
+            conversacionId,
+            usuarioId,
+            texto
+        ]
+    );
+
+    return resultado.rows[0];
+}
+
+export async function editarMensajeTexto(
+    usuarioId: string,
+    mensajeId: string,
+    contenido: string
+) {
+    const texto = contenido.trim();
+
+    if (!texto) {
+        throw new Error("El mensaje no puede estar vacÃ­o");
+    }
+
+    const resultado = await db.query(
+        `
+        UPDATE mensajes_privados mp
+        SET
+            contenido = $1,
+            editado_en = NOW()
+        FROM conversaciones_privadas cp
+        WHERE
+            mp.id = $2::uuid
+            AND mp.conversacion_id = cp.id
+            AND mp.autor_id = $3::uuid
+            AND mp.tipo = 'texto'
+            AND (
+                cp.usuario_a_id = $3::uuid
+                OR cp.usuario_b_id = $3::uuid
+            )
+            AND EXISTS (
+                SELECT 1
+                FROM amistades a
+                WHERE
+                    (
+                        a.usuario_a_id = $3::uuid
+                        AND a.usuario_b_id =
+                            CASE
+                                WHEN cp.usuario_a_id = $3::uuid
+                                THEN cp.usuario_b_id
+                                ELSE cp.usuario_a_id
+                            END
+                    )
+                    OR
+                    (
+                        a.usuario_b_id = $3::uuid
+                        AND a.usuario_a_id =
+                            CASE
+                                WHEN cp.usuario_a_id = $3::uuid
+                                THEN cp.usuario_b_id
+                                ELSE cp.usuario_a_id
+                            END
+                    )
+            )
+        RETURNING
+            mp.id,
+            mp.autor_id,
+            mp.tipo,
+            mp.contenido,
+            mp.archivo_id,
+            mp.mensaje_respondiendo_id,
+            mp.creado_en,
+            mp.editado_en
+        `,
+        [
+            texto,
+            mensajeId,
+            usuarioId
+        ]
+    );
+
+    if (resultado.rowCount !== 1) {
+        throw new Error(
+            "No se pudo editar el mensaje"
+        );
+    }
+
+    return resultado.rows[0];
+}
+
+
+============================================================
+ARCHIVO: docs\ARCHITECTURE.md
+============================================================
+
+# Atuistas â€” Arquitectura del proyecto
+
+## 1. Objetivo
+
+Atuistas es una red social privada orientada a un grupo de personas conocidas.
+
+El objetivo final es disponer de:
+
+- AplicaciÃ³n web.
+- PWA.
+- AplicaciÃ³n Android.
+- Backend propio.
+- Base de datos propia.
+- Servidor propio.
+
+La aplicaciÃ³n debe diseÃ±arse desde el principio pensando principalmente en dispositivos mÃ³viles.
+
+---
+
+## 2. Arquitectura general
+
+La arquitectura prevista es:
+
+Frontend / PWA
+        â†“
+API HTTP
+        â†“
+Backend Node.js
+        â†“
+PostgreSQL
+
+Y para funcionalidades en tiempo real:
+
+Frontend
+        â†•
+WebSocket
+        â†•
+Backend
+        â†“
+PostgreSQL
+
+El frontend nunca accederÃ¡ directamente a PostgreSQL.
+
+Todas las operaciones pasarÃ¡n por el backend.
+
+---
+
+## 3. TecnologÃ­as actuales
+
+### Backend
+
+- Node.js
+- TypeScript
+- Fastify
+
+### Base de datos
+
+- PostgreSQL
+
+### Frontend
+
+Inicialmente:
+
+- HTML
+- CSS
+- JavaScript / TypeScript
+
+La arquitectura debe permitir evolucionar posteriormente el frontend sin tener que rehacer el backend.
+
+### Tiempo real
+
+Se utilizarÃ¡n WebSockets para funcionalidades que necesiten comunicaciÃ³n en tiempo real.
+
+Ejemplos:
+
+- Mensajes.
+- Mensajes de grupos.
+- Estados de conexiÃ³n.
+- Notificaciones internas.
+
+### PWA
+
+Posteriormente se implementarÃ¡n:
+
+- Web App Manifest.
+- Service Worker.
+- CachÃ©.
+- InstalaciÃ³n como aplicaciÃ³n.
+- Iconos.
+- Pantalla de carga.
+- Push Notifications.
+
+---
+
+## 4. Servidor
+
+El backend estÃ¡ pensado para ejecutarse finalmente en un PC propiedad del desarrollador utilizado como servidor.
+
+El servidor deberÃ¡ encargarse de:
+
+- API.
+- AutenticaciÃ³n.
+- Usuarios.
+- Sesiones.
+- Amistades.
+- Solicitudes.
+- Bloqueos.
+- Mensajes.
+- Grupos.
+- Encuestas.
+- Publicaciones.
+- Estados.
+- Multimedia.
+- Notificaciones Push.
+
+La base de datos PostgreSQL se ejecutarÃ¡ en el mismo servidor o en una mÃ¡quina de la misma infraestructura privada.
+
+PostgreSQL no deberÃ¡ exponerse directamente a Internet.
+
+---
+
+## 5. Usuarios
+
+Cada usuario tendrÃ¡:
+
+- Nombre.
+- Avatar.
+- DescripciÃ³n.
+- Color del nombre.
+- CÃ³digo de acceso.
+
+### Nombre
+
+- MÃ¡ximo 24 caracteres.
+- No puede estar vacÃ­o.
+- No puede coincidir exactamente con el nombre de otro usuario.
+- Puede cambiarse posteriormente.
+
+### DescripciÃ³n
+
+- MÃ¡ximo 500 caracteres.
+
+### CÃ³digo
+
+- Entre 8 y 16 caracteres.
+- No se puede cambiar normalmente.
+- No se podrÃ¡ recuperar si el usuario lo pierde.
+- Si el usuario pierde el cÃ³digo, pierde el acceso a su cuenta.
+- El cÃ³digo nunca se almacenarÃ¡ en texto plano.
+- Se almacenarÃ¡ mediante un hash seguro.
+
+---
+
+## 6. AutenticaciÃ³n
+
+El sistema tendrÃ¡:
+
+- Registro.
+- Inicio de sesiÃ³n.
+- Sesiones.
+- Cierre de sesiÃ³n.
+- ExpiraciÃ³n de sesiones.
+- RevocaciÃ³n de sesiones.
+- Soporte para mÃºltiples dispositivos.
+
+La autenticaciÃ³n serÃ¡ gestionada exclusivamente por el backend.
+
+El frontend nunca tendrÃ¡ acceso directo a las credenciales almacenadas.
+
+---
+
+## 7. Amistades
+
+ExistirÃ¡ un sistema real de amistades.
+
+Flujo:
+
+Usuario A
+    â†“
+EnvÃ­a solicitud
+    â†“
+Usuario B
+    â†“
+Acepta
+    â†“
+Amistad
+
+Solo los usuarios que sean amigos podrÃ¡n iniciar chats privados entre ellos.
+
+Los usuarios podrÃ¡n eliminar amistades.
+
+---
+
+## 8. Bloqueos
+
+Los usuarios podrÃ¡n bloquear a otros usuarios.
+
+Una persona bloqueada:
+
+- No podrÃ¡ enviar solicitudes de amistad al usuario que la bloqueÃ³.
+- No podrÃ¡ iniciar conversaciones privadas con el usuario que la bloqueÃ³.
+
+El sistema deberÃ¡ comprobar los bloqueos en el backend.
+
+---
+
+## 9. Chats privados
+
+Los chats privados solamente existirÃ¡n entre amigos.
+
+Los mensajes podrÃ¡n contener:
+
+- Texto.
+- ImÃ¡genes.
+- Audio.
+
+Los mensajes podrÃ¡n:
+
+- Editarse.
+- Eliminarse.
+- Responderse.
+
+Cuando un mensaje sea eliminado:
+
+- Se eliminarÃ¡ completamente.
+- No se mostrarÃ¡ "Mensaje eliminado".
+- No se dejarÃ¡ un marcador visible.
+
+### ImÃ¡genes
+
+Las imÃ¡genes de mÃ¡s de 8 MB podrÃ¡n comprimirse automÃ¡ticamente.
+
+El lÃ­mite absoluto previsto para imÃ¡genes de mensajes serÃ¡ de 12 MB.
+
+### Audio
+
+Los audios tendrÃ¡n una duraciÃ³n mÃ¡xima de 3 minutos y 30 segundos.
+
+Los lÃ­mites deberÃ¡n comprobarse tambiÃ©n en el backend.
+
+---
+
+## 10. Grupos / Servidores
+
+Los usuarios podrÃ¡n crear grupos.
+
+Cada grupo tendrÃ¡:
+
+- Foto.
+- Nombre.
+- DescripciÃ³n.
+- Miembros.
+- Chat.
+
+Al crear un grupo se podrÃ¡n aÃ±adir automÃ¡ticamente personas que ya sean amigos.
+
+Los grupos podrÃ¡n tener una fecha de desapariciÃ³n automÃ¡tica.
+
+Los grupos temporales estÃ¡n especialmente pensados para organizar quedadas.
+
+---
+
+## 11. Encuestas
+
+Cada grupo tendrÃ¡ una encuesta activa.
+
+La encuesta permanecerÃ¡ fijada en la parte superior del chat del grupo.
+
+Las encuestas podrÃ¡n utilizarse para:
+
+- Asistencia.
+- Horarios.
+- Lugares.
+- OrganizaciÃ³n de actividades.
+
+El funcionamiento exacto de creaciÃ³n, modificaciÃ³n, votaciÃ³n y cierre se definirÃ¡ posteriormente.
+
+---
+
+## 12. Mensajes de grupos
+
+Los mensajes de los grupos tendrÃ¡n una duraciÃ³n mÃ¡xima de 48 horas.
+
+DespuÃ©s deberÃ¡n eliminarse automÃ¡ticamente.
+
+---
+
+## 13. Publicaciones
+
+Los usuarios podrÃ¡n crear publicaciones.
+
+Una publicaciÃ³n puede contener:
+
+- Texto.
+- Texto + imÃ¡genes.
+- Texto + vÃ­deo.
+
+No se permite:
+
+- Texto + imÃ¡genes + vÃ­deo.
+
+### ImÃ¡genes
+
+- MÃ¡ximo 10 imÃ¡genes por publicaciÃ³n.
+
+### VÃ­deo
+
+- MÃ¡ximo 1 vÃ­deo por publicaciÃ³n.
+- DuraciÃ³n mÃ¡xima de 4 minutos.
+
+Las publicaciones:
+
+- No podrÃ¡n editarse.
+- SÃ­ podrÃ¡n eliminarse por su autor.
+
+Las publicaciones tendrÃ¡n:
+
+- Comentarios.
+- Corazones / likes.
+
+---
+
+## 14. Estados
+
+Los usuarios podrÃ¡n crear estados.
+
+Los estados aparecerÃ¡n en la zona principal de "ENTRAR".
+
+Los estados se organizarÃ¡n visualmente por persona y mostrarÃ¡n el avatar del usuario.
+
+El funcionamiento exacto y la duraciÃ³n de los estados se definirÃ¡ posteriormente.
+
+---
+
+## 15. Cuenta
+
+Desde CUENTA el usuario podrÃ¡:
+
+- Cambiar avatar.
+- Cambiar nombre.
+- Cambiar color del nombre.
+- Cambiar descripciÃ³n.
+- Crear publicaciones.
+- Crear estados.
+- Ver sus publicaciones.
+- Eliminar sus publicaciones.
+- Cerrar sesiÃ³n.
+
+El cÃ³digo de acceso no podrÃ¡ modificarse normalmente.
+
+---
+
+## 16. Pantalla principal
+
+La pantalla principal tendrÃ¡ cuatro opciones:
+
+- ENTRAR
+- AGREGAR AMIGOS
+- SERVIDORES
+- CUENTA
+
+CUENTA tendrÃ¡ un diseÃ±o ligeramente diferente y serÃ¡ visualmente algo mÃ¡s grande que las demÃ¡s opciones.
+
+La interfaz estarÃ¡ diseÃ±ada prioritariamente para mÃ³vil.
+
+---
+
+## 17. Agregar amigos
+
+La secciÃ³n tendrÃ¡ como mÃ­nimo:
+
+### Encontrar personas
+
+- Buscador.
+- Lista de usuarios.
+- Avatar.
+- Nombre.
+- EnvÃ­o de solicitudes.
+
+### Solicitudes
+
+PermitirÃ¡ gestionar las solicitudes recibidas.
+
+TambiÃ©n se contemplarÃ¡n las solicitudes enviadas para evitar duplicados y conflictos.
+
+---
+
+## 18. Multimedia
+
+Atuistas solamente almacenarÃ¡ multimedia necesaria para sus propias funciones.
+
+Tipos previstos:
+
+- Avatares.
+- ImÃ¡genes de publicaciones.
+- VÃ­deos de publicaciones.
+- ImÃ¡genes de mensajes.
+- Audios de mensajes.
+- ImÃ¡genes de estados.
+- ImÃ¡genes de grupos.
+
+No se implementarÃ¡ un gestor de archivos personal dentro de Atuistas.
+
+El desarrollador planea crear posteriormente una aplicaciÃ³n independiente para gestiÃ³n general de archivos.
+
+---
+
+## 19. Notificaciones Push
+
+Las notificaciones Push serÃ¡n una parte fundamental de la arquitectura.
+
+El objetivo es que un usuario pueda recibir notificaciones aunque la aplicaciÃ³n web no estÃ© abierta.
+
+Se diseÃ±arÃ¡ teniendo en cuenta:
+
+- Navegadores compatibles.
+- PWA instalada.
+- Android.
+- Futuro empaquetado/publicaciÃ³n en Google Play.
+
+---
+
+## 20. API
+
+El frontend se comunicarÃ¡ con el backend mediante una API.
+
+La API serÃ¡ responsable de:
+
+- Validar datos.
+- Autenticar usuarios.
+- Comprobar permisos.
+- Aplicar reglas de negocio.
+- Acceder a PostgreSQL.
+- Gestionar multimedia.
+- Emitir eventos en tiempo real.
+
+El frontend nunca debe considerarse una fuente fiable de seguridad.
+
+Toda validaciÃ³n importante debe repetirse en el backend.
+
+---
+
+## 21. Seguridad
+
+Principios generales:
+
+- No almacenar contraseÃ±as/cÃ³digos en texto plano.
+- Utilizar hashes seguros.
+- No exponer PostgreSQL directamente a Internet.
+- Validar los datos en el backend.
+- Comprobar permisos en el backend.
+- Limitar tamaÃ±os de archivos.
+- Validar tipos y contenido de archivos.
+- Proteger endpoints contra abuso.
+- Utilizar HTTPS en producciÃ³n.
+- Mantener secretos fuera del cÃ³digo fuente.
+- Mantener secretos fuera de Git.
+- Realizar copias de seguridad.
+
+---
+
+## 22. DocumentaciÃ³n
+
+La carpeta `docs/` contiene la documentaciÃ³n tÃ©cnica del proyecto.
+
+Los documentos deberÃ¡n mantenerse actualizados cuando se tomen decisiones importantes.
+
+Especialmente:
+
+- Arquitectura.
+- Base de datos.
+- AutenticaciÃ³n.
+- API.
+- Estado del proyecto.
+
+Las decisiones importantes deberÃ¡n documentarse para evitar cambiar accidentalmente comportamientos previamente establecidos.
+
+---
+
+## 23. Estado actual
+
+### Completado
+
+- Node.js instalado.
+- TypeScript configurado.
+- Fastify instalado.
+- PostgreSQL instalado.
+- Base de datos `atuistas` creada.
+- Backend conectado correctamente a PostgreSQL.
+
+### En desarrollo
+
+- DiseÃ±o definitivo de la base de datos.
+- DiseÃ±o de autenticaciÃ³n.
+- DiseÃ±o de API.
+
+### Pendiente
+
+- Tablas PostgreSQL.
+- Registro.
+- Login.
+- Sesiones.
+- Usuarios.
+- Amistades.
+- Bloqueos.
+- Mensajes.
+- Grupos.
+- Encuestas.
+- Publicaciones.
+- Estados.
+- Multimedia.
+- WebSockets.
+- Push Notifications.
+- Frontend.
+- PWA.
+- Servidor de producciÃ³n.
+- AplicaciÃ³n Android.
+- PublicaciÃ³n en Google Play.
+
+
+============================================================
+ARCHIVO: docs\DATABASE.md
+============================================================
+
+# Atuistas â€” DiseÃ±o de la base de datos
+
+## 1. Objetivo
+
+Este documento define el modelo conceptual de la base de datos de Atuistas.
+
+AquÃ­ se describen las entidades, relaciones y reglas principales antes de crear las tablas PostgreSQL.
+
+La estructura definitiva podrÃ¡ cambiar si durante la implementaciÃ³n aparece una necesidad tÃ©cnica, pero cualquier cambio importante deberÃ¡ actualizarse tambiÃ©n en esta documentaciÃ³n.
+
+---
+
+# 2. Entidades principales
+
+El sistema estarÃ¡ compuesto inicialmente por:
+
+- usuarios
+- sesiones
+- dispositivos
+- amistades
+- solicitudes de amistad
+- bloqueos
+- conversaciones privadas
+- mensajes privados
+- grupos
+- miembros de grupos
+- mensajes de grupos
+- encuestas
+- opciones de encuesta
+- votos
+- publicaciones
+- multimedia de publicaciones
+- comentarios
+- corazones de publicaciones
+- estados
+- multimedia de estados
+- dispositivos
+
+Algunas de estas entidades podrÃ¡n terminar combinÃ¡ndose o dividiÃ©ndose durante la implementaciÃ³n si existe una razÃ³n tÃ©cnica.
+
+---
+
+# 3. Usuarios
+
+## usuarios
+
+Representa una cuenta de Atuistas.
+
+Datos previstos:
+
+- id
+- nombre
+- descripciÃ³n
+- avatar
+- color del nombre
+- hash del cÃ³digo
+- fecha de creaciÃ³n
+- estado de la cuenta
+
+### Reglas
+
+### Nombre
+
+- No puede estar vacÃ­o.
+- MÃ¡ximo 24 caracteres.
+- No puede coincidir exactamente con el nombre de otro usuario.
+- Puede cambiarse posteriormente.
+- El nombre actual es el que se muestra en la aplicaciÃ³n.
+
+### DescripciÃ³n
+
+- MÃ¡ximo 500 caracteres.
+
+### CÃ³digo
+
+El cÃ³digo funciona como credencial de acceso.
+
+- MÃ­nimo 8 caracteres.
+- MÃ¡ximo 16 caracteres.
+- No se puede cambiar.
+- No se almacena en texto plano.
+- Se almacena mediante un hash seguro.
+
+Si el usuario pierde el cÃ³digo, no existe recuperaciÃ³n automÃ¡tica de la cuenta.
+
+---
+
+# 4. Sesiones
+
+## sesiones
+
+Representa una sesiÃ³n autenticada de un usuario.
+
+Un usuario puede tener varias sesiones simultÃ¡neas.
+
+Ejemplo:
+
+Usuario
+- PC
+- mÃ³vil
+- tablet
+
+Cada dispositivo puede tener una sesiÃ³n independiente.
+
+Datos previstos:
+
+- id
+- usuario_id
+- identificador de sesiÃ³n seguro
+- fecha de creaciÃ³n
+- fecha de expiraciÃ³n
+- Ãºltima actividad
+- estado/revocaciÃ³n
+
+La sesiÃ³n deberÃ¡ poder cerrarse y revocarse.
+
+---
+
+# 5. Dispositivos
+
+## dispositivos
+
+Representa un dispositivo/navegador utilizado por un usuario.
+
+PermitirÃ¡ distinguir diferentes dispositivos y serÃ¡ especialmente importante para las notificaciones Push.
+
+Un usuario puede tener varios dispositivos.
+
+RelaciÃ³n:
+
+usuario 1 â”€â”€â”€â”€ N dispositivos
+
+---
+
+# 6. Solicitudes de amistad
+
+## solicitudes_amistad
+
+Representa una solicitud enviada entre dos usuarios.
+
+RelaciÃ³n:
+
+usuario emisor â”€â”€â”€â”€â†’ usuario receptor
+
+Estados conceptuales:
+
+- pendiente
+- aceptada
+- rechazada
+
+No se permitirÃ¡n solicitudes duplicadas pendientes.
+
+### Solicitudes rechazadas
+
+Si una solicitud es rechazada, el mismo usuario podrÃ¡ volver a enviar otra solicitud despuÃ©s de:
+
+**5 dÃ­as**
+
+El backend deberÃ¡ comprobar este lÃ­mite.
+
+---
+
+# 7. Amistades
+
+## amistades
+
+Representa una amistad confirmada entre dos usuarios.
+
+Una amistad es bidireccional:
+
+Usuario A â†â”€â”€â”€â”€â†’ Usuario B
+
+Cuando una solicitud es aceptada se crea la amistad.
+
+No se deben guardar listas de amigos dentro de la tabla `usuarios`.
+
+La relaciÃ³n debe existir como entidad independiente.
+
+---
+
+# 8. EliminaciÃ³n de amistad
+
+Si un usuario elimina a otro de sus amigos:
+
+- Se elimina la amistad.
+- Se elimina la conversaciÃ³n privada entre ambos.
+- Se eliminan los mensajes privados asociados.
+- Se eliminan los archivos multimedia asociados a esos mensajes.
+
+El objetivo es evitar conservar datos innecesarios y ahorrar almacenamiento.
+
+---
+
+# 9. Bloqueos
+
+## bloqueos
+
+Representa un bloqueo realizado por un usuario sobre otro.
+
+El bloqueo es direccional:
+
+Usuario A â”€â”€â”€â”€â†’ bloquea â”€â”€â”€â”€â†’ Usuario B
+
+### Al bloquear
+
+Si existe una amistad:
+
+- Se elimina la amistad.
+- Se elimina la conversaciÃ³n privada.
+- Se eliminan los mensajes privados.
+- Se eliminan los archivos asociados.
+
+AdemÃ¡s:
+
+- El usuario bloqueado no puede enviar solicitudes de amistad al usuario que lo bloqueÃ³.
+- El usuario bloqueado no puede iniciar conversaciones privadas con quien lo bloqueÃ³.
+
+El bloqueo tendrÃ¡ prioridad sobre las demÃ¡s relaciones.
+
+---
+
+# 10. Conversaciones privadas
+
+## conversaciones_privadas
+
+Representa una conversaciÃ³n privada entre dos usuarios.
+
+Una conversaciÃ³n privada solamente puede existir entre dos personas que sean amigas y no estÃ©n bloqueadas.
+
+RelaciÃ³n conceptual:
+
+usuario A
+   â†“
+conversaciÃ³n privada
+   â†“
+usuario B
+
+La conversaciÃ³n debe permitir identificar a sus dos participantes.
+
+---
+
+# 11. Mensajes privados
+
+## mensajes_privados
+
+Representa un mensaje dentro de una conversaciÃ³n privada.
+
+Un mensaje pertenece a una conversaciÃ³n.
+
+Puede contener:
+
+- texto
+- imagen
+- audio
+
+No se permite combinar varios tipos de contenido multimedia de forma arbitraria.
+
+Los mensajes podrÃ¡n:
+
+- editarse
+- eliminarse
+- responderse
+
+### EliminaciÃ³n
+
+Cuando un mensaje se elimina:
+
+- Se borra completamente.
+- No se muestra "Mensaje eliminado".
+- No queda un marcador visible.
+
+### EdiciÃ³n
+
+La ediciÃ³n modificarÃ¡ el contenido del mensaje existente.
+
+El funcionamiento exacto del historial de ediciones se decidirÃ¡ posteriormente.
+
+---
+
+# 12. ImÃ¡genes de mensajes
+
+Las imÃ¡genes enviadas mediante mensajes tendrÃ¡n:
+
+- lÃ­mite recomendado de 8 MB
+- lÃ­mite absoluto de 12 MB
+
+Si una imagen supera 8 MB se intentarÃ¡ comprimir antes de almacenarla.
+
+La validaciÃ³n del lÃ­mite deberÃ¡ realizarse tambiÃ©n en el backend.
+
+Nunca se confiarÃ¡ Ãºnicamente en la validaciÃ³n del navegador.
+
+---
+
+# 13. Audios de mensajes
+
+Los mensajes de audio tendrÃ¡n una duraciÃ³n mÃ¡xima de:
+
+**3 minutos y 30 segundos**
+
+El backend deberÃ¡ comprobar la duraciÃ³n real del archivo.
+
+No se confiarÃ¡ Ãºnicamente en la informaciÃ³n proporcionada por el cliente.
+
+---
+
+# 14. Grupos / servidores
+
+## grupos
+
+Representa un grupo de usuarios.
+
+Un grupo tendrÃ¡:
+
+- id
+- nombre
+- descripciÃ³n
+- imagen
+- creador
+- fecha de creaciÃ³n
+- fecha de desapariciÃ³n opcional
+- tipo de grupo
+
+Los grupos pueden ser temporales.
+
+Ejemplo:
+
+"Quedada viernes"
+
+Fecha de desapariciÃ³n:
+
+domingo
+
+Cuando llegue la fecha configurada, el backend deberÃ¡ eliminar automÃ¡ticamente el grupo y los datos que correspondan.
+
+---
+
+# 15. Miembros de grupos
+
+## miembros_grupo
+
+Relaciona usuarios con grupos.
+
+Un usuario puede pertenecer a varios grupos.
+
+Un grupo puede tener muchos usuarios.
+
+RelaciÃ³n:
+
+usuarios N â”€â”€â”€â”€ N grupos
+
+La tabla intermedia `miembros_grupo` serÃ¡ la encargada de representar esta relaciÃ³n.
+
+---
+
+# 16. Grupos basados en amistades
+
+Algunos grupos podrÃ¡n crearse utilizando el sistema de aÃ±adir automÃ¡ticamente personas que ya son amigos del creador.
+
+En estos grupos se deberÃ¡ guardar informaciÃ³n suficiente para saber que la pertenencia de determinados miembros depende de esa relaciÃ³n de amistad.
+
+Si:
+
+- el grupo fue creado con este sistema
+- y el creador elimina de sus amigos a una persona aÃ±adida automÃ¡ticamente
+
+esa persona deberÃ¡ abandonar automÃ¡ticamente el grupo.
+
+En grupos que no dependan de esta relaciÃ³n:
+
+dejar de ser amigos no implica abandonar el grupo.
+
+---
+
+# 17. Abandonar grupos
+
+Un miembro puede abandonar voluntariamente un grupo.
+
+Esto elimina su pertenencia al grupo, pero no elimina necesariamente el grupo completo.
+
+El creador tambiÃ©n podrÃ¡ abandonar si la lÃ³gica del grupo lo permite, aunque posteriormente se deberÃ¡ decidir quÃ© ocurre con el liderazgo.
+
+---
+
+# 18. EliminaciÃ³n de grupos
+
+El creador podrÃ¡ eliminar un grupo.
+
+La eliminaciÃ³n deberÃ¡ encargarse tambiÃ©n de los datos dependientes del grupo.
+
+Ejemplos:
+
+- miembros
+- mensajes
+- encuestas
+- votos
+- multimedia asociada
+
+Los archivos almacenados fÃ­sicamente tambiÃ©n deberÃ¡n eliminarse cuando corresponda.
+
+---
+
+# 19. Mensajes de grupos
+
+## mensajes_grupo
+
+Representa mensajes dentro de un grupo.
+
+Los mensajes podrÃ¡n contener el tipo de contenido que definamos para los grupos durante la implementaciÃ³n.
+
+Los mensajes de grupo tendrÃ¡n una duraciÃ³n mÃ¡xima de:
+
+**48 horas**
+
+DespuÃ©s deberÃ¡n eliminarse automÃ¡ticamente.
+
+El servidor serÃ¡ responsable de realizar esta limpieza.
+
+---
+
+# 20. Encuestas
+
+## encuestas
+
+Cada grupo tendrÃ¡ siempre una encuesta activa.
+
+La encuesta aparecerÃ¡ fijada en la parte superior del chat del grupo.
+
+Una encuesta pertenece a un grupo.
+
+---
+
+# 21. Opciones de encuesta
+
+## opciones_encuesta
+
+Una encuesta puede tener varias opciones.
+
+Ejemplo:
+
+Â¿A quÃ© hora quedamos?
+
+- 19:00
+- 20:00
+- 21:00
+
+Las opciones pertenecen a una encuesta.
+
+---
+
+# 22. Votos
+
+## votos_encuesta
+
+Representa el voto de un usuario en una opciÃ³n de encuesta.
+
+Un usuario solamente podrÃ¡ votar segÃºn las reglas que definamos posteriormente.
+
+El diseÃ±o deberÃ¡ impedir votos duplicados no permitidos.
+
+---
+
+# 23. Publicaciones
+
+## publicaciones
+
+Representa una publicaciÃ³n creada por un usuario.
+
+Una publicaciÃ³n puede contener:
+
+- solamente texto
+- texto + imÃ¡genes
+- texto + vÃ­deo
+
+No se permite:
+
+- texto + imÃ¡genes + vÃ­deo
+
+### Publicaciones actuales
+
+Por ahora la visibilidad serÃ¡:
+
+**solo amigos**
+
+Sin embargo, la estructura deberÃ¡ permitir aÃ±adir posteriormente publicaciones pÃºblicas.
+
+Valores conceptuales previstos:
+
+- friends
+- public
+
+La opciÃ³n `public` no estarÃ¡ habilitada inicialmente.
+
+---
+
+# 24. ImÃ¡genes de publicaciones
+
+## multimedia_publicacion
+
+Una publicaciÃ³n puede contener hasta:
+
+**10 imÃ¡genes**
+
+Las imÃ¡genes estarÃ¡n relacionadas con la publicaciÃ³n mediante una entidad independiente.
+
+Esto permite guardar un nÃºmero variable de imÃ¡genes sin crear 10 columnas diferentes dentro de `publicaciones`.
+
+---
+
+# 25. VÃ­deos de publicaciones
+
+Una publicaciÃ³n puede contener como mÃ¡ximo:
+
+**1 vÃ­deo**
+
+DuraciÃ³n mÃ¡xima:
+
+**4 minutos**
+
+Una publicaciÃ³n no puede tener simultÃ¡neamente imÃ¡genes y vÃ­deo.
+
+El backend deberÃ¡ comprobar:
+
+- cantidad
+- tipo
+- tamaÃ±o
+- duraciÃ³n
+
+---
+
+# 26. EdiciÃ³n de publicaciones
+
+Las publicaciones:
+
+- No pueden editarse.
+- SÃ­ pueden eliminarse por su autor.
+
+---
+
+# 27. Comentarios
+
+## comentarios
+
+Representa un comentario de una publicaciÃ³n.
+
+Un comentario pertenece a:
+
+- una publicaciÃ³n
+- un usuario
+
+Puede comentar cualquier usuario que tenga permiso para ver la publicaciÃ³n.
+
+Actualmente, como las publicaciones son solo para amigos:
+
+solo los amigos podrÃ¡n verlas y comentarlas.
+
+Si posteriormente existen publicaciones pÃºblicas:
+
+los usuarios que puedan verlas podrÃ¡n comentarlas.
+
+---
+
+# 28. Corazones
+
+## corazones_publicacion
+
+Representa un "corazÃ³n" de una publicaciÃ³n.
+
+Un usuario solamente podrÃ¡ tener un corazÃ³n activo por publicaciÃ³n.
+
+La estructura deberÃ¡ impedir corazones duplicados.
+
+---
+
+# 29. Estados
+
+## estados
+
+Representa un estado creado por un usuario.
+
+Los estados aparecerÃ¡n en la secciÃ³n ENTRAR.
+
+Se organizarÃ¡n visualmente por usuario y mostrarÃ¡n su avatar.
+
+Actualmente los estados serÃ¡n visibles Ãºnicamente para amigos.
+
+La estructura deberÃ¡ permitir aÃ±adir posteriormente estados pÃºblicos.
+
+La duraciÃ³n exacta de los estados se decidirÃ¡ posteriormente.
+
+---
+
+# 30. Sistema de archivos
+
+## archivos
+
+Atuistas utilizarÃ¡ un sistema comÃºn para almacenar los archivos multimedia que necesita la aplicaciÃ³n.
+
+Los archivos fÃ­sicos no se almacenarÃ¡n directamente dentro de PostgreSQL.
+
+PostgreSQL almacenarÃ¡ los metadatos y la referencia al archivo.
+
+Ejemplos de archivos:
+
+- Avatares.
+- ImÃ¡genes de publicaciones.
+- VÃ­deos de publicaciones.
+- ImÃ¡genes de mensajes.
+- Audios de mensajes.
+- ImÃ¡genes de estados.
+- ImÃ¡genes de grupos.
+
+Datos previstos:
+
+- id
+- propietario_id
+- tipo
+- mime_type
+- nombre_original
+- tamaÃ±o
+- ruta
+- creado_en
+
+El backend serÃ¡ responsable de:
+
+- Validar el archivo.
+- Comprobar su tamaÃ±o.
+- Comprobar su tipo.
+- Generar una ruta segura.
+- Guardarlo en el almacenamiento.
+- Asociarlo con la entidad correspondiente.
+- Eliminarlo cuando deje de ser necesario.
+
+Los nombres originales de los archivos no se utilizarÃ¡n como rutas fÃ­sicas de almacenamiento para evitar conflictos y problemas de seguridad.
+
+La ruta fÃ­sica serÃ¡ generada por el servidor.
+
+---
+
+## RelaciÃ³n con otras entidades
+
+Los archivos podrÃ¡n estar relacionados con diferentes partes de Atuistas.
+
+Ejemplos:
+
+usuario
+â†’ avatar
+â†’ archivo
+
+publicaciÃ³n
+â†’ multimedia
+â†’ archivo
+
+mensaje
+â†’ multimedia
+â†’ archivo
+
+estado
+â†’ multimedia
+â†’ archivo
+
+grupo
+â†’ imagen
+â†’ archivo
+
+El diseÃ±o definitivo de estas relaciones se decidirÃ¡ durante la creaciÃ³n del esquema SQL.
+
+---
+
+## EliminaciÃ³n
+
+Cuando una entidad que utiliza un archivo se elimine, el backend deberÃ¡ determinar si el archivo ya no tiene ninguna referencia.
+
+Si no tiene ninguna referencia:
+
+- Se eliminarÃ¡ de PostgreSQL.
+- Se eliminarÃ¡ fÃ­sicamente del almacenamiento.
+
+No se deberÃ¡n acumular archivos huÃ©rfanos.
+
+---
+
+# 31. Notificaciones Push
+
+Los dispositivos podrÃ¡n registrar informaciÃ³n necesaria para recibir notificaciones Push.
+
+Un usuario puede tener varios dispositivos.
+
+La relaciÃ³n serÃ¡:
+
+usuario 1 â”€â”€â”€â”€ N dispositivos
+
+Cada dispositivo podrÃ¡ tener uno o varios identificadores necesarios para el sistema Push dependiendo de la tecnologÃ­a utilizada.
+
+---
+
+# 32. Relaciones principales
+
+Mapa conceptual:
+
+usuarios
+â”‚
+â”œâ”€â”€ sesiones
+â”‚
+â”œâ”€â”€ dispositivos
+â”‚
+â”œâ”€â”€ solicitudes_amistad
+â”‚
+â”œâ”€â”€ amistades
+â”‚
+â”œâ”€â”€ bloqueos
+â”‚
+â”œâ”€â”€ conversaciones_privadas
+â”‚   â””â”€â”€ mensajes_privados
+â”‚       â”œâ”€â”€ imÃ¡genes
+â”‚       â””â”€â”€ audios
+â”‚
+â”œâ”€â”€ grupos
+â”‚   â””â”€â”€ miembros_grupo
+â”‚       â””â”€â”€ mensajes_grupo
+â”‚
+â”œâ”€â”€ publicaciones
+â”‚   â”œâ”€â”€ multimedia
+â”‚   â”œâ”€â”€ comentarios
+â”‚   â””â”€â”€ corazones
+â”‚
+â””â”€â”€ estados
+    â””â”€â”€ multimedia
+
+grupos
+â””â”€â”€ encuestas
+    â”œâ”€â”€ opciones
+    â””â”€â”€ votos
+
+---
+
+# 33. Reglas importantes
+
+## Privacidad
+
+Actualmente:
+
+- Mensajes privados â†’ solamente entre amigos.
+- Publicaciones â†’ solamente amigos.
+- Estados â†’ solamente amigos.
+- Comentarios â†’ cualquier usuario que pueda ver la publicaciÃ³n.
+- Grupos â†’ dependen de la pertenencia al grupo.
+
+---
+
+## Seguridad
+
+Las reglas de acceso deberÃ¡n comprobarse siempre en el backend.
+
+Nunca se debe confiar en:
+
+- JavaScript del navegador.
+- botones ocultos.
+- datos enviados por el cliente.
+- identificadores proporcionados por el cliente.
+
+---
+
+# 34. EliminaciÃ³n de datos
+
+Cuando una relaciÃ³n o entidad se elimine, se deberÃ¡n estudiar sus datos dependientes.
+
+Ejemplos:
+
+Eliminar amistad
+â†’ conversaciÃ³n
+â†’ mensajes
+â†’ multimedia
+
+Eliminar grupo
+â†’ miembros
+â†’ mensajes
+â†’ encuestas
+â†’ votos
+â†’ multimedia
+
+La base de datos podrÃ¡ utilizar restricciones `FOREIGN KEY` y comportamientos `ON DELETE` cuando sean apropiados.
+
+Los archivos fÃ­sicos almacenados fuera de PostgreSQL necesitarÃ¡n ademÃ¡s limpieza mediante el backend.
+
+---
+
+# 35. Futuras ampliaciones previstas
+
+La arquitectura deberÃ¡ permitir aÃ±adir posteriormente:
+
+- publicaciones pÃºblicas
+- estados pÃºblicos
+- feed de publicaciones pÃºblicas
+- mÃ¡s tipos de contenido
+- nuevas configuraciones de privacidad
+- nuevas funciones sociales
+
+Estas funciones no forman parte de la primera versiÃ³n.
+
+---
+
+# 36. Estado del diseÃ±o
+
+Este documento describe el modelo conceptual.
+
+TodavÃ­a NO se han creado las tablas definitivas.
+
+Antes de crear el esquema SQL se revisarÃ¡n:
+
+- claves primarias
+- claves externas
+- Ã­ndices
+- restricciones `UNIQUE`
+- restricciones `CHECK`
+- relaciones
+- borrado en cascada
+- tipos de datos
+- almacenamiento multimedia
+
+Cualquier decisiÃ³n importante tomada durante esa fase deberÃ¡ actualizarse en este documento.

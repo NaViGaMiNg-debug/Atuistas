@@ -1,0 +1,5259 @@
+* {
+    box-sizing: border-box;
+}
+
+/*
+   El atributo `hidden` siempre debe ocultar.
+   Varias reglas usan `display: flex`, que de otro modo anula
+   el ocultado nativo y deja bloques visibles donde no toca.
+*/
+[hidden] {
+    display: none !important;
+}
+
+
+/* ==============================
+   VARIABLES GLOBALES
+   Todo el color, la sombra y el radio
+   salen de aquí para que el rediseño
+   sea coherente y fácil de mantener.
+   ============================== */
+
+:root {
+    /* Fondos, del más profundo al más elevado */
+    --fondo-base: #111;
+    --fondo-panel: #181818;
+    --fondo-elevado: #1f1f1f;
+    --fondo-hover: #242424;
+    --fondo-activo: #2b2b2b;
+    --fondo-burbuja-propia: #3a3a3a;
+    --fondo-burbuja-ajena: #252525;
+
+    /* Bordes */
+    --borde-suave: #2b2b2b;
+    --borde-medio: #333;
+    --borde-fuerte: #3d3d3d;
+
+    /* Texto */
+    --texto-principal: #fff;
+    --texto-secundario: #b3b3b3;
+    --texto-tenue: #929292;
+    --texto-apagado: #777;
+
+    /* Acento: único color de la interfaz */
+    --acento: #5865f2;
+    --acento-claro: #4752c4;
+    --acento-suave: rgba(88, 101, 242, 0.16);
+    --acento-texto: #ffffff;
+
+    /* Semánticos */
+    --peligro: #e0484c;
+    --peligro-suave: rgba(224, 72, 76, 0.16);
+    --aviso: #ffcf7a;
+    --aviso-fondo: #3d2a0f;
+    --exito: #3ba55d;
+
+    /* Acento en navegación */
+    --pestana-activa: #ffffff;
+    --pestana-linea: var(--acento);
+
+    /* Formas */
+    --radio-sm: 6px;
+    --radio-md: 10px;
+    --radio-lg: 14px;
+    --radio-full: 999px;
+
+    /* Sombras */
+    --sombra-fab: 0 8px 24px rgba(0, 0, 0, 0.45);
+    --sombra-flotante: 0 6px 18px rgba(0, 0, 0, 0.38);
+    --sombra-tarjeta: 0 1px 2px rgba(0, 0, 0, 0.3);
+
+    /* Movimiento */
+    --transicion-rapida: 0.12s ease-out;
+    --transicion-media: 0.2s ease;
+
+    /* Medidas del layout de servidores */
+    --ancho-columna-canales: 240px;
+    --alto-barra-contexto: 52px;
+}
+
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+    min-height: 100%;
+    font-family: Arial, sans-serif;
+    background: #111;
+    color: #fff;
+}
+
+
+body {
+    min-height: 100vh;
+    padding-bottom: 80px;
+}
+
+
+/* ==============================
+   BARRA SUPERIOR
+   ============================== */
+
+.barra-superior {
+    position: relative;
+    padding: 20px;
+    text-align: center;
+    border-bottom: 1px solid #2b2b2b;
+}
+
+
+.barra-superior h1 {
+    margin: 0;
+    font-size: 28px;
+}
+
+
+/* ==============================
+   CONTENIDO
+   ============================== */
+
+main {
+    width: 100%;
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 25px 20px;
+}
+
+
+h2 {
+    margin-top: 0;
+    font-size: 22px;
+}
+
+
+/* ==============================
+   ENTRAR
+   ============================== */
+
+#contenedor-horizontal-entrar {
+    width: 100%;
+    display: flex;
+    transition: transform 0.22s ease;
+
+    /*
+       Público existe a la derecha, pero no puede
+       aparecer asomándose mientras estamos en
+       "Mis amigos".
+    */
+    overflow: hidden;
+}
+
+
+.pagina-entrar {
+    width: 100%;
+    min-width: 100%;
+    flex: 0 0 100%;
+}
+
+
+/* ==============================
+   ESTADOS
+   ============================== */
+
+.seccion-estados {
+    width: 100%;
+    margin-bottom: 30px;
+}
+
+
+.seccion-estados h2 {
+    margin-bottom: 18px;
+    font-size: 22px;
+}
+
+
+/*
+   Fila horizontal de estados.
+*/
+
+.lista-estados {
+    width: 100%;
+
+    display: flex;
+    gap: 12px;
+
+    overflow-x: auto;
+
+    padding: 2px 2px 10px;
+
+    scrollbar-width: none;
+
+    /*
+       Permite deslizar las tarjetas cómodamente
+       en móvil.
+    */
+    -webkit-overflow-scrolling: touch;
+}
+
+.tarjeta-estado,
+.estado-texto-amigo {
+    position: relative;
+    flex: 0 0 135px;
+    width: 135px;
+    height: 240px;
+    aspect-ratio: 9 / 16;
+    overflow: hidden;
+    border: 1px solid #343434;
+    border-radius: 12px;
+}
+
+.tarjeta-estado {
+    padding: 12px;
+    background: #191919;
+    color: #fff;
+    cursor: pointer;
+}
+
+.tarjeta-mi-estado {
+    display: grid;
+    place-items: center;
+}
+
+.tarjeta-mi-estado > img {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    width: 42px;
+    height: 42px;
+    object-fit: cover;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    background: #181818;
+}
+
+.tarjeta-mi-estado > span {
+    position: relative;
+    z-index: 1;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    text-align: center;
+}
+
+.tarjeta-mi-estado > img:not([hidden]) ~ #texto-mi-estado {
+    align-self: end;
+    width: 100%;
+    padding: 28px 4px 4px;
+    background: linear-gradient(transparent, #000c);
+}
+
+.cantidad-estados {
+    position: absolute !important;
+    top: 9px;
+    right: 9px;
+    width: 26px;
+    height: 26px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: #101010cc;
+}
+
+
+.lista-estados::-webkit-scrollbar {
+    display: none;
+}
+
+
+/*
+   TARJETA DEL ESTADO
+*/
+
+.estado-amigo {
+    position: relative;
+
+    flex: 0 0 145px;
+
+    width: 145px;
+    height: 220px;
+
+    border-radius: 14px;
+
+    overflow: hidden;
+
+    background: #242424;
+
+    cursor: pointer;
+}
+
+
+/*
+   Imagen principal del estado.
+*/
+
+.estado-imagen {
+    position: relative;
+
+    width: 100%;
+    height: 100%;
+
+    overflow: hidden;
+
+    background: #242424;
+}
+
+
+.estado-imagen > img {
+    width: 100%;
+    height: 100%;
+
+    display: block;
+
+    object-fit: cover;
+
+    background: #242424;
+}
+
+
+/*
+   Oscurecemos ligeramente la parte inferior
+   para que el nombre se pueda leer encima
+   de cualquier imagen.
+*/
+
+.estado-imagen::after {
+    content: "";
+
+    position: absolute;
+
+    left: 0;
+    right: 0;
+    bottom: 0;
+
+    height: 65px;
+
+    background: linear-gradient(
+        transparent,
+        rgba(0, 0, 0, 0.8)
+    );
+
+    pointer-events: none;
+}
+
+
+/*
+   FOTO DE PERFIL PEQUEÑA
+   Arriba a la izquierda.
+*/
+
+.estado-avatar {
+    position: absolute;
+
+    top: 10px;
+    left: 10px;
+
+    z-index: 2;
+
+    width: 34px;
+    height: 34px;
+
+    padding: 2px;
+
+    border: 2px solid #fff;
+    border-radius: 50%;
+
+    background: #181818;
+
+    overflow: hidden;
+}
+
+
+.estado-avatar img {
+    width: 100%;
+    height: 100%;
+
+    display: block;
+
+    border-radius: 50%;
+
+    object-fit: cover;
+
+    background: #242424;
+}
+
+
+/*
+   NOMBRE DEL USUARIO
+   Abajo dentro de la tarjeta.
+*/
+
+.estado-amigo span {
+    position: absolute;
+
+    left: 10px;
+    right: 10px;
+    bottom: 9px;
+
+    z-index: 2;
+
+    width: auto;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+
+    white-space: nowrap;
+
+    color: #fff;
+
+    font-size: 13px;
+    font-weight: bold;
+
+    text-align: left;
+
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+}
+
+
+/*
+   Efecto visual al pasar el ratón.
+*/
+
+.estado-amigo:hover {
+    transform: translateY(-2px);
+}
+
+
+.estado-amigo {
+    transition: transform 0.15s ease;
+}
+
+
+/* ==============================
+   RECUADRO DE CHATS
+   ============================== */
+
+.seccion-chats {
+    width: 100%;
+    margin-bottom: 35px;
+}
+
+
+.contenedor-chats {
+    width: 100%;
+
+    padding: 18px;
+
+    border: 1px solid #2b2b2b;
+    border-radius: 16px;
+
+    background: #181818;
+}
+
+
+.cabecera-chats {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    margin-bottom: 10px;
+}
+
+
+.cabecera-chats h2 {
+    margin: 0;
+    font-size: 20px;
+}
+
+
+/* ==============================
+   LISTA DE CHATS
+   ============================== */
+
+.lista-chats {
+    width: 100%;
+
+    display: flex;
+    flex-direction: column;
+}
+
+
+.chat-amigo {
+    width: 100%;
+
+    display: flex;
+    align-items: center;
+
+    gap: 12px;
+
+    padding: 12px 4px;
+
+    border-bottom: 1px solid #2b2b2b;
+
+    cursor: pointer;
+}
+
+
+.chat-amigo:last-child {
+    border-bottom: none;
+}
+
+
+.chat-amigo:hover {
+    background: #202020;
+}
+
+.tarjeta-historia {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: stretch;
+    padding: 12px;
+    text-align: left;
+}
+
+.tarjeta-historia > .contenido-multimedia-social {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    max-height: none;
+    margin: 0;
+    border-radius: 0;
+    object-fit: cover;
+}
+
+.tarjeta-historia::after {
+    position: absolute;
+    inset: 35% 0 0;
+    z-index: 1;
+    content: "";
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.78));
+    pointer-events: none;
+}
+
+.avatar-historia {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 2;
+    width: 38px;
+    height: 38px;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    background: #181818;
+    object-fit: cover;
+}
+
+.avatar-historia-vacio {
+    display: block;
+}
+
+.nombre-historia,
+.tarjeta-historia-texto {
+    position: relative;
+    z-index: 2;
+    max-width: 100%;
+    overflow: hidden;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    text-shadow: 0 1px 5px rgba(0, 0, 0, 0.9);
+    white-space: nowrap;
+}
+
+.cantidad-historias {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 2;
+    min-width: 24px;
+    height: 24px;
+    display: grid;
+    place-items: center;
+    padding: 0 6px;
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.65);
+    color: #fff;
+    font-size: 11px;
+}
+
+
+.chat-avatar {
+    flex: 0 0 auto;
+
+    width: 48px;
+    height: 48px;
+
+    border-radius: 50%;
+
+    background: #242424;
+
+    overflow: hidden;
+}
+
+
+.chat-avatar img {
+    width: 100%;
+    height: 100%;
+
+    display: block;
+
+    object-fit: cover;
+}
+
+
+.chat-informacion {
+    min-width: 0;
+
+    flex: 1;
+}
+
+
+.chat-informacion strong {
+    display: block;
+
+    margin-bottom: 5px;
+
+    color: #ffffff;
+
+    font-size: 16px;
+}
+
+.chat-amigo-datos {
+    min-width: 0;
+    flex: 1;
+}
+
+.chat-amigo-datos strong {
+    display: block;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    font-size: 16px;
+}
+
+#chat-nombre {
+    color: #ffffff;
+}
+
+
+.chat-informacion p {
+    margin: 0;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+
+    white-space: nowrap;
+
+    color: #aaa;
+
+    font-size: 14px;
+}
+
+
+/* ==============================
+   VER MÁS CHATS
+   ============================== */
+
+.boton-ver-mas {
+    width: 100%;
+
+    margin-top: 12px;
+
+    padding: 11px 15px;
+
+    border: none;
+    border-radius: 10px;
+
+    background: #242424;
+
+    color: white;
+
+    font-size: 14px;
+    font-weight: bold;
+
+    cursor: pointer;
+}
+
+
+.boton-ver-mas:hover {
+    background: #333;
+}
+
+
+/* ==============================
+   PUBLICACIONES
+   ============================== */
+
+.seccion-publicaciones {
+    width: 100%;
+    margin-bottom: 35px;
+}
+
+
+.seccion-publicaciones h2 {
+    margin-bottom: 18px;
+    font-size: 22px;
+}
+
+
+.lista-publicaciones {
+    width: 100%;
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 18px;
+}
+
+
+/* ==============================
+   PUBLICACIÓN
+   ============================== */
+
+.publicacion {
+    width: 100%;
+
+    border: 1px solid #2b2b2b;
+    border-radius: 16px;
+
+    background: #181818;
+
+    overflow: hidden;
+}
+
+
+.publicacion-cabecera {
+    display: flex;
+    align-items: center;
+
+    gap: 12px;
+
+    padding: 15px;
+}
+
+
+.publicacion-avatar {
+    flex: 0 0 auto;
+
+    width: 44px;
+    height: 44px;
+
+    border-radius: 50%;
+
+    background: #242424;
+
+    overflow: hidden;
+}
+
+
+.publicacion-avatar img {
+    width: 100%;
+    height: 100%;
+
+    display: block;
+
+    object-fit: cover;
+}
+
+
+.publicacion-cabecera > div:last-child {
+    min-width: 0;
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 4px;
+}
+
+
+.publicacion-cabecera strong {
+    font-size: 16px;
+}
+
+
+.publicacion-cabecera span {
+    color: #888;
+    font-size: 13px;
+}
+
+
+.publicacion-contenido {
+    padding: 0 15px 15px;
+}
+
+
+.publicacion-contenido p {
+    margin: 0;
+
+    line-height: 1.5;
+
+    font-size: 15px;
+}
+
+
+/* ==============================
+   INTERACCIONES
+   ============================== */
+
+.publicacion-interacciones {
+    display: flex;
+    align-items: center;
+
+    gap: 8px;
+
+    padding: 10px 15px 13px;
+
+    border-top: 1px solid #2b2b2b;
+}
+
+
+.publicacion-interacciones button {
+    padding: 7px 10px;
+
+    border: none;
+    border-radius: 8px;
+
+    background: transparent;
+
+    color: #aaa;
+
+    cursor: pointer;
+
+    font-size: 14px;
+}
+
+
+.publicacion-interacciones button:hover {
+    background: #242424;
+    color: #fff;
+}
+
+
+/* ==============================
+   PÚBLICO
+   ============================== */
+
+/*
+   Público está preparado para estar a la derecha
+   de Mis amigos.
+
+   No debe aparecer nunca asomándose por el lateral.
+*/
+
+.pagina-publico {
+    width: 100%;
+    min-width: 100%;
+    flex: 0 0 100%;
+}
+
+
+.seccion-estados-publicos {
+    width: 100%;
+    margin-bottom: 30px;
+}
+
+
+.seccion-estados-publicos h2 {
+    margin-bottom: 18px;
+}
+
+
+/*
+   Los estados públicos utilizan exactamente
+   el mismo formato visual que los de amigos.
+*/
+
+.estado-publico .estado-avatar {
+    border-color: #aaa;
+}
+
+/* ==============================
+   AGREGAR AMIGOS
+   ============================== */
+
+#contenido-amigos {
+    width: 100%;
+}
+
+/*
+   CABECERA
+*/
+
+.cabecera-amigos {
+    width: 100%;
+    margin-bottom: 24px;
+}
+
+.cabecera-amigos h2 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+}
+
+/*
+   PESTAÑAS
+*/
+
+.pestanas-amigos {
+    width: 100%;
+    display: flex;
+    gap: 8px;
+    margin-bottom: 22px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #2b2b2b;
+}
+
+.pestana-amigos {
+    flex: 1;
+    min-height: 42px;
+    padding: 11px 10px;
+
+    border: 1px solid transparent;
+    border-radius: 10px;
+
+    background: #181818;
+    color: #888;
+
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+
+    cursor: pointer;
+
+    transition:
+        background 0.15s ease,
+        border-color 0.15s ease,
+        color 0.15s ease,
+        transform 0.15s ease;
+}
+
+.pestana-amigos:hover {
+    background: #202020;
+    color: #ddd;
+}
+
+.pestana-amigos:active {
+    transform: scale(0.98);
+}
+
+.pestana-amigos.activa {
+    background: #242424;
+    border-color: #333;
+    color: #fff;
+}
+
+/*
+   SECCIONES
+*/
+
+.seccion-amigos {
+    width: 100%;
+}
+
+.seccion-amigos[hidden] {
+    display: none;
+}
+
+/*
+   BUSCADOR
+*/
+
+.buscador-amigos {
+    width: 100%;
+    margin-bottom: 14px;
+}
+
+#buscador-personas {
+    box-sizing: border-box;
+
+    width: 100%;
+    min-height: 48px;
+
+    padding: 13px 16px;
+
+    border: 1px solid #333;
+    border-radius: 12px;
+
+    background: #181818;
+    color: #fff;
+
+    font-family: Arial, sans-serif;
+    font-size: 15px;
+
+    outline: none;
+
+    transition:
+        background 0.15s ease,
+        border-color 0.15s ease,
+        box-shadow 0.15s ease;
+}
+
+#buscador-personas::placeholder {
+    color: #707070;
+}
+
+#buscador-personas:hover {
+    background: #1b1b1b;
+    border-color: #3a3a3a;
+}
+
+#buscador-personas:focus {
+    background: #1c1c1c;
+    border-color: #4a4a4a;
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.04);
+}
+
+/*
+   MENSAJES DE ESTADO
+*/
+
+.estado-amigos {
+    margin: 18px 0;
+
+    color: #777;
+
+    font-size: 13px;
+    line-height: 1.5;
+
+    text-align: center;
+}
+
+/*
+   LISTAS
+*/
+
+.lista-personas,
+.lista-solicitudes {
+    width: 100%;
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 10px;
+}
+
+/*
+   RESULTADO DE PERSONA
+   Estas son las clases que realmente genera app.js
+*/
+
+.persona-resultado {
+    box-sizing: border-box;
+
+    width: 100%;
+
+    display: flex;
+    align-items: center;
+
+    gap: 12px;
+
+    padding: 12px;
+
+    border: 1px solid #2b2b2b;
+    border-radius: 14px;
+
+    background: #181818;
+
+    transition:
+        background 0.15s ease,
+        border-color 0.15s ease,
+        transform 0.15s ease;
+}
+
+.persona-resultado:hover {
+    background: #1d1d1d;
+    border-color: #383838;
+}
+
+.persona-resultado:active {
+    transform: scale(0.995);
+}
+
+/*
+   INFORMACIÓN DEL RESULTADO
+*/
+
+.persona-resultado-info {
+    min-width: 0;
+    flex: 1;
+
+    display: flex;
+    align-items: center;
+
+    gap: 12px;
+}
+
+/*
+   AVATAR
+*/
+
+.persona-resultado-avatar {
+    flex: 0 0 auto;
+
+    width: 50px;
+    height: 50px;
+
+    border-radius: 50%;
+
+    background: #242424;
+
+    overflow: hidden;
+
+    box-shadow:
+        0 0 0 1px #303030;
+}
+
+.persona-resultado-avatar img {
+    width: 100%;
+    height: 100%;
+
+    display: block;
+
+    object-fit: cover;
+}
+
+/*
+   DATOS
+*/
+
+.persona-resultado-datos {
+    min-width: 0;
+    flex: 1;
+}
+
+.persona-resultado-datos strong {
+    display: block;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    font-size: 15px;
+    font-weight: 700;
+}
+
+/*
+   BOTÓN AGREGAR
+*/
+
+.boton-enviar-solicitud {
+    flex: 0 0 auto;
+
+    min-height: 36px;
+
+    padding: 8px 13px;
+
+    border: 1px solid #333;
+    border-radius: 9px;
+
+    background: #242424;
+    color: #fff;
+
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+
+    cursor: pointer;
+
+    transition:
+        background 0.15s ease,
+        border-color 0.15s ease,
+        color 0.15s ease,
+        opacity 0.15s ease,
+        transform 0.15s ease;
+}
+
+.boton-enviar-solicitud:hover {
+    background: #303030;
+    border-color: #424242;
+}
+
+.boton-enviar-solicitud:active {
+    transform: scale(0.97);
+}
+
+.boton-enviar-solicitud:disabled {
+    opacity: 0.55;
+    cursor: default;
+}
+
+.boton-enviar-solicitud:disabled:hover {
+    background: #242424;
+    border-color: #333;
+}
+
+/*
+   SOLICITUD DE AMISTAD
+   Estas son las clases que realmente genera app.js
+*/
+
+.solicitud-amistad {
+    box-sizing: border-box;
+
+    width: 100%;
+
+    display: flex;
+    align-items: center;
+
+    gap: 12px;
+
+    padding: 12px;
+
+    border: 1px solid #2b2b2b;
+    border-radius: 14px;
+
+    background: #181818;
+
+    transition:
+        background 0.15s ease,
+        border-color 0.15s ease;
+}
+
+.solicitud-amistad:hover {
+    background: #1d1d1d;
+    border-color: #383838;
+}
+
+/*
+   INFORMACIÓN DE LA SOLICITUD
+*/
+
+.solicitud-amistad-info {
+    min-width: 0;
+    flex: 1;
+
+    display: flex;
+    align-items: center;
+
+    gap: 12px;
+}
+
+/*
+   AVATAR DE LA SOLICITUD
+*/
+
+.solicitud-amistad-avatar {
+    flex: 0 0 auto;
+
+    width: 50px;
+    height: 50px;
+
+    border-radius: 50%;
+
+    background: #242424;
+
+    overflow: hidden;
+
+    box-shadow:
+        0 0 0 1px #303030;
+}
+
+.solicitud-amistad-avatar img {
+    width: 100%;
+    height: 100%;
+
+    display: block;
+
+    object-fit: cover;
+}
+
+/*
+   DATOS DE LA SOLICITUD
+*/
+
+.solicitud-amistad-datos {
+    min-width: 0;
+    flex: 1;
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 4px;
+}
+
+.solicitud-amistad-datos strong {
+    display: block;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    font-size: 15px;
+    font-weight: 700;
+}
+
+/*
+   BOTONES DE SOLICITUD
+*/
+
+.solicitud-amistad-acciones {
+    flex: 0 0 auto;
+
+    display: flex;
+    align-items: center;
+
+    gap: 7px;
+}
+
+.solicitud-amistad-acciones button {
+    min-height: 34px;
+
+    padding: 7px 11px;
+
+    border: 1px solid #333;
+    border-radius: 9px;
+
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+
+    cursor: pointer;
+
+    transition:
+        background 0.15s ease,
+        border-color 0.15s ease,
+        color 0.15s ease,
+        transform 0.15s ease;
+}
+
+.solicitud-amistad-acciones button:active {
+    transform: scale(0.97);
+}
+
+/*
+   ACEPTAR
+*/
+
+.boton-aceptar-solicitud {
+    background: #242424;
+    border-color: #363636 !important;
+    color: #fff;
+}
+
+.boton-aceptar-solicitud:hover {
+    background: #303030;
+    border-color: #454545 !important;
+}
+
+/*
+   RECHAZAR
+*/
+
+.boton-rechazar-solicitud {
+    background: #1b1b1b;
+    border-color: #2b2b2b !important;
+    color: #999 !important;
+}
+
+.boton-rechazar-solicitud:hover {
+    background: #252525;
+    border-color: #383838 !important;
+    color: #fff !important;
+}
+
+/* ==============================
+   AMIGOS — COMPATIBILIDAD
+   ============================== */
+
+#lista-amigos {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+
+.amigo {
+    padding: 15px;
+
+    border: 1px solid #2b2b2b;
+    border-radius: 12px;
+
+    background: #1a1a1a;
+}
+
+
+.amigo strong {
+    font-size: 18px;
+}
+
+
+.amigo p {
+    margin: 6px 0 0;
+
+    color: #aaa;
+}
+
+
+/* ==============================
+   NAVEGACIÓN
+   ============================== */
+
+.barra-navegacion {
+    position: fixed;
+
+    bottom: 0;
+    left: 0;
+
+    width: 100%;
+
+    display: flex;
+    justify-content: center;
+
+    gap: 8px;
+
+    padding: 12px;
+
+    background: #151515;
+
+    border-top: 1px solid #2b2b2b;
+}
+
+
+.barra-navegacion button {
+    border: none;
+    border-radius: 10px;
+
+    padding: 10px 14px;
+
+    background: #242424;
+
+    color: #fff;
+
+    cursor: pointer;
+}
+
+
+.barra-navegacion button:hover {
+    background: #333;
+}
+
+
+#boton-cuenta {
+    font-weight: bold;
+}
+
+
+/* ==============================
+   PANTALLA DE ACCESO
+   ============================== */
+
+#pantalla-acceso {
+    min-height: 100vh;
+
+    display: flex;
+    flex-direction: column;
+
+    align-items: center;
+    justify-content: center;
+
+    padding: 30px;
+}
+
+
+#pantalla-acceso[hidden] {
+    display: none;
+}
+
+
+/* ==============================
+   PANTALLA INICIAL
+   ============================== */
+
+#acceso-inicial {
+    width: 100%;
+    max-width: 360px;
+
+    display: flex;
+    flex-direction: column;
+
+    align-items: center;
+}
+
+
+#acceso-inicial[hidden] {
+    display: none;
+}
+
+
+#acceso-inicial h1 {
+    margin: 0 0 40px;
+
+    font-size: 42px;
+}
+
+
+#acceso-inicial p {
+    margin: 25px 0 10px;
+
+    color: #aaa;
+}
+
+
+#acceso-inicial button {
+    width: 220px;
+
+    padding: 14px 20px;
+
+    border: none;
+    border-radius: 12px;
+
+    background: #242424;
+
+    color: white;
+
+    font-size: 16px;
+    font-weight: bold;
+
+    cursor: pointer;
+}
+
+
+#acceso-inicial button:hover {
+    background: #333;
+}
+
+
+/* ==============================
+   LOGIN Y REGISTRO
+   ============================== */
+
+#acceso-login,
+#acceso-registro {
+    width: 100%;
+    max-width: 360px;
+
+    display: flex;
+    flex-direction: column;
+
+    align-items: center;
+}
+
+
+#acceso-login[hidden],
+#acceso-registro[hidden] {
+    display: none;
+}
+
+
+#acceso-login h1,
+#acceso-registro h1 {
+    margin: 0 0 30px;
+
+    font-size: 32px;
+}
+
+
+/* ==============================
+   BOTÓN VOLVER
+   ============================== */
+
+.boton-volver {
+    align-self: flex-start !important;
+
+    width: auto !important;
+
+    margin-bottom: 20px;
+
+    padding: 5px 10px !important;
+
+    border: none !important;
+
+    background: transparent !important;
+
+    color: white !important;
+
+    font-size: 30px !important;
+    font-weight: normal !important;
+
+    cursor: pointer;
+}
+
+
+.boton-volver:hover {
+    background: #242424 !important;
+}
+
+
+/* ==============================
+   FORMULARIOS
+   ============================== */
+
+#formulario-login,
+#formulario-registro {
+    width: 100%;
+    max-width: 320px;
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 10px;
+}
+
+
+#formulario-login label,
+#formulario-registro label {
+    margin-top: 5px;
+
+    color: #aaa;
+
+    font-size: 14px;
+}
+
+
+#formulario-login input,
+#formulario-registro input {
+    width: 100%;
+
+    padding: 13px;
+
+    border: 1px solid #333;
+    border-radius: 10px;
+
+    background: #1a1a1a;
+
+    color: white;
+
+    font-size: 16px;
+
+    outline: none;
+}
+
+
+#formulario-login input:focus,
+#formulario-registro input:focus {
+    border-color: #555;
+}
+
+
+#formulario-login button[type="submit"],
+#formulario-registro button[type="submit"] {
+    width: 100%;
+
+    margin-top: 10px;
+
+    padding: 14px 20px;
+
+    border: none;
+    border-radius: 12px;
+
+    background: #242424;
+
+    color: white;
+
+    font-size: 16px;
+    font-weight: bold;
+
+    cursor: pointer;
+}
+
+
+#formulario-login button[type="submit"]:hover,
+#formulario-registro button[type="submit"]:hover {
+    background: #333;
+}
+
+
+/* ==============================
+   ERRORES
+   ============================== */
+
+#error-login,
+#error-registro {
+    min-height: 20px;
+
+    margin: 5px 0 0;
+
+    color: #ff6b6b;
+
+    text-align: center;
+}
+
+
+/* ==============================
+   CÓDIGO DE VINCULACIÓN
+   ============================== */
+
+#codigo-generado {
+    width: 100%;
+    max-width: 360px;
+
+    display: flex;
+    flex-direction: column;
+
+    align-items: center;
+}
+
+
+#codigo-generado[hidden] {
+    display: none;
+}
+
+
+#codigo-generado h2 {
+    margin: 0 0 25px;
+
+    font-size: 24px;
+
+    text-align: center;
+}
+
+
+.codigo-contenedor {
+    width: 100%;
+
+    display: flex;
+    align-items: center;
+
+    padding: 14px 16px;
+
+    border: 1px solid #333;
+    border-radius: 12px;
+
+    background: #1a1a1a;
+}
+
+
+#codigo-generado-texto {
+    flex: 1;
+
+    margin: 0 !important;
+
+    color: white !important;
+
+    font-size: 18px;
+    font-weight: bold;
+
+    letter-spacing: 1px;
+
+    text-align: center;
+}
+
+
+#boton-copiar-codigo {
+    width: auto !important;
+
+    margin-left: 10px;
+
+    padding: 5px !important;
+
+    border: none !important;
+    border-radius: 8px;
+
+    background: transparent !important;
+
+    color: white !important;
+
+    font-size: 20px !important;
+
+    cursor: pointer;
+}
+
+
+#boton-copiar-codigo:hover {
+    background: #242424 !important;
+}
+
+
+#codigo-generado > p {
+    margin: 20px 0;
+
+    color: #aaa;
+
+    line-height: 1.5;
+
+    text-align: center;
+}
+
+
+#boton-continuar-registro {
+    width: 220px;
+
+    padding: 14px 20px;
+
+    border: none;
+    border-radius: 12px;
+
+    background: #242424;
+
+    color: white;
+
+    font-size: 16px;
+    font-weight: bold;
+
+    cursor: pointer;
+}
+
+
+#boton-continuar-registro:hover {
+    background: #333;
+}
+
+
+/* ==============================
+   CUENTA
+   ============================== */
+
+#contenido-cuenta {
+    width: 100%;
+}
+
+
+#contenido-cuenta[hidden],
+#contenido-amigos[hidden],
+#contenido-servidores[hidden],
+#panel-inicio-entrar[hidden],
+#contenido-entrar[hidden],
+#contenido-publico[hidden] {
+    display: none;
+}
+
+.lista-servidores {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.servidor-item {
+    width: 100%;
+    min-height: 68px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px;
+    border: 1px solid #303030;
+    border-radius: 10px;
+    background: #181818;
+    color: #fff;
+    text-align: left;
+}
+
+button.servidor-item {
+    cursor: pointer;
+}
+
+.servidor-item-datos {
+    min-width: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.servidor-item-datos span,
+.servidor-item-meta,
+.cabecera-servidor p {
+    color: #929292;
+    font-size: 13px;
+}
+
+.servidor-item-datos span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.servidor-item-meta {
+    white-space: nowrap;
+}
+
+.entrada-servidores,
+.formulario-servidor input,
+.formulario-servidor textarea,
+.formulario-servidor select,
+.formulario-mensaje-servidor input {
+    width: 100%;
+    min-height: 44px;
+    margin: 6px 0 14px;
+    padding: 11px 13px;
+    border: 1px solid #333;
+    border-radius: 9px;
+    background: #181818;
+    color: #fff;
+    font: inherit;
+}
+
+.formulario-servidor {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 16px 0;
+}
+
+.formulario-servidor button,
+.servidor-item button,
+.cabecera-servidor button,
+.formulario-mensaje-servidor button {
+    min-height: 40px;
+    padding: 9px 14px;
+    border: 1px solid #383838;
+    border-radius: 8px;
+    background: #242424;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.panel-servidor {
+    width: 100%;
+}
+
+.cabecera-servidor {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid #2b2b2b;
+}
+
+.cabecera-servidor > div {
+    min-width: 0;
+    flex: 1;
+}
+
+.cabecera-servidor h3,
+.cabecera-servidor p {
+    margin: 0;
+}
+
+.cabecera-servidor p {
+    margin-top: 5px;
+}
+
+.mensajes-servidor {
+    height: min(42vh, 420px);
+    min-height: 220px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px 0;
+}
+
+.mensaje-servidor {
+    max-width: 88%;
+    align-self: flex-start;
+    padding: 10px 12px;
+    border-radius: 9px;
+    background: #202020;
+}
+
+.mensaje-servidor.propio {
+    align-self: flex-end;
+    background: #292929;
+}
+
+.mensaje-servidor-cabecera {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    font-size: 12px;
+}
+
+.mensaje-servidor time,
+.mensaje-servidor small {
+    color: #999;
+    font-size: 11px;
+}
+
+.mensaje-servidor p {
+    margin: 7px 0;
+    overflow-wrap: anywhere;
+}
+
+.boton-responder-servidor {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #aaa;
+    font-size: 10px;
+    cursor: pointer;
+}
+
+.formulario-mensaje-servidor {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    position: sticky;
+    bottom: 0;
+    padding-top: 8px;
+    background: #111;
+}
+
+.formulario-mensaje-servidor input {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+}
+
+@media (max-width: 480px) {
+    .servidor-item {
+        flex-wrap: wrap;
+    }
+
+    .servidor-item-meta {
+        margin-left: auto;
+    }
+
+    .cabecera-servidor {
+        flex-wrap: wrap;
+    }
+}
+
+/* ========================================
+   SERVIDORES: BARRA DE CONTEXTO, TARJETAS,
+   COLUMNA DE CANALES Y BOTÓN FLOTANTE
+   ======================================== */
+
+.barra-contexto-servidor {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: var(--alto-barra-contexto);
+    padding: 8px 4px;
+    background: var(--fondo-base);
+    border-bottom: 1px solid var(--borde-suave);
+}
+
+.boton-flecha-contexto {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    flex: 0 0 36px;
+    border: none;
+    border-radius: var(--radio-sm);
+    background: transparent;
+    color: var(--texto-secundario);
+    cursor: pointer;
+    transition: background var(--transicion-rapida), color var(--transicion-rapida);
+}
+
+.boton-flecha-contexto:hover {
+    background: var(--fondo-hover);
+    color: var(--texto-principal);
+}
+
+.barra-contexto-datos {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.barra-contexto-textos {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    gap: 1px;
+}
+
+/* Foto del servidor en la barra de contexto. Sin foto se ve la inicial.
+   El selector es específico para no heredar el estilo de los subtítulos. */
+
+.barra-contexto-datos .avatar-contexto-servidor {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    flex: 0 0 38px;
+    overflow: hidden;
+    border-radius: var(--radio-lg);
+    background: var(--fondo-activo);
+    color: var(--texto-principal);
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.barra-contexto-datos .avatar-contexto-servidor[hidden] {
+    display: none;
+}
+
+.avatar-contexto-servidor img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.barra-contexto-datos strong {
+    font-size: 15px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.barra-contexto-datos span {
+    font-size: 12px;
+    color: var(--texto-tenue);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.barra-contexto-acciones {
+    margin-left: auto;
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+/* Botones de acción de la barra (Miembros, Ajustes, Salir, Eliminar). */
+.barra-contexto-acciones button {
+    min-height: 34px;
+    padding: 0 12px;
+    border: 1px solid var(--borde-medio);
+    border-radius: var(--radio-sm);
+    background: var(--fondo-panel);
+    color: var(--texto-secundario);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    cursor: pointer;
+    transition:
+        background var(--transicion-rapida),
+        color var(--transicion-rapida),
+        border-color var(--transicion-rapida);
+}
+
+.barra-contexto-acciones button:hover {
+    background: var(--fondo-hover);
+    color: var(--texto-principal);
+    border-color: var(--borde-fuerte);
+}
+
+#boton-eliminar-servidor {
+    color: var(--peligro);
+    border-color: var(--peligro-suave);
+}
+
+#boton-eliminar-servidor:hover {
+    background: var(--peligro-suave);
+    border-color: var(--peligro);
+    color: #fff;
+}
+
+@media (max-width: 700px) {
+    .barra-contexto-servidor {
+        gap: 6px;
+        padding: 8px 0;
+    }
+
+    .barra-contexto-acciones button {
+        padding: 0 9px;
+        font-size: 11px;
+    }
+}
+
+/* ---------- Tarjetas ---------- */
+
+.lista-servidores {
+    display: grid;
+    gap: 10px;
+}
+
+.servidor-tarjeta {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 1px solid var(--borde-suave);
+    border-radius: var(--radio-md);
+    background: var(--fondo-panel);
+    transition: background var(--transicion-media), border-color var(--transicion-media);
+}
+
+/* Las tarjetas de "mis servidores" son un botón entero:
+   se entra al servidor pulsando cualquier punto de la tarjeta. */
+button.servidor-tarjeta {
+    width: 100%;
+    font: inherit;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+button.servidor-tarjeta:focus-visible {
+    outline: 2px solid var(--acento);
+    outline-offset: 2px;
+}
+
+.servidor-tarjeta:hover {
+    background: var(--fondo-elevado);
+    border-color: var(--borde-medio);
+}
+
+.servidor-tarjeta-icono {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 46px;
+    height: 46px;
+    flex: 0 0 46px;
+    border-radius: var(--radio-lg);
+    overflow: hidden;
+    background: var(--fondo-activo);
+}
+
+.servidor-tarjeta-imagen {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.servidor-tarjeta-inicial {
+    font-size: 19px;
+    font-weight: 700;
+    color: var(--texto-secundario);
+}
+
+.servidor-tarjeta-datos {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+    flex: 1;
+}
+
+.servidor-tarjeta-datos strong {
+    font-size: 15px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.servidor-tarjeta-preview {
+    font-size: 13px;
+    color: var(--texto-tenue);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.servidor-tarjeta-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--texto-apagado);
+}
+
+.servidor-tarjeta-contador {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: var(--radio-full);
+    background: var(--acento);
+    color: var(--acento-texto);
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.servidor-tarjeta-acciones {
+    display: flex;
+    gap: 8px;
+    flex: 0 0 auto;
+}
+
+.servidor-tarjeta-acciones button {
+    min-height: 34px;
+    padding: 0 14px;
+    border: 1px solid var(--borde-medio);
+    border-radius: var(--radio-sm);
+    background: var(--fondo-hover);
+    color: var(--texto-principal);
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background var(--transicion-rapida), border-color var(--transicion-rapida);
+}
+
+.servidor-tarjeta-acciones button:hover {
+    background: var(--fondo-activo);
+    border-color: var(--acento);
+}
+
+/* ---------- Botón flotante ---------- */
+
+.boton-flotante-crear {
+    position: fixed;
+    right: 22px;
+    bottom: 96px;
+    z-index: 40;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    border: none;
+    border-radius: var(--radio-full);
+    background: var(--acento);
+    color: var(--acento-texto);
+    box-shadow: var(--sombra-fab);
+    cursor: pointer;
+    transition: transform var(--transicion-media), background var(--transicion-media);
+}
+
+.boton-flotante-crear:hover {
+    background: var(--acento-claro);
+    transform: translateY(-2px);
+}
+
+.boton-flotante-crear:active {
+    transform: translateY(0);
+}
+
+/* ---------- Columna de canales + chat ---------- */
+
+.panel-servidor {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    width: 100%;
+}
+
+.columna-canales {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    max-width: 100%;
+    padding: 10px;
+    background: var(--fondo-panel);
+    border: 1px solid var(--borde-suave);
+    border-radius: var(--radio-md);
+}
+
+.columna-canales[hidden] {
+    display: none;
+}
+
+.lista-canales {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.canal-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    width: 100%;
+    min-height: 38px;
+    padding: 8px 10px;
+    border: none;
+    border-radius: var(--radio-sm);
+    background: transparent;
+    color: var(--texto-tenue);
+    font-size: 14px;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+    transition: background var(--transicion-rapida), color var(--transicion-rapida);
+}
+
+.canal-item:hover {
+    background: var(--fondo-hover);
+    color: var(--texto-principal);
+}
+
+.canal-item.activo {
+    background: var(--fondo-activo);
+    color: var(--texto-principal);
+}
+
+.canal-item-hash {
+    color: var(--texto-apagado);
+    font-weight: 700;
+}
+
+.canal-item.activo .canal-item-hash {
+    color: var(--acento);
+}
+
+.canal-item-nombre {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.acciones-columna-canales {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: auto;
+    padding-top: 10px;
+}
+
+.zona-chat-servidor {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+}
+
+.zona-chat-servidor[hidden] {
+    display: none;
+}
+
+/* ---------- Escritorio: dos columnas ---------- */
+
+@media (min-width: 1000px) {
+    .panel-servidor {
+        gap: 14px;
+    }
+
+    .columna-canales {
+        width: var(--ancho-columna-canales);
+        flex: 0 0 var(--ancho-columna-canales);
+        border-radius: var(--radio-lg);
+    }
+
+    .lista-servidores {
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    }
+
+    /* La sección de servidores aprovecha el ancho útil de la pantalla:
+       la lista se reparte en varias columnas (y una sola tarjeta se
+       estira a todo el ancho) en vez de quedarse en la franja de 700px. */
+    body.vista-servidores #app,
+    body.vista-servidores #contenido-principal {
+        max-width: 100%;
+    }
+}
+
+/* ---------- Composer: micrófono, adjuntos y grabación ----------
+
+   Los dos composers (chat privado y servidor) comparten estas clases.
+   El chip del adjunto y la fila de grabación ocupan una línea propia,
+   por eso el formulario envuelve con flex-wrap y el botón de acción
+   se mantiene en la primera línea. */
+
+.formulario-mensaje,
+.formulario-mensaje-servidor {
+    flex-wrap: wrap;
+}
+
+.composer-adjuntos {
+    position: relative;
+
+    display: flex;
+
+    align-items: center;
+
+    flex: 0 0 auto;
+}
+
+.boton-mas-composer {
+    display: inline-flex;
+
+    align-items: center;
+    justify-content: center;
+
+    width: 40px;
+    height: 40px;
+
+    padding: 0;
+
+    border: none;
+    border-radius: var(--radio-full);
+
+    background: transparent;
+    color: var(--texto-tenue);
+
+    cursor: pointer;
+
+    transition: background var(--transicion-rapida), color var(--transicion-rapida);
+}
+
+.boton-mas-composer:hover,
+.boton-mas-composer[aria-expanded="true"] {
+    background: var(--fondo-hover);
+    color: var(--texto-principal);
+}
+
+/* El menú de fotos, vídeos y audios se abre hacia arriba para no salirse
+   de la pantalla en el composer de abajo. */
+
+.menu-adjuntar {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 0;
+    z-index: 40;
+
+    display: flex;
+    flex-direction: column;
+
+    min-width: 148px;
+
+    padding: 6px;
+
+    border: 1px solid var(--borde-medio);
+    border-radius: var(--radio-md);
+
+    background: var(--fondo-elevado);
+
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+}
+
+.menu-adjuntar[hidden] {
+    display: none;
+}
+
+.menu-adjuntar button {
+    min-height: 0;
+
+    padding: 9px 12px;
+
+    border: none;
+    border-radius: var(--radio-sm);
+
+    background: transparent;
+    color: var(--texto-principal);
+
+    font-size: 11px;
+    font-weight: 700;
+    text-align: left;
+
+    cursor: pointer;
+}
+
+.menu-adjuntar button:hover {
+    background: var(--fondo-hover);
+}
+
+/* Botón que hace de micrófono, de enviar y de parar la grabación. */
+
+.boton-accion-composer {
+    display: inline-flex;
+
+    align-items: center;
+    justify-content: center;
+
+    width: 40px;
+    height: 40px;
+
+    flex: 0 0 40px;
+
+    margin-left: auto;
+    padding: 0;
+
+    border: none;
+    border-radius: var(--radio-full);
+
+    background: var(--fondo-hover);
+    color: var(--texto-principal);
+
+    cursor: pointer;
+
+    transition: background var(--transicion-rapida), color var(--transicion-rapida);
+}
+
+.boton-accion-composer:hover:not(:disabled) {
+    background: var(--fondo-activo);
+}
+
+.boton-accion-composer:disabled {
+    opacity: 0.55;
+    cursor: progress;
+}
+
+/* Con texto o adjunto listo el botón ya envía. */
+
+.boton-accion-composer.activo {
+    background: var(--acento);
+    color: var(--acento-texto);
+}
+
+/* Grabando: el botón para la grabación y parpadea en rojo. */
+
+.boton-accion-composer.grabando {
+    background: var(--peligro);
+    color: #ffffff;
+    animation: latido-grabacion 1.1s ease-in-out infinite;
+}
+
+@keyframes latido-grabacion {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.55;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .boton-accion-composer.grabando {
+        animation: none;
+    }
+}
+
+/* Nombre del archivo adjunto y avisos de error, sobre la caja. */
+
+.chip-adjunto {
+    order: 10;
+
+    display: flex;
+
+    align-items: center;
+
+    width: 100%;
+
+    margin: 0;
+
+    padding: 7px 12px;
+
+    border: 1px solid var(--borde-suave);
+    border-radius: var(--radio-sm);
+
+    background: var(--fondo-hover);
+
+    color: var(--texto-secundario);
+
+    font-size: 12px;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.chip-adjunto[hidden] {
+    display: none;
+}
+
+.chip-adjunto-error {
+    border-color: var(--peligro);
+    background: var(--peligro-suave);
+    color: var(--peligro);
+}
+
+/* Fila de grabación: punto rojo, tiempo y botón de borrar. */
+
+.fila-grabacion {
+    order: 20;
+
+    display: flex;
+
+    align-items: center;
+    gap: 10px;
+
+    width: 100%;
+
+    padding: 6px 12px;
+
+    border: 1px solid var(--peligro-suave);
+    border-radius: var(--radio-full);
+
+    background: var(--fondo-hover);
+}
+
+.fila-grabacion[hidden] {
+    display: none;
+}
+
+.grabacion-punto {
+    width: 9px;
+    height: 9px;
+
+    flex: 0 0 9px;
+
+    border-radius: var(--radio-full);
+
+    background: var(--peligro);
+
+    animation: latido-grabacion 1.1s ease-in-out infinite;
+}
+
+.grabacion-tiempo {
+    color: var(--texto-principal);
+
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+}
+
+.boton-descartar-grabacion {
+    min-height: 0;
+
+    margin-left: auto;
+    padding: 5px 12px;
+
+    border: 1px solid var(--borde-medio);
+    border-radius: var(--radio-full);
+
+    background: transparent;
+    color: var(--texto-secundario);
+
+    font-size: 10px;
+    font-weight: 700;
+
+    cursor: pointer;
+}
+
+.boton-descartar-grabacion:hover {
+    border-color: var(--peligro);
+    color: var(--peligro);
+}
+
+/* Pestaña de "oculto" junto al botón de enviar, solo en servidores. */
+
+.pastilla-oculto {
+    display: inline-flex;
+
+    align-items: center;
+    gap: 5px;
+
+    flex: 0 0 auto;
+
+    padding: 0 11px;
+
+    border: 1px solid var(--borde-medio);
+    border-radius: var(--radio-full);
+
+    background: transparent;
+    color: var(--texto-tenue);
+
+    font-size: 10px;
+    font-weight: 700;
+
+    cursor: pointer;
+}
+
+.pastilla-oculto[hidden] {
+    display: none;
+}
+
+.pastilla-oculto:hover {
+    background: var(--fondo-hover);
+    color: var(--texto-principal);
+}
+
+.pastilla-oculto.activo {
+    border-color: var(--acento);
+    background: var(--acento-suave);
+    color: var(--acento-claro);
+}
+
+/* ---------- Burbujas con lenguaje de chat privado ---------- */
+
+.mensajes-servidor {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.mensaje-chat.mensaje-chat-recibido,
+.mensaje-chat.mensaje-chat-enviado {
+    max-width: min(75%, 520px);
+    align-self: flex-start;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    background: var(--fondo-burbuja-ajena);
+    color: var(--texto-principal);
+}
+
+.mensaje-chat.mensaje-chat-enviado {
+    align-self: flex-end;
+    background: var(--fondo-burbuja-propia);
+}
+
+.mensaje-chat.es-oculto {
+    border: 1px dashed var(--borde-fuerte);
+}
+
+.mensaje-servidor-cabecera {
+    padding: 0 2px;
+    font-size: 13px;
+    line-height: 1.2;
+}
+
+.mensaje-chat-contenido {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.adjunto-mensaje img,
+.adjunto-mensaje video {
+    max-width: 100%;
+    max-height: 320px;
+    border-radius: var(--radio-sm);
+    display: block;
+}
+
+.adjunto-mensaje audio {
+    width: 100%;
+    min-width: 220px;
+}
+
+.meta-mensaje-servidor {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    align-self: flex-end;
+    font-size: 10px;
+    color: var(--texto-apagado);
+}
+
+.acciones-mensaje-servidor {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 1px solid var(--borde-suave);
+}
+
+.acciones-mensaje-servidor button {
+    min-height: 28px;
+    padding: 4px 10px;
+    border: 1px solid var(--borde-medio);
+    border-radius: var(--radio-sm);
+    background: var(--fondo-hover);
+    color: var(--texto-principal);
+    font-size: 10px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.acciones-mensaje-servidor button.peligro {
+    border-color: var(--peligro);
+    color: var(--peligro);
+}
+
+.formulario-mensaje-servidor {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.formulario-mensaje-servidor input {
+    flex: 1;
+    min-width: 0;
+}
+
+/* ========================================
+   SERVIDORES: CANALES, OCULTOS Y PANELES
+   ======================================== */
+
+.barra-canales-servidor {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 0;
+    border-bottom: 1px solid #2b2b2b;
+}
+
+.lista-canales {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+}
+
+.canal-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 34px;
+    padding: 6px 11px;
+    border: 1px solid #2f2f2f;
+    border-radius: 16px;
+    background: #1c1c1c;
+    color: #bbb;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.canal-chip.activo {
+    background: #2e2e2e;
+    border-color: #4e4e4e;
+    color: #fff;
+}
+
+.canal-chip .editar-canal {
+    color: #888;
+    font-size: 12px;
+    padding: 0 2px;
+}
+
+.canal-chip .editar-canal:hover {
+    color: #fff;
+}
+
+.acciones-barra-canales {
+    display: flex;
+    gap: 8px;
+}
+
+.acciones-barra-canales button {
+    min-height: 34px;
+    padding: 6px 10px;
+    font-size: 11px;
+}
+
+.insignia-oculto {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 6px;
+    background: #3d2a0f;
+    color: #ffcf7a;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    vertical-align: middle;
+}
+
+.insignia-mini {
+    padding: 1px 5px;
+    font-size: 9px;
+}
+
+.mensaje-servidor.es-oculto {
+    border: 1px dashed #6b4d1c;
+}
+
+.mensaje-servidor.oculto-ajeno {
+    background: #191919;
+}
+
+.meta-mensaje-servidor {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-align: right;
+}
+
+.acciones-mensaje {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 5px;
+}
+
+.boton-accion-mensaje {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #aaa;
+    font-size: 10px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.boton-accion-mensaje:hover {
+    color: #fff;
+}
+
+.boton-accion-peligro {
+    color: #e07a7a;
+}
+
+.cita-mensaje-servidor {
+    display: block;
+    margin: 5px 0 0;
+    padding: 4px 8px;
+    border-left: 3px solid #464646;
+    border-radius: 0 6px 6px 0;
+    background: #161616;
+    font-size: 11px;
+    color: #aaa;
+}
+
+.cita-mensaje-servidor strong {
+    display: block;
+    color: #ddd;
+    font-size: 11px;
+}
+
+.cita-mensaje-servidor span {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.boton-oculto-servidor {
+    padding: 0 11px;
+    font-size: 11px;
+}
+
+.boton-oculto-servidor.activo {
+    background: #5a3d10;
+    border-color: #a97b25;
+    color: #ffd78f;
+}
+
+.lista-filas-servidor {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 52vh;
+    overflow-y: auto;
+    margin: 10px 0;
+}
+
+.fila-servidor {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding: 9px 10px;
+    border: 1px solid #2b2b2b;
+    border-radius: 8px;
+    background: #1b1b1b;
+}
+
+.fila-servidor.yo {
+    border-color: #3d5a3d;
+}
+
+.fila-servidor-datos {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+    flex: 1;
+}
+
+.fila-servidor-datos span,
+.fila-servidor-datos small {
+    color: #999;
+    font-size: 11px;
+}
+
+.fila-servidor-acciones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.fila-servidor-acciones button {
+    min-height: 30px;
+    padding: 5px 8px;
+    border: 1px solid #383838;
+    border-radius: 7px;
+    background: #242424;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.fila-servidor-acciones button.peligro {
+    background: #451d1d;
+    border-color: #662929;
+}
+
+.etiqueta-rol {
+    font-style: normal;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 6px;
+    background: #2a2a2a;
+    color: #ccc;
+}
+
+.etiqueta-creador {
+    background: #4a3a12;
+    color: #ffd78f;
+}
+
+.etiqueta-moderador {
+    background: #1f3a4a;
+    color: #9fd0ff;
+}
+
+.etiqueta-aviso {
+    font-style: normal;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 6px;
+    background: #451d1d;
+    color: #ffa9a9;
+}
+
+.bloque-ajuste {
+    padding: 14px 0;
+    border-bottom: 1px solid #2b2b2b;
+}
+
+.bloque-ajuste h3 {
+    margin: 0 0 8px;
+    font-size: 15px;
+}
+
+.bloque-ajuste > label {
+    display: block;
+    margin: 8px 0 4px;
+    font-size: 12px;
+    color: #bbb;
+}
+
+.texto-ajuste {
+    margin: 0 0 8px;
+    color: #999;
+    font-size: 12px;
+}
+
+/* Previa de la foto del servidor en los ajustes del servidor. */
+
+.fila-imagen-servidor {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.previa-imagen-servidor {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px;
+    height: 64px;
+    flex: 0 0 64px;
+    overflow: hidden;
+    border-radius: var(--radio-lg);
+    background: var(--fondo-activo);
+    color: var(--texto-principal);
+    font-size: 24px;
+    font-weight: 700;
+}
+
+.previa-imagen-servidor img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.previa-imagen-servidor.sin-imagen {
+    background: var(--fondo-hover);
+    color: var(--texto-apagado);
+}
+
+.fila-ajuste {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.fila-ajuste button,
+.bloque-ajuste > button,
+.bloque-invitacion button,
+.dialogo-ajustes-servidor select {
+    min-height: 40px;
+    padding: 9px 14px;
+    border: 1px solid #383838;
+    border-radius: 8px;
+    background: #242424;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.opcion-ajuste {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 8px 0;
+    font-size: 13px;
+    color: #ccc;
+}
+
+.codigo-invitacion {
+    margin: 0;
+    padding: 9px 11px;
+    border: 1px dashed #3a3a3a;
+    border-radius: 8px;
+    background: #111;
+    font-family: "Courier New", monospace;
+    font-size: 13px;
+    color: #ffd78f;
+    overflow-wrap: anywhere;
+}
+
+.bloque-invitacion {
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid #2b2b2b;
+}
+
+.bloque-invitacion h3 {
+    font-size: 14px;
+}
+
+#vista-invitacion {
+    margin-top: 10px;
+}
+
+.boton-peligro {
+    background: #451d1d;
+    border-color: #662929;
+}
+
+@media (max-width: 480px) {
+    .barra-canales-servidor {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .lista-canales {
+        flex-wrap: nowrap;
+    }
+
+    .canal-chip {
+        white-space: nowrap;
+    }
+
+    .fila-servidor-acciones {
+        width: 100%;
+    }
+}
+
+
+/* ==============================
+   CABECERA DE CUENTA
+   ============================== */
+
+.cabecera-cuenta {
+    display: flex;
+    flex-direction: column;
+
+    align-items: center;
+
+    margin-bottom: 30px;
+}
+
+
+.cabecera-cuenta h2 {
+    margin: 15px 0 0;
+
+    font-size: 24px;
+
+    text-align: center;
+}
+
+
+/* ==============================
+   FOTO DE PERFIL
+   ============================== */
+
+.boton-foto-perfil {
+    width: 120px;
+    height: 120px;
+
+    padding: 0;
+
+    border: 2px solid #333;
+    border-radius: 50%;
+
+    background: #1a1a1a;
+
+    overflow: hidden;
+
+    cursor: pointer;
+}
+
+
+.boton-foto-perfil:hover {
+    border-color: #555;
+}
+
+
+.boton-foto-perfil img {
+    width: 100%;
+    height: 100%;
+
+    display: block;
+
+    object-fit: cover;
+}
+
+
+/* ==============================
+   INFORMACIÓN DE CUENTA
+   ============================== */
+
+.informacion-cuenta {
+    width: 100%;
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 10px;
+
+    margin-bottom: 30px;
+}
+
+
+.informacion-cuenta label {
+    color: #aaa;
+
+    font-size: 14px;
+}
+
+
+#descripcion-cuenta {
+    width: 100%;
+    min-height: 120px;
+
+    resize: vertical;
+
+    padding: 13px;
+
+    border: 1px solid #333;
+    border-radius: 10px;
+
+    background: #1a1a1a;
+
+    color: white;
+
+    font-family: Arial, sans-serif;
+    font-size: 16px;
+
+    outline: none;
+}
+
+
+#descripcion-cuenta:focus {
+    border-color: #555;
+}
+
+
+#color-nombre-cuenta {
+    width: 60px;
+    height: 40px;
+
+    padding: 2px;
+
+    border: 1px solid #333;
+    border-radius: 8px;
+
+    background: #1a1a1a;
+
+    cursor: pointer;
+}
+
+
+#estado-cuenta {
+    margin: 5px 0 0;
+
+    color: #aaa;
+
+    font-size: 14px;
+}
+
+
+/* ==============================
+   CÓDIGO EN CUENTA
+   ============================== */
+
+.codigo-cuenta {
+    width: 100%;
+
+    display: flex;
+    flex-direction: column;
+
+    align-items: center;
+
+    margin-bottom: 30px;
+}
+
+
+.codigo-cuenta h3 {
+    margin: 0 0 15px;
+
+    font-size: 18px;
+}
+
+
+.codigo-cuenta-contenedor {
+    width: 100%;
+
+    display: flex;
+    align-items: center;
+
+    padding: 14px 16px;
+
+    border: 1px solid #333;
+    border-radius: 12px;
+
+    background: #1a1a1a;
+}
+
+
+#codigo-cuenta-texto {
+    flex: 1;
+
+    color: white;
+
+    font-size: 17px;
+    font-weight: bold;
+
+    letter-spacing: 1px;
+
+    text-align: center;
+}
+
+
+#boton-copiar-codigo-cuenta {
+    width: auto;
+
+    margin-left: 10px;
+
+    padding: 5px;
+
+    border: none;
+    border-radius: 8px;
+
+    background: transparent;
+
+    color: white;
+
+    font-size: 20px;
+
+    cursor: pointer;
+}
+
+
+#boton-copiar-codigo-cuenta:hover {
+    background: #242424;
+}
+
+
+#boton-regenerar-codigo {
+    margin-top: 12px;
+
+    padding: 10px 16px;
+
+    border: none;
+    border-radius: 10px;
+
+    background: #242424;
+
+    color: white;
+
+    font-size: 14px;
+    font-weight: bold;
+
+    cursor: pointer;
+}
+
+
+#boton-regenerar-codigo:hover {
+    background: #333;
+}
+
+
+/* ==============================
+   CERRAR SESIÓN
+   ============================== */
+
+#boton-cerrar-sesion {
+    width: 100%;
+
+    padding: 14px 20px;
+
+    border: none;
+    border-radius: 12px;
+
+    background: #242424;
+
+    color: white;
+
+    font-size: 16px;
+    font-weight: bold;
+
+    cursor: pointer;
+}
+
+
+#boton-cerrar-sesion:hover {
+    background: #333;
+}
+
+
+/* ==============================
+   MODALES
+   ============================== */
+
+.modal {
+    position: fixed;
+
+    inset: 0;
+
+    z-index: 1000;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    padding: 20px;
+
+    background: rgba(0, 0, 0, 0.75);
+}
+
+
+.modal[hidden] {
+    display: none;
+}
+
+
+/* ==============================
+   MODAL OPCIONES FOTO
+   ============================== */
+
+.modal-contenido {
+    position: relative;
+
+    width: 100%;
+    max-width: 360px;
+
+    padding: 30px 25px 25px;
+
+    border: 1px solid #333;
+    border-radius: 16px;
+
+    background: #151515;
+
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+
+.modal-contenido h2 {
+    margin: 0 0 25px;
+
+    font-size: 22px;
+
+    text-align: center;
+}
+
+.modal-contenido-social {
+    z-index: 1100;
+}
+
+.dialogo-social {
+    width: min(540px, calc(100vw - 28px));
+    max-height: min(84vh, 760px);
+    overflow-y: auto;
+    padding: 18px;
+    border: 1px solid #383838;
+    border-radius: 9px;
+    background: #171717;
+    color: #fff;
+}
+
+.cabecera-dialogo-social {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.cabecera-dialogo-social h2 {
+    margin: 0;
+    font-size: 20px;
+}
+
+.cabecera-dialogo-social .boton-cerrar-modal {
+    position: static;
+    flex: 0 0 38px;
+}
+
+.formulario-dialogo-social,
+.acciones-mi-estado {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.formulario-dialogo-social[hidden],
+.acciones-mi-estado[hidden],
+.visor-estados[hidden],
+.selector-archivo-social[hidden],
+.controles-grabar-audio[hidden] {
+    display: none;
+}
+
+.selector-tipo-contenido {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.selector-tipo-contenido legend,
+.selector-audiencia-social {
+    width: 100%;
+    margin-bottom: 5px;
+    color: #aaa;
+    font-size: 13px;
+}
+
+.selector-tipo-contenido label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 38px;
+    padding: 7px 10px;
+    border: 1px solid #343434;
+    border-radius: 7px;
+    background: #202020;
+    color: #eee;
+    font-size: 12px;
+}
+
+.formulario-dialogo-social textarea,
+.formulario-dialogo-social select {
+    width: 100%;
+    min-height: 44px;
+    padding: 12px;
+    border: 1px solid #363636;
+    border-radius: 8px;
+    background: #101010;
+    color: #fff;
+    font: inherit;
+}
+
+.formulario-dialogo-social textarea {
+    min-height: 150px;
+    resize: vertical;
+}
+
+.selector-archivo-social {
+    min-height: 76px;
+    display: grid;
+    place-items: center;
+    border: 1px dashed #555;
+    border-radius: 8px;
+    color: #ddd;
+    cursor: pointer;
+}
+
+.controles-grabar-audio {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.controles-grabar-audio audio {
+    width: 100%;
+}
+
+.acciones-mi-estado button,
+.controles-grabar-audio button,
+.boton-confirmar-social,
+.boton-crear-contenido {
+    min-height: 44px;
+    padding: 10px 14px;
+    border: 1px solid #373737;
+    border-radius: 8px;
+    background: #252525;
+    color: #fff;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.boton-confirmar-social {
+    background: #353535;
+}
+
+.error-social {
+    margin: 0;
+    color: #e08d84;
+    font-size: 13px;
+}
+
+.visor-estados {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.visor-estado-item {
+    min-height: 220px;
+    display: grid;
+    place-items: center;
+    padding: 18px;
+    border: 1px solid #333;
+    border-radius: 9px;
+    background: #222;
+    text-align: center;
+}
+
+
+.modal-contenido > button:not(.boton-cerrar-modal) {
+    width: 100%;
+
+    margin-top: 10px;
+
+    padding: 14px 20px;
+
+    border: none;
+    border-radius: 12px;
+
+    background: #242424;
+
+    color: white;
+
+    font-size: 15px;
+    font-weight: bold;
+
+    cursor: pointer;
+}
+
+
+.modal-contenido > button:not(.boton-cerrar-modal):hover {
+    background: #333;
+}
+
+
+/* ==============================
+   BOTÓN CERRAR MODAL
+   ============================== */
+
+.boton-cerrar-modal {
+    position: absolute;
+
+    top: 8px;
+    right: 10px;
+
+    width: 36px;
+    height: 36px;
+
+    padding: 0;
+
+    border: none;
+    border-radius: 50%;
+
+    background: transparent;
+
+    color: #fff;
+
+    font-size: 28px;
+    font-weight: normal;
+
+    line-height: 36px;
+
+    cursor: pointer;
+}
+
+
+.boton-cerrar-modal:hover {
+    background: #242424;
+}
+
+
+/* ==============================
+   MODAL FOTO GRANDE
+   ============================== */
+
+.modal-foto-contenido {
+    position: relative;
+
+    width: min(90vw, 700px);
+    height: min(90vh, 700px);
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    padding: 20px;
+}
+
+
+#foto-perfil-grande {
+    max-width: 100%;
+    max-height: 100%;
+
+    display: block;
+
+    border-radius: 12px;
+
+    object-fit: contain;
+}
+
+
+/* ==============================
+   MÓVIL
+   ============================== */
+
+@media (max-width: 600px) {
+
+    .barra-navegacion {
+        gap: 4px;
+
+        padding: 10px 6px;
+    }
+
+
+    .barra-navegacion button {
+        flex: 1;
+
+        padding: 10px 6px;
+
+        font-size: 12px;
+    }
+
+
+    #contenido-principal {
+        padding: 20px 15px;
+    }
+
+
+    .boton-foto-perfil {
+        width: 110px;
+        height: 110px;
+    }
+
+
+    .modal-contenido {
+        max-width: 340px;
+    }
+
+
+    /*
+       Estados un poco más estrechos
+       para que entren varios en móvil.
+    */
+
+    .lista-estados {
+        gap: 10px;
+    }
+
+
+    .estado-amigo {
+        flex-basis: 125px;
+
+        width: 125px;
+        height: 195px;
+
+        border-radius: 13px;
+    }
+
+
+    .estado-avatar {
+        top: 9px;
+        left: 9px;
+
+        width: 32px;
+        height: 32px;
+    }
+
+
+    .estado-amigo span {
+        left: 9px;
+        right: 9px;
+        bottom: 8px;
+
+        font-size: 12px;
+    }
+
+
+    .contenedor-chats {
+        padding: 15px;
+    }
+
+
+    .publicacion {
+        border-radius: 14px;
+    }
+
+
+    /*
+       AGREGAR AMIGOS EN MÓVIL
+    */
+
+    .cabecera-amigos h2 {
+        font-size: 22px;
+    }
+
+
+    .pestana-amigos {
+        padding: 11px 6px;
+
+        font-size: 11px;
+    }
+
+
+    .persona-amigo {
+        gap: 10px;
+
+        padding: 10px;
+    }
+
+
+    .persona-avatar {
+        width: 48px;
+        height: 48px;
+    }
+
+
+    .persona-informacion strong {
+        font-size: 15px;
+    }
+
+
+    .persona-informacion p {
+        font-size: 12px;
+    }
+
+
+    .boton-agregar-amigo {
+        padding: 8px 10px;
+
+        font-size: 11px;
+    }
+
+
+    .solicitud-amigo {
+        gap: 10px;
+
+        padding: 10px;
+    }
+
+
+    .solicitud-avatar {
+        width: 48px;
+        height: 48px;
+    }
+
+
+    .solicitud-informacion strong {
+        font-size: 15px;
+    }
+
+
+    .solicitud-informacion p {
+        font-size: 12px;
+    }
+
+
+    .solicitud-acciones {
+        gap: 5px;
+    }
+
+
+    .solicitud-acciones button {
+        padding: 7px 8px;
+
+        font-size: 10px;
+    }
+
+}
+
+/* ========================================
+   AVATAR DE LOS CHATS
+   ======================================== */
+
+.chat-amigo-avatar {
+    width: 50px;
+    height: 50px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    overflow: hidden;
+}
+
+.chat-amigo-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* ========================================
+   PANEL DE CHAT
+   ======================================== */
+
+.panel-chat {
+    position: fixed;
+    inset: 0;
+    z-index: 3000;
+
+    display: flex;
+    flex-direction: column;
+
+    background: #111111;
+}
+
+.panel-chat[hidden] {
+    display: none !important;
+}
+
+/* Cabecera */
+
+.cabecera-chat {
+    width: 100%;
+    min-height: 64px;
+
+    display: flex;
+    align-items: center;
+
+    gap: 12px;
+
+    padding: 10px 16px;
+
+    background: #181818;
+    border-bottom: 1px solid #2b2b2b;
+}
+
+.boton-volver-chat {
+    width: 42px;
+    height: 42px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: none;
+    border-radius: 50%;
+
+    background: transparent;
+    color: #ffffff;
+
+    font-size: 28px;
+    line-height: 1;
+
+    cursor: pointer;
+}
+
+.boton-volver-chat:hover {
+    background: #252525;
+}
+
+.boton-ver-perfil-chat {
+    min-width: 0;
+
+    flex: 1;
+
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    padding: 0;
+
+    border: 0;
+    background: transparent;
+
+    color: inherit;
+    font: inherit;
+    text-align: left;
+
+    cursor: pointer;
+}
+
+.chat-avatar-panel {
+    width: 42px;
+    height: 42px;
+
+    display: block;
+
+    flex-shrink: 0;
+
+    border-radius: 50%;
+    overflow: hidden;
+
+    background: #242424;
+}
+
+.chat-avatar-panel img {
+    width: 100%;
+    height: 100%;
+
+    display: block;
+
+    object-fit: cover;
+}
+
+.chat-datos-panel {
+    min-width: 0;
+}
+
+.chat-datos-panel strong {
+    display: block;
+
+    font-size: 17px;
+}
+
+/* Lista de mensajes */
+
+.lista-mensajes {
+    flex: 1;
+
+    width: 100%;
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 8px;
+
+    padding: 18px;
+
+    overflow-y: auto;
+}
+
+/* Mensajes */
+
+.mensaje-chat {
+    max-width: min(75%, 520px);
+
+    padding: 10px 14px;
+
+    border-radius: 16px;
+
+    color: #ffffff;
+
+    font-size: 15px;
+    line-height: 1.4;
+
+    overflow-wrap: anywhere;
+
+    position: relative;
+    touch-action: pan-y;
+    user-select: none;
+    -webkit-user-select: none;
+    transition: transform 0.12s ease-out;
+    will-change: transform;
+}
+
+.mensaje-chat-recibido {
+    align-self: flex-start;
+
+    background: #252525;
+
+    border-bottom-left-radius: 5px;
+}
+
+.mensaje-chat-enviado {
+    align-self: flex-end;
+
+    background: #3a3a3a;
+
+    border-bottom-right-radius: 5px;
+}
+
+/* Mensaje vacío */
+
+.mensajes-vacios {
+    flex: 1;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    color: #777777;
+
+    text-align: center;
+}
+
+/* Formulario */
+
+.formulario-mensaje {
+    width: 100%;
+
+    display: flex;
+    align-items: center;
+
+    gap: 8px;
+
+    padding: 12px 16px;
+
+    background: #181818;
+    border-top: 1px solid #2b2b2b;
+}
+
+#entrada-mensaje {
+    flex: 1;
+
+    min-width: 0;
+
+    height: 44px;
+
+    padding: 0 14px;
+
+    border: 1px solid #333333;
+    border-radius: 22px;
+
+    outline: none;
+
+    background: #242424;
+    color: #ffffff;
+
+    font-family: inherit;
+    font-size: 15px;
+}
+
+#entrada-mensaje::placeholder {
+    color: #777777;
+}
+
+#entrada-mensaje:focus {
+    border-color: #555555;
+}
+
+.boton-enviar-mensaje {
+    flex-shrink: 0;
+
+    height: 44px;
+
+    padding: 0 16px;
+
+    border: none;
+    border-radius: 22px;
+
+    background: #ffffff;
+    color: #111111;
+
+    font-weight: 700;
+    font-size: 13px;
+
+    cursor: pointer;
+}
+
+.boton-enviar-mensaje:hover {
+    background: #dddddd;
+}
+
+.pestanas-entrada {
+    margin-bottom: 14px;
+}
+
+.formulario-contenido {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 8px;
+    align-items: stretch;
+    margin: 0 0 12px;
+}
+
+.formulario-contenido textarea {
+    min-width: 0;
+    min-height: 44px;
+    max-height: 130px;
+    resize: vertical;
+    padding: 11px 13px;
+    border: 1px solid #333;
+    border-radius: 9px;
+    background: #181818;
+    color: #fff;
+    font: inherit;
+}
+
+.formulario-contenido select,
+.formulario-contenido button {
+    min-height: 44px;
+    padding: 10px 12px;
+    border: 1px solid #333;
+    border-radius: 9px;
+    background: #202020;
+    color: #fff;
+    font-size: 12px;
+}
+
+.formulario-contenido button {
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.estado-texto-amigo {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 12px;
+    background: #202020;
+}
+
+.estado-texto-amigo p {
+    max-height: 70%;
+    margin: 0;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+    font-size: 14px;
+}
+
+.estado-texto-amigo time,
+.cabecera-publicacion-actual time {
+    color: #888;
+    font-size: 11px;
+}
+
+.estado-texto-amigo button,
+.cabecera-publicacion-actual > button {
+    align-self: flex-start;
+    padding: 4px 0;
+    border: 0;
+    background: transparent;
+    color: #aaa;
+    font-size: 10px;
+    cursor: pointer;
+}
+
+.lista-publicaciones {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.publicacion-actual {
+    padding: 14px;
+    border: 1px solid #303030;
+    border-radius: 8px;
+    background: #181818;
+}
+
+.cabecera-publicacion-actual {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.cabecera-publicacion-actual img,
+.avatar-publicacion-vacio {
+    width: 38px;
+    height: 38px;
+    flex: 0 0 38px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: #303030;
+}
+
+.cabecera-publicacion-actual > div {
+    min-width: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.texto-publicacion-actual {
+    margin: 14px 0;
+    line-height: 1.55;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.acciones-publicacion-actual {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    border-top: 1px solid #2b2b2b;
+    padding-top: 10px;
+}
+
+.acciones-publicacion-actual button,
+.formulario-comentario-actual button {
+    min-height: 34px;
+    padding: 7px 10px;
+    border: 1px solid #333;
+    border-radius: 7px;
+    background: #202020;
+    color: #ddd;
+    font-size: 11px;
+    cursor: pointer;
+}
+
+.acciones-publicacion-actual .boton-corazon-publicacion {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.acciones-publicacion-actual .icono-corazon-publicacion {
+    width: 17px;
+    height: 17px;
+
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.6;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+
+    transition: fill 0.18s ease, stroke 0.18s ease, transform 0.18s ease;
+}
+
+.acciones-publicacion-actual .boton-corazon-publicacion:hover .icono-corazon-publicacion {
+    transform: scale(1.1);
+}
+
+.acciones-publicacion-actual .boton-corazon-publicacion-activo {
+    color: #ff5b5b;
+}
+
+.acciones-publicacion-actual .boton-corazon-publicacion-activo .icono-corazon-publicacion {
+    fill: #ff5b5b;
+    stroke: #ff5b5b;
+
+    transform: scale(1.1);
+}
+
+.lista-comentarios-actuales {
+    padding: 8px 0;
+}
+
+.lista-comentarios-actuales p {
+    margin: 8px 0;
+    font-size: 13px;
+    overflow-wrap: anywhere;
+}
+
+.formulario-comentario-actual {
+    display: flex;
+    gap: 8px;
+}
+
+.formulario-comentario-actual input {
+    min-width: 0;
+    flex: 1;
+    padding: 9px;
+    border: 1px solid #333;
+    border-radius: 7px;
+    background: #111;
+    color: #fff;
+}
+
+@media (max-width: 520px) {
+    .formulario-contenido {
+        grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    .formulario-contenido textarea {
+        grid-column: 1 / -1;
+    }
+
+    .formulario-contenido select {
+        min-width: 0;
+    }
+}
+
+#nombre-cuenta-editar {
+    width: 100%;
+    min-height: 46px;
+    padding: 12px;
+    border: 1px solid #333;
+    border-radius: 10px;
+    background: #1a1a1a;
+    color: #fff;
+    font: inherit;
+    outline: none;
+}
+
+#nombre-cuenta-editar:focus {
+    border-color: #555;
+}
+
+.mensaje-chat-cita {
+    display: block;
+    margin-bottom: 7px;
+    padding-left: 8px;
+    border-left: 2px solid #777;
+    color: #aaa;
+    overflow-wrap: anywhere;
+}
+
+.acciones-mensaje-chat {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 7px;
+}
+
+.acciones-mensaje-chat button {
+    padding: 4px 6px;
+    border: 0;
+    border-radius: 5px;
+    background: rgba(255, 255, 255, 0.08);
+    color: #bbb;
+    font-size: 9px;
+    cursor: pointer;
+}
+
+.acciones-mensaje-chat button:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+}
+
+.mensaje-chat-deslizable {
+    transition: none;
+    will-change: auto;
+}
+
+.mensaje-chat-contenido {
+    pointer-events: none;
+}
+
+.mensaje-chat p {
+    margin: 0;
+}
+
+.mensaje-chat-editado {
+    color: #aaa;
+    font-size: 11px;
+}
+
+.mensaje-chat-modo-editar {
+    outline: 2px solid #7aa2ff;
+    outline-offset: 2px;
+}
+
+.mensaje-chat-seleccionado {
+    outline: 2px solid #ff5b5b;
+    outline-offset: 2px;
+    background: #4a2a2a !important;
+}
+
+.barra-seleccion-chat {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 16px;
+    background: #1d1d1d;
+    border-top: 1px solid #2b2b2b;
+    color: #fff;
+    font-size: 13px;
+}
+
+.barra-seleccion-chat[hidden] {
+    display: none !important;
+}
+
+.barra-seleccion-chat button {
+    padding: 8px 12px;
+    border: 1px solid #3a3a3a;
+    border-radius: 18px;
+    background: #2a2a2a;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.boton-papelera-chat {
+    margin-left: auto;
+    font-size: 20px !important;
+    line-height: 1;
+    padding: 6px 12px !important;
+}
+
+.boton-cancelar-cita-chat {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    background: transparent;
+    border: none;
+    color: #bbb;
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.boton-cancelar-cita-chat:hover {
+    color: #fff;
+}
+
+.cita-chat {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px 8px 16px;
+    background: #1d1d1d;
+    border-top: 1px solid #2b2b2b;
+}
+
+.cita-chat[hidden] {
+    display: none !important;
+}
+
+.cita-chat .estado-amigos {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#estado-respuesta-chat,
+#estado-edicion-chat {
+    margin: 0;
+    padding: 0;
+}
+
+.indicador-gesto-chat {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: #202020;
+    border-top: 1px solid #2b2b2b;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.indicador-gesto-chat[hidden] {
+    display: none !important;
+}
+
+#icono-gesto-chat {
+    font-size: 18px;
+}
+
+
+.configuracion-notificaciones {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 24px 0;
+    padding-top: 18px;
+    border-top: 1px solid #2b2b2b;
+}
+
+.configuracion-notificaciones h3 {
+    margin: 0 0 4px;
+    font-size: 17px;
+}
+
+.configuracion-notificaciones label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 38px;
+    color: #ddd;
+    font-size: 14px;
+}
+
+.configuracion-notificaciones input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #b44a42;
+}
+
+.configuracion-notificaciones button {
+    min-height: 42px;
+    padding: 10px 14px;
+    border: 1px solid #333;
+    border-radius: 8px;
+    background: #242424;
+    color: #fff;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+#estado-notificaciones {
+    margin: 0;
+    color: #999;
+    font-size: 12px;
+}
+
+.estado-texto-amigo .contenido-multimedia-social {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 0;
+}
+
+.estado-texto-amigo .contenido-multimedia-social::after {
+    pointer-events: none;
+}
+
+.boton-crear-contenido {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 12px;
+}
+
+.boton-crear-contenido span {
+    font-size: 18px;
+}
+
+.contenido-multimedia-social {
+    display: block;
+    max-width: 100%;
+    max-height: 60vh;
+    margin: 8px 0;
+    border-radius: 8px;
+    background: #101010;
+}
+
+.publicacion-actual > .contenido-multimedia-social {
+    width: 100%;
+    object-fit: contain;
+}
+
+/* Las fotos conservan su proporción: ocupan todo el ancho cuando son horizontales
+   y, si son verticales, se limitan por la altura máxima y quedan centradas. */
+.publicacion-actual > img.contenido-multimedia-social {
+    width: auto;
+    max-width: 100%;
+
+    margin: 8px auto;
+}
+
+/* ========================================
+   CARRUSEL DE FOTOS DE LAS PUBLICACIONES
+   Solo se usa cuando la publicación lleva más de un medio.
+   ======================================== */
+
+.carrusel-publicacion {
+    margin: 8px 0;
+}
+
+.carrusel-pista {
+    display: flex;
+    align-items: stretch;
+
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+
+    scrollbar-width: none;
+
+    cursor: grab;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.carrusel-pista::-webkit-scrollbar {
+    display: none;
+}
+
+.carrusel-pista.carrusel-arrastrando {
+    scroll-snap-type: none;
+
+    cursor: grabbing;
+}
+
+.carrusel-diapositiva {
+    flex: 0 0 100%;
+    min-width: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    scroll-snap-align: center;
+}
+
+.carrusel-diapositiva .contenido-multimedia-social {
+    width: 100%;
+    margin: 0;
+}
+
+/* Cada foto mantiene su proporción dentro de su diapositiva: las horizontales llenan
+   el ancho y las verticales se ajustan a la altura máxima, así la pista toma la altura
+   de la más alta y las demás quedan centradas. */
+.carrusel-diapositiva img.contenido-multimedia-social {
+    width: auto;
+    max-width: 100%;
+}
+
+.carrusel-diapositiva img {
+    pointer-events: none;
+    -webkit-user-drag: none;
+}
+
+.carrusel-puntos {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+
+    padding: 10px 0 2px;
+}
+
+.carrusel-punto {
+    width: 8px;
+    height: 8px;
+
+    padding: 0;
+
+    border: 0;
+    border-radius: 50%;
+
+    background: #555555;
+
+    cursor: pointer;
+
+    transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.carrusel-punto:hover {
+    background: #777777;
+}
+
+.carrusel-punto-activo {
+    background: #ffffff;
+
+    transform: scale(1.2);
+}
+
+.visor-estado-item {
+    min-height: 220px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 18px;
+    border: 1px solid #333;
+    border-radius: 9px;
+    background: #222;
+    text-align: center;
+}
+
+.dialogo-social .boton-confirmar-social,
+.dialogo-social .acciones-mi-estado button {
+    width: 100%;
+}
+
+.visor-historias-pantalla {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: #050505;
+    color: #fff;
+}
+
+.visor-historias-pantalla[hidden] {
+    display: none;
+}
+
+.progreso-historias {
+    position: absolute;
+    top: max(10px, env(safe-area-inset-top));
+    left: max(12px, env(safe-area-inset-left));
+    right: max(12px, env(safe-area-inset-right));
+    z-index: 5;
+    display: flex;
+    gap: 4px;
+}
+
+.progreso-historia {
+    height: 3px;
+    flex: 1;
+    overflow: hidden;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.4);
+}
+
+.progreso-historia.completado {
+    background: #fff;
+}
+
+.progreso-historia i {
+    width: 100%;
+    height: 100%;
+    display: block;
+    transform: scaleX(0);
+    transform-origin: left center;
+    background: #fff;
+}
+
+.progreso-historia i.avanzar {
+    animation: avanzar-historia linear forwards;
+}
+
+@keyframes avanzar-historia {
+    to { transform: scaleX(1); }
+}
+
+.cabecera-historia-pantalla {
+    position: absolute;
+    top: max(23px, calc(env(safe-area-inset-top) + 13px));
+    left: max(14px, env(safe-area-inset-left));
+    right: max(14px, env(safe-area-inset-right));
+    z-index: 6;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    padding-right: 48px;
+    text-shadow: 0 1px 5px #000;
+}
+
+.cabecera-historia-pantalla img {
+    width: 34px;
+    height: 34px;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.cabecera-historia-pantalla button {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 40px;
+    height: 40px;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.42);
+    color: #fff;
+    font-size: 28px;
+    cursor: pointer;
+}
+
+.contenido-historia-pantalla {
+    width: min(100vw, 56.25vh);
+    height: min(100vh, 177.78vw);
+    max-width: 100%;
+    max-height: 100%;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    background: #161616;
+}
+
+.contenido-historia-pantalla > img,
+.contenido-historia-pantalla > video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.contenido-historia-pantalla > audio {
+    width: calc(100% - 32px);
+}
+
+.texto-historia-pantalla {
+    width: 100%;
+    max-height: 100%;
+    display: grid;
+    place-items: center;
+    margin: 0;
+    padding: 34px;
+    overflow: auto;
+    overflow-wrap: anywhere;
+    background: #222;
+    font-size: 24px;
+    text-align: center;
+    white-space: pre-wrap;
+}
+
+.zona-historia {
+    position: absolute;
+    top: 16%;
+    bottom: 0;
+    z-index: 4;
+    width: 24%;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+}
+
+.zona-historia-anterior {
+    left: 0;
+}
+
+.zona-historia-siguiente {
+    right: 0;
+}
+
+
+
+/* ==============================
+   BOTÓN DE PERFIL EN PUBLICACIONES
+   ============================== */
+
+.cabecera-publicacion-actual > .boton-perfil-publicacion {
+    min-width: 0;
+    flex: 1;
+    align-self: center;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.boton-perfil-publicacion > img,
+.boton-perfil-publicacion > .avatar-publicacion-vacio {
+    width: 38px;
+    height: 38px;
+    flex: 0 0 38px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: #303030;
+}
+
+.boton-perfil-publicacion > .datos-publicacion-actual {
+    min-width: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.boton-perfil-publicacion > .datos-publicacion-actual strong {
+    overflow-wrap: anywhere;
+}
+
+
+/* ==============================
+   MODAL PERFIL
+   ============================== */
+
+#modal-perfil {
+    z-index: 3100;
+}
+
+#modal-acciones-perfil,
+#modal-amigos-perfil {
+    z-index: 3200;
+}
+
+#modal-foto-grande {
+    z-index: 3300;
+}
+
+.dialogo-perfil {
+    width: min(560px, calc(100vw - 28px));
+}
+
+.dialogo-amigos-perfil {
+    width: min(420px, calc(100vw - 28px));
+}
+
+.contenido-perfil {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.cabecera-perfil {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    text-align: center;
+}
+
+.avatar-perfil {
+    width: 96px;
+    height: 96px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    cursor: pointer;
+}
+
+.avatar-perfil > img,
+.avatar-perfil-vacio {
+    width: 96px;
+    height: 96px;
+    display: block;
+    border: 2px solid #3a3a3a;
+    border-radius: 50%;
+    object-fit: cover;
+    background: #303030;
+}
+
+.nombre-perfil {
+    font-size: 20px;
+    overflow-wrap: anywhere;
+}
+
+.descripcion-perfil {
+    margin: 0;
+    color: #bbb;
+    font-size: 14px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.descripcion-perfil-vacia {
+    color: #666;
+    font-style: italic;
+}
+
+.estadisticas-perfil {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.estadistica-perfil {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 10px 6px;
+    border: 1px solid #333;
+    border-radius: 9px;
+    background: #202020;
+    color: #eee;
+    font: inherit;
+}
+
+button.estadistica-perfil {
+    cursor: pointer;
+}
+
+button.estadistica-perfil:hover {
+    background: #2b2b2b;
+    border-color: #454545;
+}
+
+.estadistica-perfil strong {
+    font-size: 18px;
+}
+
+.estadistica-perfil span {
+    color: #999;
+    font-size: 11px;
+    line-height: 1.3;
+    text-align: center;
+}
+
+.titulo-publicaciones-perfil {
+    margin: 0;
+    font-size: 16px;
+}
+
+.lista-publicaciones-perfil {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.lista-amigos-perfil {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.amigo-perfil {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #2b2b2b;
+    border-radius: 10px;
+    background: #181818;
+    color: #fff;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.amigo-perfil:hover {
+    background: #202020;
+    border-color: #383838;
+}
+
+.amigo-perfil-avatar {
+    width: 36px;
+    height: 36px;
+    flex: 0 0 36px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: #303030;
+}
+
+.amigo-perfil-avatar img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+}
+
+.amigo-perfil-nombre {
+    min-width: 0;
+    font-size: 14px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+
+/* ==============================
+   PERFIL DEL AUTOR EN ESTADOS
+   ============================== */
+
+.cabecera-historia-pantalla #boton-perfil-historia {
+    position: static;
+    width: auto;
+    height: auto;
+    max-width: calc(100% - 48px);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: #fff;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+#boton-perfil-historia strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

@@ -1,0 +1,1514 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Atuistas</title>
+
+    <link
+        rel="stylesheet"
+        href="/style.css"
+    >
+
+    <link rel="icon" href="/icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/icon-192.png">
+    <link rel="manifest" href="/app.webmanifest">
+    <meta name="theme-color" content="#111111">
+
+    <!-- Instalar la app como PWA: hace falta en iOS y mejora el aviso en Android. -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Atuistas">
+    <meta name="description" content="Red social de Atuistas">
+
+</head>
+
+<body>
+
+    <main id="app">
+
+        <!-- ==============================
+             PANTALLA DE ACCESO
+             ============================== -->
+
+        <section id="pantalla-acceso">
+
+            <div id="acceso-inicial">
+
+                <h1>Atuistas</h1>
+
+                <button id="boton-entrar">
+                    ENTRAR
+                </button>
+
+                <p>¿Eres nuevo?</p>
+
+                <button id="boton-crear-cuenta">
+                    CREAR CUENTA
+                </button>
+
+            </div>
+
+
+            <div id="acceso-login" hidden>
+
+                <button
+                    id="boton-volver-login"
+                    class="boton-volver"
+                    type="button"
+                    aria-label="Volver"
+                >
+                    ←
+                </button>
+
+                <h1>ENTRAR</h1>
+
+                <form id="formulario-login">
+
+                    <label for="codigo-login">
+                        Código de vinculación
+                    </label>
+
+                    <input
+                        type="text"
+                        id="codigo-login"
+                        autocomplete="off"
+                        required
+                    >
+
+                    <button type="submit">ENTRAR</button>
+                    <p id="error-login"></p>
+
+                </form>
+
+            </div>
+
+
+            <div id="acceso-registro" hidden>
+
+                <button
+                    id="boton-volver-registro"
+                    class="boton-volver"
+                    type="button"
+                    aria-label="Volver"
+                >
+                    ←
+                </button>
+
+                <h1>CREAR CUENTA</h1>
+
+                <form id="formulario-registro">
+
+                    <label for="nombre-registro">
+                        Nombre
+                    </label>
+
+                    <input
+                        type="text"
+                        id="nombre-registro"
+                        maxlength="25"
+                        autocomplete="name"
+                        required
+                    >
+
+                    <button type="submit">
+                        CREAR CUENTA
+                    </button>
+
+                    <p id="error-registro"></p>
+
+                </form>
+
+            </div>
+
+
+            <div id="codigo-generado" hidden>
+
+                <h2>Tu código de vinculación</h2>
+
+                <div class="codigo-contenedor">
+
+                    <span id="codigo-generado-texto"></span>
+
+                    <button
+                        id="boton-copiar-codigo"
+                        type="button"
+                        aria-label="Copiar código"
+                    >
+                        ⧉
+                    </button>
+
+                </div>
+
+                <p>
+                    Guarda este código. Lo necesitarás para vincular otros dispositivos a tu cuenta.
+                </p>
+
+                <button id="boton-continuar-registro">
+                    CONTINUAR
+                </button>
+
+            </div>
+
+        </section>
+
+
+        <!-- ==============================
+             APLICACIÓN
+             ============================== -->
+
+        <section id="pantalla-app" hidden>
+
+            <!-- ==============================
+                 CABECERA
+                 ============================== -->
+
+            <header class="barra-superior">
+
+                <h1>Atuistas</h1>
+
+            </header>
+
+
+            <!-- ==============================
+                 CONTENIDO PRINCIPAL
+                 ============================== -->
+
+            <main id="contenido-principal">
+
+                <div id="panel-inicio-entrar" class="panel-inicio-entrar" hidden>
+
+                    <div class="pestanas-amigos pestanas-entrada" role="tablist" aria-label="Actividad">
+                        <button id="boton-feed-amigos" class="pestana-amigos activa" type="button" role="tab" aria-selected="true">MIS AMIGOS</button>
+                        <button id="boton-feed-publico" class="pestana-amigos" type="button" role="tab" aria-selected="false">PÚBLICO</button>
+                    </div>
+
+                <!-- ==============================
+                     CONTENEDOR HORIZONTAL
+                     ============================== -->
+
+                <div
+                    id="contenedor-horizontal-entrar"
+                    class="contenedor-horizontal-entrar"
+                >
+
+                    <!-- ==============================
+                         PÁGINA — MIS AMIGOS
+                         ============================== -->
+
+                    <section
+                        id="contenido-entrar"
+                        class="pagina-entrar pagina-amigos"
+                    >
+
+
+                        <!-- ==============================
+                             MIS AMIGOS — ESTADOS
+                             ============================== -->
+
+                        <section class="seccion-estados">
+
+                            <h2>Estados</h2>
+
+                            <div
+                                id="lista-estados-amigos"
+                                class="lista-estados"
+                            >
+
+                                <button id="boton-mi-estado" class="tarjeta-estado tarjeta-mi-estado" type="button" aria-label="Mi estado">
+                                    <img id="avatar-mi-estado" alt="" hidden>
+                                    <span id="texto-mi-estado">Añadir estado</span>
+                                    <span id="cantidad-mis-estados" class="cantidad-estados" hidden></span>
+                                </button>
+                            </div>
+
+                        </section>
+
+
+                        <!-- ==============================
+                             CHATS
+                             ============================== -->
+
+                        <section class="seccion-chats">
+
+                            <div
+                                id="contenedor-chats"
+                                class="contenedor-chats"
+                            >
+
+                                <div class="cabecera-chats">
+
+                                    <h2>
+                                        Chats
+                                    </h2>
+
+                                </div>
+
+
+                                <div
+                                    id="lista-amigos"
+                                    class="lista-chats"
+                                >
+
+                                    <!--
+                                        Los chats reales se generarán
+                                        desde app.js.
+                                    -->
+
+                                </div>
+
+
+                                <button
+                                    id="boton-ver-mas-chats"
+                                    class="boton-ver-mas"
+                                    type="button"
+                                >
+                                    VER MÁS
+                                </button>
+
+                            </div>
+
+                        </section>
+
+
+                        <!-- ==============================
+                             PUBLICACIONES DE AMIGOS
+                             ============================== -->
+
+                        <section class="seccion-publicaciones">
+
+                            <h2>
+                                Publicaciones de tus amigos
+                            </h2>
+
+                            <button id="boton-abrir-publicacion" class="boton-crear-contenido" type="button">
+                                <span aria-hidden="true">＋</span> PUBLICAR
+                            </button>
+
+
+                            <div
+                                id="lista-publicaciones-amigos"
+                                class="lista-publicaciones"
+                            >
+
+                                <!--
+                                    Las publicaciones reales se
+                                    generarán desde app.js.
+                                -->
+
+                            </div>
+
+                        </section>
+
+                    </section>
+
+
+
+                    <!-- ==============================
+                         PÁGINA — PÚBLICO
+                         ============================== -->
+
+                    <section
+                        id="contenido-publico"
+                        class="pagina-entrar pagina-publico"
+                    >
+
+
+                        <!-- ==============================
+                             ESTADOS PÚBLICOS
+                             ============================== -->
+
+                        <section class="seccion-estados-publicos">
+
+                            <h2>
+                                Público
+                            </h2>
+
+
+                            <div
+                                id="lista-estados-publicos"
+                                class="lista-estados"
+                            >
+
+                                <!--
+                                    Los estados públicos reales se
+                                    generarán desde app.js.
+                                -->
+
+                            </div>
+
+                        </section>
+
+
+                        <!-- ==============================
+                             PUBLICACIONES PÚBLICAS
+                             ============================== -->
+
+                        <section class="seccion-publicaciones">
+
+                            <h2>
+                                Publicaciones
+                            </h2>
+
+
+                            <div
+                                id="lista-publicaciones-publicas"
+                                class="lista-publicaciones"
+                            >
+
+                                <!--
+                                    Las publicaciones públicas reales
+                                    se generarán desde app.js.
+                                -->
+
+                            </div>
+
+                        </section>
+
+                    </section>
+
+                </div>
+
+                </div>
+
+
+                <!-- ==============================
+                     CUENTA
+                     ============================== -->
+
+                    <div id="panel-chat" class="panel-chat" hidden>
+
+                        <header class="cabecera-chat">
+
+                            <button
+                                id="boton-volver-chat"
+                                class="boton-volver-chat"
+                                type="button"
+                                aria-label="Volver"
+                            >
+                                ←
+                            </button>
+
+                            <button
+                                id="boton-ver-perfil-chat"
+                                class="boton-ver-perfil-chat"
+                                type="button"
+                                aria-label="Ver perfil"
+                            >
+                                <span
+                                    id="chat-avatar"
+                                    class="chat-avatar-panel"
+                                ></span>
+
+                                <span class="chat-datos-panel">
+                                    <strong id="chat-nombre"></strong>
+                                </span>
+                            </button>
+
+                        </header>
+
+                        <div
+                            id="lista-mensajes"
+                            class="lista-mensajes"
+                        ></div>
+
+                        <div
+                            id="barra-seleccion-chat"
+                            class="barra-seleccion-chat"
+                            hidden
+                        >
+                            <span id="contador-seleccion-chat">0 seleccionados</span>
+
+                            <button
+                                id="boton-cancelar-seleccion-chat"
+                                type="button"
+                            >
+                                CANCELAR
+                            </button>
+
+                            <button
+                                id="boton-borrar-seleccion-chat"
+                                class="boton-papelera-chat"
+                                type="button"
+                                aria-label="Eliminar mensajes seleccionados"
+                            >
+                                🗑
+                            </button>
+                        </div>
+
+                        <div
+                            id="indicador-gesto-chat"
+                            class="indicador-gesto-chat"
+                            hidden
+                        >
+                            <span id="icono-gesto-chat">↩</span>
+                            <span id="texto-gesto-chat">Responder</span>
+                        </div>
+
+                        <div
+                            id="cita-respuesta-chat"
+                            class="cita-chat"
+                            hidden
+                        >
+                            <p id="estado-respuesta-chat" class="estado-amigos"></p>
+                            <button
+                                id="boton-cancelar-respuesta-chat"
+                                class="boton-cancelar-cita-chat"
+                                type="button"
+                                aria-label="Cancelar respuesta"
+                            >
+                                ×
+                            </button>
+                        </div>
+                        <div
+                            id="cita-edicion-chat"
+                            class="cita-chat"
+                            hidden
+                        >
+                            <p id="estado-edicion-chat" class="estado-amigos"></p>
+                            <button
+                                id="boton-cancelar-edicion-chat"
+                                class="boton-cancelar-cita-chat"
+                                type="button"
+                                aria-label="Cancelar edición"
+                            >
+                                ×
+                            </button>
+                        </div>
+
+                        <form
+                            id="formulario-mensaje"
+                            class="formulario-mensaje"
+                        >
+
+                            <div class="composer-adjuntos">
+                                <button
+                                    id="boton-mas-chat"
+                                    class="boton-mas-composer"
+                                    type="button"
+                                    aria-label="Adjuntar archivo"
+                                    aria-haspopup="true"
+                                    aria-expanded="false"
+                                >
+                                    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
+                                        <path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+                                    </svg>
+                                </button>
+
+                                <div id="menu-adjuntar-chat" class="menu-adjuntar" role="menu" hidden>
+                                    <button type="button" role="menuitem" data-adjunto="imagen">FOTOS</button>
+                                    <button type="button" role="menuitem" data-adjunto="video">VÍDEOS</button>
+                                    <button type="button" role="menuitem" data-adjunto="audio">AUDIOS</button>
+                                </div>
+
+                                <input id="archivo-chat" type="file" hidden>
+                            </div>
+
+                            <input
+                                id="entrada-mensaje"
+                                type="text"
+                                placeholder="Escribe un mensaje..."
+                                autocomplete="off"
+                                maxlength="5000"
+                            >
+
+                            <p id="estado-adjunto-chat" class="chip-adjunto" hidden></p>
+
+                            <div id="fila-grabacion-chat" class="fila-grabacion" hidden>
+                                <span class="grabacion-punto" aria-hidden="true"></span>
+                                <span id="tiempo-grabacion-chat" class="grabacion-tiempo">0:00</span>
+                                <button id="boton-descartar-grabacion-chat" class="boton-descartar-grabacion" type="button">
+                                    BORRAR
+                                </button>
+                            </div>
+
+                            <button
+                                id="boton-accion-chat"
+                                class="boton-accion-composer"
+                                type="submit"
+                                aria-label="Grabar audio"
+                            >
+                                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+                                    <rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor"></rect>
+                                    <path d="M6 11a6 6 0 0 0 12 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+                                    <path d="M12 17v4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+                                    <path d="M9 21h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+                                </svg>
+                            </button>
+
+                        </form>
+
+                    </div>
+
+                <div id="contenido-cuenta" hidden>
+
+                    <div class="cabecera-cuenta">
+
+                        <button
+                            id="boton-foto-perfil"
+                            class="boton-foto-perfil"
+                            type="button"
+                            aria-label="Opciones de foto de perfil"
+                        >
+
+                            <img
+                                id="foto-perfil-cuenta"
+                                src=""
+                                alt="Foto de perfil"
+                            >
+
+                        </button>
+
+                        <h2 id="nombre-cuenta">
+                            Mi cuenta
+                        </h2>
+
+                    </div>
+
+
+                    <div class="informacion-cuenta">
+
+                        <label for="nombre-cuenta-editar">
+                            Nombre
+                        </label>
+
+                        <input
+                            type="text"
+                            id="nombre-cuenta-editar"
+                            maxlength="25"
+                            autocomplete="name"
+                        >
+
+                        <label for="descripcion-cuenta">
+                            Descripción
+                        </label>
+
+                        <textarea
+                            id="descripcion-cuenta"
+                            maxlength="500"
+                            placeholder="Escribe una descripción..."
+                        ></textarea>
+
+
+                        <label for="color-nombre-cuenta">
+                            Color de tu nombre
+                        </label>
+
+                        <input
+                            type="color"
+                            id="color-nombre-cuenta"
+                        >
+
+
+                        <!-- ==============================
+                             GUARDAR CAMBIOS
+                             ============================== -->
+
+                        <button
+                            id="boton-guardar-cuenta"
+                            type="button"
+                        >
+                            GUARDAR CAMBIOS
+                        </button>
+
+
+                        <p id="estado-cuenta"></p>
+
+                    </div>
+
+
+                    <!-- ==============================
+                         CÓDIGO DE VINCULACIÓN
+                         ============================== -->
+
+                    <div class="codigo-cuenta">
+
+                        <h3>
+                            Código de vinculación
+                        </h3>
+
+                        <div class="codigo-cuenta-contenedor">
+
+                            <span id="codigo-cuenta-texto">
+                                Cargando...
+                            </span>
+
+                            <button
+                                id="boton-copiar-codigo-cuenta"
+                                type="button"
+                                aria-label="Copiar código de vinculación"
+                            >
+                                ⧉
+                            </button>
+
+                        </div>
+
+                        <button
+                            id="boton-regenerar-codigo"
+                            type="button"
+                        >
+                            REGENERAR CÓDIGO
+                        </button>
+
+                    </div>
+
+                    <section class="configuracion-notificaciones">
+                        <h3>Notificaciones</h3>
+                        <button id="boton-activar-notificaciones-dispositivo" type="button">ACTIVAR EN ESTE DISPOSITIVO</button>
+                        <p id="estado-notificaciones-dispositivo" aria-live="polite"></p>
+                        <label><input type="checkbox" data-preferencia="solicitudes_amistad"> Solicitudes de amistad</label>
+                        <label><input type="checkbox" data-preferencia="amistades_aceptadas"> Amistades aceptadas</label>
+                        <label><input type="checkbox" data-preferencia="mensajes_privados"> Mensajes privados</label>
+                        <label><input type="checkbox" data-preferencia="mensajes_grupo"> Mensajes de servidores</label>
+                        <label><input type="checkbox" data-preferencia="respuestas"> Respuestas</label>
+                        <label><input type="checkbox" data-preferencia="corazones"> Corazones</label>
+                        <label><input type="checkbox" data-preferencia="comentarios"> Comentarios</label>
+                        <button id="boton-guardar-notificaciones" type="button">GUARDAR NOTIFICACIONES</button>
+                        <p id="estado-notificaciones" aria-live="polite"></p>
+                    </section>
+
+
+                    <!-- ==============================
+                         CERRAR SESIÓN
+                         ============================== -->
+
+                    <button
+                        id="boton-cerrar-sesion"
+                        type="button"
+                    >
+                        CERRAR SESIÓN
+                    </button>
+
+                </div>
+
+
+                <!-- ==============================
+                     AGREGAR AMIGOS
+                     ============================== -->
+
+                <div
+                    id="contenido-amigos"
+                    hidden
+                >
+
+                    <div class="cabecera-amigos">
+
+                        <h2>
+                            Agregar amigos
+                        </h2>
+
+                    </div>
+
+
+                    <!-- ==============================
+                         PESTAÑAS
+                         ============================== -->
+
+                    <div
+                        class="pestanas-amigos"
+                        role="tablist"
+                        aria-label="Amigos"
+                    >
+
+                        <button
+                            id="boton-encontrar-personas"
+                            class="pestana-amigos activa"
+                            type="button"
+                            role="tab"
+                            aria-selected="true"
+                        >
+                            ENCONTRAR PERSONAS
+                        </button>
+
+                        <button
+                            id="boton-solicitudes"
+                            class="pestana-amigos"
+                            type="button"
+                            role="tab"
+                            aria-selected="false"
+                        >
+                            SOLICITUDES
+                        </button>
+
+                    </div>
+
+
+                    <!-- ==============================
+                         ENCONTRAR PERSONAS
+                         ============================== -->
+
+                    <section
+                        id="seccion-encontrar-personas"
+                        class="seccion-amigos"
+                    >
+
+                        <div class="buscador-amigos">
+
+                            <label
+                                for="buscador-personas"
+                                class="texto-oculto"
+                            >
+                                Buscar personas
+                            </label>
+
+                            <input
+                                type="search"
+                                id="buscador-personas"
+                                placeholder="Buscar personas..."
+                                autocomplete="off"
+                                maxlength="25"
+                            >
+
+                        </div>
+
+
+                        <p
+                            id="estado-busqueda-amigos"
+                            class="estado-amigos"
+                        >
+                            Escribe un nombre para buscar personas.
+                        </p>
+
+
+                        <div
+                            id="lista-resultados-amigos"
+                            class="lista-personas"
+                        >
+
+                            <!--
+                                Los resultados reales se generarán
+                                desde app.js.
+                            -->
+
+                        </div>
+
+                    </section>
+
+
+                    <!-- ==============================
+                         SOLICITUDES RECIBIDAS
+                         ============================== -->
+
+                    <section
+                        id="seccion-solicitudes"
+                        class="seccion-amigos"
+                        hidden
+                    >
+
+                        <div
+                            id="lista-solicitudes-amigos"
+                            class="lista-solicitudes"
+                        >
+
+                            <!--
+                                Las solicitudes reales se generarán
+                                desde app.js.
+                            -->
+
+                        </div>
+
+
+                        <p
+                            id="estado-solicitudes-amigos"
+                            class="estado-amigos"
+                        >
+                            No hay solicitudes de amistad.
+                        </p>
+
+                    </section>
+
+                </div>
+
+
+                <!-- ==============================
+                     SERVIDORES
+                     ============================== -->
+
+                <div
+                    id="contenido-servidores"
+                    hidden
+                >
+
+                    <!-- Barra de contexto: la flecha vuelve hacia atrás y el título
+                     indica en qué pantalla estás (servidor o canal). -->
+                    <header id="barra-contexto-servidor" class="barra-contexto-servidor">
+                        <button id="boton-volver-servidor" class="boton-flecha-contexto" type="button" aria-label="Volver" hidden>
+                            <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
+                                <path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                        <div class="barra-contexto-datos">
+                            <span id="avatar-contexto-servidor" class="avatar-contexto-servidor" hidden></span>
+                            <span class="barra-contexto-textos">
+                                <strong id="titulo-contexto-servidor">Servidores</strong>
+                                <span id="subtitulo-contexto-servidor"></span>
+                            </span>
+                        </div>
+                        <div class="barra-contexto-acciones" id="acciones-contexto-servidor" hidden>
+                            <button id="boton-miembros-servidor" type="button">MIEMBROS</button>
+                            <button id="boton-ajustes-servidor" type="button" hidden>AJUSTES</button>
+                            <button id="boton-salir-servidor" type="button">SALIR</button>
+                            <button id="boton-eliminar-servidor" type="button" hidden>ELIMINAR</button>
+                        </div>
+                    </header>
+
+                    <div class="pestanas-amigos" role="tablist" aria-label="Servidores">
+                        <button id="boton-mis-servidores" class="pestana-amigos activa" type="button" role="tab" aria-selected="true">MIS SERVIDORES</button>
+                        <button id="boton-buscar-servidores" class="pestana-amigos" type="button" role="tab" aria-selected="false">BUSCAR</button>
+                    </div>
+
+                    <p id="estado-servidores" class="estado-amigos" aria-live="polite"></p>
+
+                    <section id="seccion-mis-servidores" class="seccion-amigos">
+                        <div id="lista-servidores" class="lista-servidores"></div>
+                    </section>
+
+                    <!-- Crear servidor se abre desde el botón flotante, no desde una pestaña. -->
+                    <button id="boton-crear-servidor" class="boton-flotante-crear" type="button" aria-label="Crear servidor" title="Crear servidor">
+                        <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true" focusable="false">
+                            <path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+                        </svg>
+                    </button>
+
+                    <section id="seccion-buscar-servidores" class="seccion-amigos" hidden>
+                        <label class="texto-oculto" for="buscador-servidores">Buscar servidores</label>
+                        <input id="buscador-servidores" class="entrada-servidores" type="search" maxlength="25" placeholder="Buscar servidores..." autocomplete="off">
+                        <div id="resultados-servidores" class="lista-servidores"></div>
+
+                        <div class="bloque-invitacion">
+                            <h3>¿Tienes un código de invitación?</h3>
+                            <form id="formulario-invitacion" class="formulario-servidor">
+                                <label for="codigo-invitacion">Código de 9 caracteres</label>
+                                <input id="codigo-invitacion" type="text" maxlength="9" placeholder="Ej: ABC234KLM" autocomplete="off" autocapitalize="characters">
+                                <button type="submit">VER INVITACIÓN</button>
+                            </form>
+                            <div id="vista-invitacion"></div>
+                        </div>
+                    </section>
+
+                    <!-- ==================================
+                         PANEL DE SERVIDOR
+                         Escritorio: columna de canales a la
+                         izquierda y chat al centro.
+                         Móvil: una cosa a la vez.
+                         ================================== -->
+
+                    <section id="panel-servidor" class="panel-servidor" hidden>
+
+                        <aside id="columna-canales" class="columna-canales" hidden aria-label="Canales del servidor">
+                            <div id="lista-canales" class="lista-canales" role="tablist"></div>
+                            <div class="acciones-columna-canales">
+                                <button id="boton-activar-canales" type="button" hidden>ACTIVAR CANALES</button>
+                            </div>
+                        </aside>
+
+                        <div class="zona-chat-servidor">
+                        <div id="mensajes-servidor" class="mensajes-servidor" aria-live="polite"></div>
+
+                        <div id="barra-seleccion-servidor" class="barra-seleccion-chat" hidden>
+                            <span id="contador-seleccion-servidor">0 seleccionados</span>
+                            <button id="boton-cancelar-seleccion-servidor" type="button">CANCELAR</button>
+                            <button id="boton-borrar-seleccion-servidor" class="boton-papelera-chat" type="button" aria-label="Eliminar mensajes seleccionados">🗑</button>
+                        </div>
+
+                        <form id="formulario-mensaje-servidor" class="formulario-mensaje-servidor">
+                            <div class="composer-adjuntos">
+                                <button id="boton-mas-servidor" class="boton-mas-composer" type="button"
+                                        aria-label="Adjuntar foto, audio o vídeo" title="Adjuntar foto, audio o vídeo"
+                                        aria-haspopup="true" aria-expanded="false">
+                                    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
+                                        <path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+                                    </svg>
+                                </button>
+                                <div id="menu-adjuntar-servidor" class="menu-adjuntar" role="menu" hidden>
+                                    <button type="button" role="menuitem" data-adjunto="imagen">FOTOS</button>
+                                    <button type="button" role="menuitem" data-adjunto="video">VÍDEOS</button>
+                                    <button type="button" role="menuitem" data-adjunto="audio">AUDIOS</button>
+                                </div>
+                                <input id="archivo-servidor" type="file" hidden>
+                            </div>
+
+                            <input id="entrada-mensaje-servidor" type="text" maxlength="5000" placeholder="Escribe un mensaje..." autocomplete="off">
+
+                            <button id="boton-oculto-servidor" class="pastilla-oculto" type="button" hidden aria-pressed="false" title="Enviar el mensaje de forma oculta">
+                                <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+                                    <path d="M3 11s3.5-5 9-5 9 5 9 5-3.5 5-9 5-9-5-9-5Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"></path>
+                                    <circle cx="12" cy="11" r="2.5" fill="currentColor"></circle>
+                                    <path d="M4 19 20 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+                                </svg>
+                                <span>OCULTO</span>
+                            </button>
+
+                            <p id="estado-adjunto-servidor" class="chip-adjunto" hidden></p>
+
+                            <div id="fila-grabacion-servidor" class="fila-grabacion" hidden>
+                                <span class="grabacion-punto" aria-hidden="true"></span>
+                                <span id="tiempo-grabacion-servidor" class="grabacion-tiempo">0:00</span>
+                                <button id="boton-descartar-grabacion-servidor" class="boton-descartar-grabacion" type="button">
+                                    BORRAR
+                                </button>
+                            </div>
+
+                            <button id="boton-accion-servidor" class="boton-accion-composer" type="submit" aria-label="Grabar audio">
+                                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+                                    <rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor"></rect>
+                                    <path d="M6 11a6 6 0 0 0 12 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+                                    <path d="M12 17v4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+                                    <path d="M9 21h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+                                </svg>
+                            </button>
+                        </form>
+                        </div>
+                    </section>
+
+                </div>
+
+            </main>
+
+            <!-- ==============================
+                 MODAL CREAR SERVIDOR
+                 Se abre desde el botón flotante "+"
+                 ============================== -->
+
+            <div id="modal-crear-servidor" class="modal modal-contenido-social" hidden>
+                <section class="dialogo-social" role="dialog" aria-modal="true" aria-labelledby="titulo-crear-servidor">
+                    <header class="cabecera-dialogo-social">
+                        <h2 id="titulo-crear-servidor">Crear servidor</h2>
+                        <button id="boton-cerrar-crear-servidor" class="boton-cerrar-modal" type="button" aria-label="Cerrar">×</button>
+                    </header>
+                    <form id="formulario-crear-servidor" class="formulario-servidor">
+                        <label for="nombre-servidor">Nombre</label>
+                        <input id="nombre-servidor" type="text" maxlength="25" required>
+                        <label for="descripcion-servidor">Descripción</label>
+                        <textarea id="descripcion-servidor" maxlength="500"></textarea>
+                        <label for="tipo-servidor">Tipo de servidor</label>
+                        <select id="tipo-servidor">
+                            <option value="normal">Normal</option>
+                            <option value="amistades">Solo amistades del creador</option>
+                        </select>
+                        <label for="modelo-servidor">Modelo</label>
+                        <select id="modelo-servidor">
+                            <option value="chat_unico">Chat único</option>
+                            <option value="canales">Canales (activables después)</option>
+                        </select>
+                        <label class="opcion-ajuste" for="ocultos-servidor">
+                            <input id="ocultos-servidor" type="checkbox">
+                            Permitir mensajes ocultos en el canal general
+                        </label>
+                        <button type="submit">CREAR SERVIDOR</button>
+                    </form>
+                </section>
+            </div>
+
+            <!-- ==============================
+                 GESTIÓN DE CANALES
+                 Pantalla propia para creadores y moderadores
+                 ============================== -->
+
+            <div id="modal-gestion-canales" class="modal modal-contenido-social" hidden>
+                <section class="dialogo-social" role="dialog" aria-modal="true" aria-labelledby="titulo-gestion-canales">
+                    <header class="cabecera-dialogo-social">
+                        <h2 id="titulo-gestion-canales">Gestionar canales</h2>
+                        <button id="boton-cerrar-gestion-canales" class="boton-cerrar-modal" type="button" aria-label="Cerrar">×</button>
+                    </header>
+                    <form id="formulario-crear-canal" class="formulario-servidor">
+                        <label for="nombre-canal">Nombre</label>
+                        <input id="nombre-canal" type="text" maxlength="30" required>
+                        <label for="descripcion-canal">Descripción</label>
+                        <textarea id="descripcion-canal" maxlength="200"></textarea>
+                        <label for="retencion-canal">Retención en horas (vacío = permanente)</label>
+                        <input id="retencion-canal" type="number" min="1" max="8760" inputmode="numeric">
+                        <label class="opcion-ajuste" for="ocultos-canal">
+                            <input id="ocultos-canal" type="checkbox">
+                            Permitir mensajes ocultos
+                        </label>
+                        <button type="submit">CREAR CANAL</button>
+                    </form>
+                    <div id="lista-canales-ajuste" class="lista-filas-servidor"></div>
+                </section>
+            </div>
+
+            <!-- ==============================
+                 MODAL MIEMBROS DEL SERVIDOR
+                 ============================== -->
+
+            <div id="modal-miembros-servidor" class="modal modal-contenido-social" hidden>
+                <section class="dialogo-social" role="dialog" aria-modal="true" aria-labelledby="titulo-miembros-servidor">
+                    <header class="cabecera-dialogo-social">
+                        <h2 id="titulo-miembros-servidor">Miembros</h2>
+                        <button id="boton-cerrar-miembros-servidor" class="boton-cerrar-modal" type="button" aria-label="Cerrar">×</button>
+                    </header>
+                    <div id="lista-miembros-servidor" class="lista-filas-servidor"></div>
+                    <p id="estado-miembros-servidor" class="estado-amigos" aria-live="polite"></p>
+                </section>
+            </div>
+
+            <!-- ==============================
+                 MODAL AJUSTES DEL SERVIDOR
+                 ============================== -->
+
+            <div id="modal-ajustes-servidor" class="modal modal-contenido-social" hidden>
+                <section class="dialogo-social dialogo-ajustes-servidor" role="dialog" aria-modal="true" aria-labelledby="titulo-ajustes-servidor">
+                    <header class="cabecera-dialogo-social">
+                        <h2 id="titulo-ajustes-servidor">Ajustes del servidor</h2>
+                        <button id="boton-cerrar-ajustes-servidor" class="boton-cerrar-modal" type="button" aria-label="Cerrar">×</button>
+                    </header>
+
+                    <!-- La foto del servidor vale igual para los que tienen
+                         canales y para los de chat único. -->
+                    <div class="bloque-ajuste">
+                        <h3>Foto del servidor</h3>
+                        <div class="fila-imagen-servidor">
+                            <span id="previa-imagen-servidor" class="previa-imagen-servidor" aria-hidden="true"></span>
+                            <div class="fila-ajuste">
+                                <button id="boton-cambiar-imagen-servidor" type="button">CAMBIAR FOTO</button>
+                                <button id="boton-quitar-imagen-servidor" type="button">QUITAR FOTO</button>
+                            </div>
+                        </div>
+                        <input id="archivo-imagen-servidor" type="file" accept="image/*" hidden>
+                    </div>
+
+                    <div class="bloque-ajuste">
+                        <h3>Invitación</h3>
+                        <p id="codigo-invitacion-servidor" class="codigo-invitacion">Sin código activo.</p>
+                        <div class="fila-ajuste">
+                            <button id="boton-generar-invitacion" type="button">GENERAR CÓDIGO</button>
+                            <button id="boton-copiar-invitacion" type="button">COPIAR</button>
+                            <button id="boton-eliminar-invitacion" type="button">DESHABILITAR</button>
+                        </div>
+                    </div>
+
+                    <!-- La gestión de canales vive ahora en su propia pantalla,
+                         accesible desde el botón GESTIONAR CANALES. -->
+                    <div class="bloque-ajuste">
+                        <h3>Canales</h3>
+                        <button id="boton-gestion-canales" type="button">GESTIONAR CANALES</button>
+                    </div>
+
+                    <div class="bloque-ajuste">
+                        <h3>Bloqueados</h3>
+                        <div id="lista-bloqueados-servidor" class="lista-filas-servidor"></div>
+                    </div>
+
+                    <div class="bloque-ajuste">
+                        <h3>Mensajes ocultos</h3>
+                        <p class="texto-ajuste">Levanta todas las restricciones que impiden enviar mensajes ocultos en este servidor.</p>
+                        <button id="boton-quitar-restricciones" type="button">QUITAR RESTRICCIONES</button>
+                    </div>
+
+                    <div class="bloque-ajuste">
+                        <h3>Privacidad y propiedad</h3>
+                        <div class="fila-ajuste">
+                            <button id="boton-silenciar-servidor" type="button">SILENCIAR</button>
+                        </div>
+                        <label for="select-traspaso-servidor">Traspasar la propiedad a</label>
+                        <select id="select-traspaso-servidor">
+                            <option value="">Elige un miembro...</option>
+                        </select>
+                        <button id="boton-traspasar-servidor" type="button">TRASPARSAR PROPIEDAD</button>
+                    </div>
+
+                    <p id="estado-ajustes-servidor" class="estado-amigos" aria-live="polite"></p>
+                </section>
+            </div>
+
+            <!-- ==============================
+                 MODAL EDITAR CANAL
+                 ============================== -->
+
+            <div id="modal-canal-servidor" class="modal modal-contenido-social" hidden>
+                <section class="dialogo-social" role="dialog" aria-modal="true" aria-labelledby="titulo-canal-servidor">
+                    <header class="cabecera-dialogo-social">
+                        <h2 id="titulo-canal-servidor">Editar canal</h2>
+                        <button id="boton-cerrar-canal-servidor" class="boton-cerrar-modal" type="button" aria-label="Cerrar">×</button>
+                    </header>
+                    <form id="formulario-editar-canal" class="formulario-servidor">
+                        <input id="editar-canal-id" type="hidden" value="">
+                        <label for="editar-nombre-canal">Nombre</label>
+                        <input id="editar-nombre-canal" type="text" maxlength="30" required>
+                        <label for="editar-descripcion-canal">Descripción</label>
+                        <textarea id="editar-descripcion-canal" maxlength="200"></textarea>
+                        <label for="editar-retencion-canal">Retención en horas (vacío = permanente)</label>
+                        <input id="editar-retencion-canal" type="number" min="1" max="8760" inputmode="numeric">
+                        <label class="opcion-ajuste" for="editar-ocultos-canal">
+                            <input id="editar-ocultos-canal" type="checkbox">
+                            Permitir mensajes ocultos
+                        </label>
+                        <button type="submit">GUARDAR CAMBIOS</button>
+                        <button id="boton-eliminar-canal" class="boton-peligro" type="button">ELIMINAR CANAL</button>
+                    </form>
+                </section>
+            </div>
+
+
+            <!-- ==============================
+                 MODAL OPCIONES FOTO DE PERFIL
+                 ============================== -->
+
+            <div
+                id="modal-opciones-foto"
+                class="modal"
+                hidden
+            >
+
+                <div
+                    class="modal-contenido"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="titulo-opciones-foto"
+                >
+
+                    <button
+                        id="boton-cerrar-opciones-foto"
+                        class="boton-cerrar-modal"
+                        type="button"
+                        aria-label="Cerrar"
+                    >
+                        ×
+                    </button>
+
+                    <h2 id="titulo-opciones-foto">
+                        Foto de perfil
+                    </h2>
+
+                    <button
+                        id="boton-ver-foto"
+                        type="button"
+                    >
+                        VER FOTO
+                    </button>
+
+                    <button
+                        id="boton-cambiar-foto"
+                        type="button"
+                    >
+                        CAMBIAR FOTO
+                    </button>
+
+                </div>
+
+            </div>
+
+            <div id="modal-estado" class="modal modal-contenido-social" hidden>
+                <section class="dialogo-social" role="dialog" aria-modal="true" aria-labelledby="titulo-modal-estado">
+                    <header class="cabecera-dialogo-social">
+                        <h2 id="titulo-modal-estado">Mi estado</h2>
+                        <button id="boton-cerrar-modal-estado" class="boton-cerrar-modal" type="button" aria-label="Cerrar">×</button>
+                    </header>
+                    <div id="acciones-mi-estado" class="acciones-mi-estado" hidden>
+                        <button id="boton-ver-mis-estados" type="button">VER MIS ESTADOS</button>
+                        <button id="boton-anadir-estado" type="button">SUBIR OTRO ESTADO</button>
+                    </div>
+                    <div id="visor-estados" class="visor-estados" hidden></div>
+                    <form id="formulario-estado" class="formulario-dialogo-social" hidden>
+                        <fieldset class="selector-tipo-contenido">
+                            <legend>Tipo de estado</legend>
+                            <label><input type="radio" name="tipo-estado" value="texto" checked> Texto</label>
+                            <label><input type="radio" name="tipo-estado" value="imagenes"> Fotos</label>
+                            <label><input type="radio" name="tipo-estado" value="video"> Vídeo</label>
+                            <label><input type="radio" name="tipo-estado" value="audio"> Audio</label>
+                        </fieldset>
+                        <textarea id="texto-estado" maxlength="500" placeholder="Escribe tu estado..." required></textarea>
+                        <label id="etiqueta-archivo-estado" class="selector-archivo-social" hidden>
+                            <span id="texto-archivo-estado">Seleccionar archivo</span>
+                            <input id="archivo-estado" type="file" accept="image/*" hidden>
+                        </label>
+                        <div id="controles-grabar-audio" class="controles-grabar-audio" hidden>
+                            <button id="boton-iniciar-audio" type="button">GRABAR AUDIO</button>
+                            <button id="boton-detener-audio" type="button" disabled>DETENER</button>
+                            <audio id="vista-previa-audio" controls hidden></audio>
+                        </div>
+                        <label class="selector-audiencia-social" for="visibilidad-estado">Quién puede verlo</label>
+                        <select id="visibilidad-estado">
+                            <option value="amigos">Mis amigos</option>
+                            <option value="publica">Público</option>
+                        </select>
+                        <p id="error-estado-social" class="error-social" aria-live="polite"></p>
+                        <button id="boton-publicar-estado" class="boton-confirmar-social" type="submit">PUBLICAR ESTADO</button>
+                    </form>
+                </section>
+            </div>
+
+            <div id="visor-historias-pantalla" class="visor-historias-pantalla" role="dialog" aria-modal="true" aria-label="Estados" tabindex="-1" hidden>
+                <div id="progreso-historias" class="progreso-historias" aria-hidden="true"></div>
+                <header class="cabecera-historia-pantalla">
+                    <button id="boton-perfil-historia" class="boton-perfil-historia" type="button" aria-label="Ver el perfil del autor">
+                        <img id="avatar-autor-historia" alt="" hidden>
+                        <strong id="nombre-autor-historia"></strong>
+                    </button>
+                    <button id="cerrar-visor-historias" type="button" aria-label="Cerrar estados">×</button>
+                </header>
+                <button id="historia-anterior" class="zona-historia zona-historia-anterior" type="button" aria-label="Estado anterior"></button>
+                <div id="contenido-historia-pantalla" class="contenido-historia-pantalla"></div>
+                <button id="historia-siguiente" class="zona-historia zona-historia-siguiente" type="button" aria-label="Siguiente estado"></button>
+            </div>
+
+            <div id="modal-publicacion" class="modal modal-contenido-social" hidden>
+                <section class="dialogo-social" role="dialog" aria-modal="true" aria-labelledby="titulo-modal-publicacion">
+                    <header class="cabecera-dialogo-social">
+                        <h2 id="titulo-modal-publicacion">Crear publicación</h2>
+                        <button id="boton-cerrar-modal-publicacion" class="boton-cerrar-modal" type="button" aria-label="Cerrar">×</button>
+                    </header>
+                    <form id="formulario-publicacion" class="formulario-dialogo-social">
+                        <fieldset class="selector-tipo-contenido">
+                            <legend>Tipo de publicación</legend>
+                            <label><input type="radio" name="tipo-publicacion" value="texto" checked> Texto</label>
+                            <label><input type="radio" name="tipo-publicacion" value="imagenes"> Fotos</label>
+                            <label><input type="radio" name="tipo-publicacion" value="video"> Vídeo</label>
+                        </fieldset>
+                        <textarea id="texto-publicacion" maxlength="5000" placeholder="Escribe una publicación..." required></textarea>
+                        <label id="etiqueta-archivo-publicacion" class="selector-archivo-social" hidden>
+                            <span>Seleccionar fotos o vídeo</span>
+                            <input id="archivo-publicacion" type="file" accept="image/*" multiple hidden>
+                        </label>
+                        <label class="selector-audiencia-social" for="visibilidad-publicacion">Quién puede verlo</label>
+                        <select id="visibilidad-publicacion">
+                            <option value="amigos">Mis amigos</option>
+                            <option value="publica">Público</option>
+                        </select>
+                        <p id="error-publicacion-social" class="error-social" aria-live="polite"></p>
+                        <button class="boton-confirmar-social" type="submit">PUBLICAR</button>
+                    </form>
+                </section>
+            </div>
+
+            <!-- ==============================
+                 MODAL FOTO GRANDE
+                 ============================== -->
+
+            <div
+                id="modal-foto-grande"
+                class="modal"
+                hidden
+            >
+
+                <div
+                    class="modal-foto-contenido"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label="Foto de perfil"
+                >
+
+                    <button
+                        id="boton-cerrar-foto-grande"
+                        class="boton-cerrar-modal"
+                        type="button"
+                        aria-label="Cerrar"
+                    >
+                        ×
+                    </button>
+
+                    <img
+                        id="foto-perfil-grande"
+                        src=""
+                        alt="Foto de perfil ampliada"
+                    >
+
+                </div>
+
+            </div>
+
+
+            <!-- ==============================
+                 MODAL PERFIL
+                 ============================== -->
+
+            <div
+                id="modal-perfil"
+                class="modal modal-contenido-social"
+                hidden
+            >
+
+                <section
+                    class="dialogo-social dialogo-perfil"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="titulo-modal-perfil"
+                >
+
+                    <header class="cabecera-dialogo-social">
+
+                        <h2 id="titulo-modal-perfil">
+                            Perfil
+                        </h2>
+
+                        <button
+                            id="boton-cerrar-modal-perfil"
+                            class="boton-cerrar-modal"
+                            type="button"
+                            aria-label="Cerrar"
+                        >
+                            ×
+                        </button>
+
+                    </header>
+
+                    <div
+                        id="contenido-perfil"
+                        class="contenido-perfil"
+                    ></div>
+
+                    <p
+                        id="estado-perfil"
+                        class="estado-amigos"
+                        aria-live="polite"
+                    ></p>
+
+                </section>
+
+            </div>
+
+
+            <!-- ==============================
+                 MODAL OPCIONES DEL PERFIL
+                 ============================== -->
+
+            <div
+                id="modal-acciones-perfil"
+                class="modal modal-contenido-social"
+                hidden
+            >
+
+                <div
+                    class="modal-contenido"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="titulo-acciones-perfil"
+                >
+
+                    <button
+                        id="boton-cerrar-acciones-perfil"
+                        class="boton-cerrar-modal"
+                        type="button"
+                        aria-label="Cerrar"
+                    >
+                        ×
+                    </button>
+
+                    <h2 id="titulo-acciones-perfil">
+                        Foto de perfil
+                    </h2>
+
+                    <button
+                        id="boton-perfil-ver-estados"
+                        type="button"
+                    >
+                        VER ESTADOS
+                    </button>
+
+                    <button
+                        id="boton-perfil-ver-foto"
+                        type="button"
+                    >
+                        VER FOTO
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <!-- ==============================
+                 MODAL AMISTADES DEL PERFIL
+                 ============================== -->
+
+            <div
+                id="modal-amigos-perfil"
+                class="modal modal-contenido-social"
+                hidden
+            >
+
+                <section
+                    class="dialogo-social dialogo-amigos-perfil"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="titulo-amigos-perfil"
+                >
+
+                    <header class="cabecera-dialogo-social">
+
+                        <h2 id="titulo-amigos-perfil">
+                            Amistades
+                        </h2>
+
+                        <button
+                            id="boton-cerrar-amigos-perfil"
+                            class="boton-cerrar-modal"
+                            type="button"
+                            aria-label="Cerrar"
+                        >
+                            ×
+                        </button>
+
+                    </header>
+
+                    <p
+                        id="estado-amigos-perfil"
+                        class="estado-amigos"
+                        aria-live="polite"
+                    ></p>
+
+                    <div
+                        id="lista-amigos-perfil"
+                        class="lista-amigos-perfil"
+                    ></div>
+
+                </section>
+
+            </div>
+
+
+            <!-- ==============================
+                 INPUT OCULTO PARA CAMBIAR FOTO
+                 ============================== -->
+
+            <input
+                type="file"
+                id="input-foto-perfil"
+                accept="image/*"
+                hidden
+            >
+
+
+            <!-- ==============================
+                 NAVEGACIÓN
+                 ============================== -->
+
+            <nav class="barra-navegacion">
+
+                <button id="boton-entrar-app">
+                    ENTRAR
+                </button>
+
+                <button id="boton-amigos">
+                    AGREGAR AMIGOS
+                </button>
+
+                <button id="boton-servidores">
+                    SERVIDORES
+                </button>
+
+                <button id="boton-cuenta">
+                    CUENTA
+                </button>
+
+            </nav>
+
+        </section>
+
+    </main>
+
+
+    <script src="/app.js"></script>
+
+</body>
+
+</html>

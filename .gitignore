@@ -3,3 +3,14 @@ dist/
 .env
 .env.*
 !.env.example
+
+# Contenido subido por los usuarios: nunca va al repositorio.
+uploads/
+
+# Claves VAPID de las notificaciones: se generan solas en cada instalacion.
+data/push-vapid.json
+data/push-vapid.*.tmp
+
+# Ruido del entorno local.
+*.log
+.vscode/
