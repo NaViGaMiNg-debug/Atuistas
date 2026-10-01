@@ -21,11 +21,14 @@ if [ "$(id -u)" -ne 0 ]; then
 fi
 
 echo "==> Instalando el servicio systemd"
-# Las rutas del servicio se generan aqui para que coincidan con la carpeta
-# real de la aplicacion, en vez de tenerlas escritas a mano.
+# Con "sudo bash", $USER y $(id -un) son root: hay que usar el usuario que
+# invoco sudo, o el servicio arrancaria como root y dejaria el puerto 3000
+# bloqueado sin que el propio usuario pueda pararlo.
+USUARIO_REAL="${SUDO_USER:-$(logname 2>/dev/null || echo root)}"
+
 sed -e "s#@APP_DIR@#$APP_DIR#g" \
-    -e "s#@APP_USER@#$(id -un)#g" \
-    -e "s#@APP_GROUP@#$(id -gn)#g" \
+    -e "s#@APP_USER@#$USUARIO_REAL#g" \
+    -e "s#@APP_GROUP@#$USUARIO_REAL#g" \
     "$APP_DIR/deploy/atuistas.service" > /etc/systemd/system/atuistas.service
 
 chmod 644 /etc/systemd/system/atuistas.service
