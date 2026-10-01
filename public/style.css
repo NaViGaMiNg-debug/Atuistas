@@ -5257,3 +5257,118 @@ button.estadistica-perfil:hover {
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+
+/* ========================================
+   PWA: INSTALAR LA APP Y AVISO DE ACTUALIZACION
+   ======================================== */
+
+.boton-instalar-app {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+
+    width: 100%;
+    max-width: 320px;
+    min-height: 44px;
+
+    margin-top: 8px;
+    padding: 11px 16px;
+
+    border: 1px solid var(--borde-medio);
+    border-radius: var(--radio-md);
+
+    background: transparent;
+    color: var(--texto-secundario);
+
+    font-size: 12px;
+    font-weight: 700;
+
+    cursor: pointer;
+
+    transition: background var(--transicion-rapida), color var(--transicion-rapida);
+}
+
+.boton-instalar-app:hover:not(:disabled) {
+    background: var(--fondo-hover);
+    color: var(--texto-principal);
+}
+
+.boton-instalar-app:disabled {
+    opacity: 0.6;
+    cursor: progress;
+}
+
+.boton-instalar-app[hidden] {
+    display: none;
+}
+
+/* Aviso de version nueva. Flota arriba para no tapar el contenido, y en
+   movil ocupa el ancho entero para que se pulse bien. */
+
+.aviso-actualizacion {
+    position: fixed;
+    top: 12px;
+    left: 50%;
+    z-index: 200;
+
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    padding: 10px 12px 10px 16px;
+
+    border: 1px solid var(--acento);
+    border-radius: var(--radio-full);
+
+    background: var(--fondo-elevado);
+
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+
+    color: var(--texto-principal);
+
+    font-size: 12px;
+    font-weight: 700;
+
+    transform: translateX(-50%);
+}
+
+.aviso-actualizacion[hidden] {
+    display: none;
+}
+
+.aviso-actualizacion button {
+    min-height: 0;
+    padding: 6px 14px;
+
+    border: none;
+    border-radius: var(--radio-full);
+
+    background: var(--acento);
+    color: var(--acento-texto);
+
+    font-size: 11px;
+    font-weight: 700;
+
+    cursor: pointer;
+}
+
+.aviso-actualizacion button:disabled {
+    opacity: 0.6;
+    cursor: progress;
+}
+
+@media (max-width: 480px) {
+    .aviso-actualizacion {
+        top: 8px;
+        left: 8px;
+        right: 8px;
+
+        justify-content: space-between;
+
+        border-radius: var(--radio-md);
+
+        transform: none;
+    }
+}
+

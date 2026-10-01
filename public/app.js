@@ -772,10 +772,131 @@ let indiceHistoriaActual = 0;
 let temporizadorHistoria = null;
 let secuenciaHistoriaActual = [];
 
+/* ========================================
+   INSTALACIÓN Y ACTUALIZACIÓN DE LA PWA
+   El boton de instalar solo aparece si el navegador dice que se puede
+   instalar, y la actualizacion se comprueba sola: cuando hay version
+   nueva, aparece el aviso y basta con pulsar ACTUALIZAR.
+   ======================================== */
+
+const botonInstalarApp = document.getElementById("boton-instalar-app");
+const avisoActualizacion = document.getElementById("aviso-actualizacion");
+const botonActualizarApp = document.getElementById("boton-actualizar-app");
+
+let instalacionPendiente = null;
+
+// Si la app ya se esta ejecutando como instalada, no tiene sentido ofrecer
+// volver a instalarla.
+function appYaInstalada() {
+    return window.matchMedia("(display-mode: standalone)").matches
+        || window.navigator.standalone === true;
+}
+
+function mostrarBotonInstalar() {
+    if (!botonInstalarApp || appYaInstalada()) return;
+    botonInstalarApp.hidden = false;
+}
+
+botonInstalarApp?.addEventListener("click", async () => {
+    if (!instalacionPendiente) return;
+    botonInstalarApp.disabled = true;
+    try {
+        instalacionPendiente.prompt();
+        // El usuario puede cancelar: outcome queda en "dismissed".
+        const { outcome } = await instalacionPendiente.userChoice;
+        if (outcome === "accepted") {
+            botonInstalarApp.hidden = true;
+        } else {
+            botonInstalarApp.disabled = false;
+        }
+    } finally {
+        instalacionPendiente = null;
+    }
+});
+
+// Cuando hay una version nueva esperando, se avisa en vez de recargar solo:
+// recargar sin permiso perderia lo que el usuario estuviera escribiendo.
+function avisarActualizacion(registration) {
+    if (!avisoActualizacion) return;
+
+    avisoActualizacion.hidden = false;
+
+    const aplicar = () => {
+        avisarActualizacion.hidden = true;
+        botonActualizarApp.disabled = true;
+        if (registration.waiting) {
+            registration.waiting.postMessage({ tipo: "activar-version" });
+        } else {
+            window.location.reload();
+        }
+    };
+
+    botonActualizarApp.onclick = aplicar;
+    botonActualizarApp.disabled = false;
+}
+
+function vigilarActualizaciones(registration) {
+    if (!registration) return;
+
+    // Ya hay una version nueva descargada al abrir la app.
+    if (registration.waiting) {
+        avisarActualizacion(registration);
+    }
+
+    // Se esta descargando una version nueva.
+    registration.addEventListener("updatefound", () => {
+        const instalando = registration.installing;
+        if (!instalando) return;
+
+        instalando.addEventListener("statechange", () => {
+            // "installed" con un worker previo significa que hay version nueva.
+            if (instalando.state === "installed" && navigator.serviceWorker.controller) {
+                avisarActualizacion(registration);
+            }
+        });
+    });
+
+    // Cada certaino se pregunta al servidor si hay algo nuevo. Asi el
+    // cambio llega solo, sin que el usuario tenga que reinstalar nada.
+    setInterval(async () => {
+        try {
+            await registration.update();
+        } catch {
+            // Sin conexion no hay nada que comprobar.
+        }
+    }, 30 * 60 * 1000);
+    // El service worker avisa cuando ya esta sirviendo la version nueva: se
+    // recarga una vez y la app queda al dia sin que haya que instalar nada.
+    let recargando = false;
+    navigator.serviceWorker.addEventListener("message", (event) => {
+        if (event.data?.tipo !== "version-aplicada") return;
+        if (recargando) return;
+        recargando = true;
+        window.location.reload();
+    });
+
+}
+
 if ("serviceWorker" in navigator && window.isSecureContext) {
     navigator.serviceWorker.register("/sw.js")
-        .then((registration) => { registroServiceWorker = registration; })
+        .then((registration) => {
+            registroServiceWorker = registration;
+            vigilarActualizaciones(registration);
+        })
         .catch((error) => console.warn("No se pudo registrar el service worker:", error));
+
+    // Chrome avisa cuando la app cumple los requisitos de instalacion.
+    window.addEventListener("beforeinstallprompt", (event) => {
+        event.preventDefault();
+        instalacionPendiente = event;
+        mostrarBotonInstalar();
+    });
+
+    // Si el usuario instalo desde el navegador, el boton ya no hace falta.
+    window.addEventListener("appinstalled", () => {
+        instalacionPendiente = null;
+        if (botonInstalarApp) botonInstalarApp.hidden = true;
+    });
 }
 
 async function solicitarGrupo(ruta, opciones = {}) {

@@ -1,0 +1,14 @@
+PORT=3000
+HOST=127.0.0.1
+NODE_ENV=production
+
+# PostgreSQL local en el mismo servidor
+DB_HOST=127.0.0.1
+DB_PORT=5432
+DB_NAME=atuistas
+DB_USER=atuistas
+DB_PASSWORD=EShBc2xSWRkdIeYipZXfMnl7JcSjmRTZ
+
+# Cifra los codigos de vinculacion del movil. No cambiar nunca:
+# si se cambia, los codigos ya emitidos dejan de servir.
+ATUISTAS_CODE_ENCRYPTION_KEY=373ebb8bb05f690cec6f2553626be3210ed8711f88b409e447f1a03cc81ff058

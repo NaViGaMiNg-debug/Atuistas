@@ -33,6 +33,16 @@
 
 <body>
 
+    <!-- ========================================
+         AVISOS DE LA APLICACION INSTALADA
+         El aviso de actualizacion solo aparece cuando hay version nueva
+         descargada y lista para aplicarse.
+         ======================================== -->
+    <div id="aviso-actualizacion" class="aviso-actualizacion" hidden role="status">
+        <span>Hay una version nueva disponible.</span>
+        <button id="boton-actualizar-app" type="button">ACTUALIZAR</button>
+    </div>
+
     <main id="app">
 
         <!-- ==============================
@@ -53,6 +63,17 @@
 
                 <button id="boton-crear-cuenta">
                     CREAR CUENTA
+                </button>
+
+                <!-- Instalar la app. El boton se muestra solo cuando el
+                     navegador confirma que se puede instalar, de modo que
+                     nunca aparece un boton que no haga nada. -->
+                <button id="boton-instalar-app" class="boton-instalar-app" type="button" hidden>
+                    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+                        <path d="M12 3v11m0 0 4-4m-4 4-4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                        <path d="M5 18v2h14v-2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+                    </svg>
+                    <span>INSTALAR APLICACIÓN</span>
                 </button>
 
             </div>
