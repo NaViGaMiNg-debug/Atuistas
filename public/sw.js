@@ -8,7 +8,7 @@
    lo nuevo. Asi la app instalada se actualiza sola, sin reinstalarla.
    ======================================== */
 
-const VERSION = "v1";
+const VERSION = "v2";
 const CACHE = `atuistas-${VERSION}`;
 
 // Solo se cachean estos ficheros. Todo lo demas (API, subidas) va directo a
@@ -88,21 +88,22 @@ self.addEventListener("fetch", (event) => {
         return;
     }
 
-    // Resto de ficheros: se sirve desde la cache y se refresca por detrás.
+    // Ficheros del programa (app.js, style.css...): primero la red y la cache
+    // solo hace de copia de seguridad. Servirlos desde cache primero hacia
+    // que la app instalada se quedara eternamente en una version vieja.
     event.respondWith((async () => {
         const cache = await caches.open(CACHE);
-        const guardada = await cache.match(solicitud);
 
-        const desdeRed = fetch(solicitud)
-            .then((respuesta) => {
-                if (respuesta && respuesta.ok) {
-                    cache.put(solicitud, respuesta.clone());
-                }
-                return respuesta;
-            })
-            .catch(() => guardada);
-
-        return guardada || desdeRed;
+        try {
+            const respuesta = await fetch(solicitud);
+            if (respuesta && respuesta.ok) {
+                cache.put(solicitud, respuesta.clone());
+            }
+            return respuesta;
+        } catch {
+            // Sin conexion se sirve la ultima copia buena.
+            return (await cache.match(solicitud)) || Response.error();
+        }
     })());
 });
 
