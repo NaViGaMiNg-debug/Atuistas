@@ -2154,8 +2154,8 @@ function actualizarContextoServidor() {
     }
 
     if (!grupoActual || panel.hidden) {
-        // Pantalla de lista de servidores.
-        titulo.textContent = "Servidores";
+        // Pantalla de lista: sin titulo, la cabecera se queda limpia.
+        titulo.textContent = "";
         subtitulo.textContent = "";
         volver.hidden = true;
         acciones.hidden = true;
