@@ -1,0 +1,112 @@
+/**
+ * Prueba visual en Chrome sin intervention manual: deja la sesion iniciada
+ * y abre un servidor de chat unico, para ver la barra de escritura y la
+ * pestanita del nombre del grupo.
+ *
+ *   node deploy/probar-visual.mjs
+ */
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const aqui = path.dirname(fileURLToPath(import.meta.url));
+const raiz = path.join(aqui, "..");
+const base = process.env.BASE || "http://127.0.0.1:3000";
+
+const sufijo = Date.now().toString().slice(-8);
+const registro = await fetch(`${base}/api/auth/registro`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ nombre: `visual${sufijo}`, dispositivo_id: `visual-${sufijo}` })
+}).then((r) => r.json());
+const token = registro.usuario.token;
+const cabeceras = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
+
+const creado = await fetch(`${base}/api/grupos`, {
+    method: "POST",
+    headers: cabeceras,
+    body: JSON.stringify({ nombre: `Servidor ${sufijo}`, modelo: "chat_unico", descripcion: "Un servidor de prueba" })
+}).then((r) => r.json());
+
+// Con "canales" el servidor se convierte, para comprobar que reaparece la
+// lista de canales y que la descripcion se deja de mostrar.
+if (process.argv.includes("canales")) {
+    await fetch(`${base}/api/grupos/${creado.grupo.id}/activar-canales`, {
+        method: "POST",
+        headers: cabeceras,
+        body: "{}"
+    });
+    for (const nombre of ["general", "random", "series"]) {
+        if (nombre === "general") continue;
+        await fetch(`${base}/api/grupos/${creado.grupo.id}/canales`, {
+            method: "POST",
+            headers: cabeceras,
+            body: JSON.stringify({ nombre })
+        });
+    }
+}
+
+// Algunos mensajes de relleno, para que la lista tenga contenido.
+const grupo = await fetch(`${base}/api/grupos/${creado.grupo.id}`, { headers: cabeceras }).then((r) => r.json());
+const canalId = grupo.grupo.canales[0].id;
+
+for (const contenido of ["Hola, este es el primer mensaje", "Segundo mensaje para ver la lista"]) {
+    await fetch(`${base}/api/grupos/${creado.grupo.id}/mensajes`, {
+        method: "POST",
+        headers: cabeceras,
+        body: JSON.stringify({ contenido, canalId })
+    });
+}
+
+// La pagina de prueba inyecta el token y llama a la misma funcion que usa
+// la aplicacion al tocar una tarjeta de servidor.
+const html = fs.readFileSync(path.join(raiz, "public", "index.html"), "utf8");
+const app = fs.readFileSync(path.join(raiz, "public", "app.js"), "utf8");
+const css = fs.readFileSync(path.join(raiz, "public", "style.css"), "utf8");
+
+// Se intercepta localStorage antes de que corra la app.
+const arranque = `
+<script>
+(function () {
+    var token = ${JSON.stringify(token)};
+    var idGrupo = ${JSON.stringify(creado.grupo.id)};
+    var datos = {};
+    Object.defineProperty(window, "localStorage", {
+        value: {
+            getItem: function (k) { return k === "atuistas_token" ? token : null; },
+            setItem: function () {}, removeItem: function () {}
+        },
+        configurable: true
+    });
+    window.addEventListener("load", function () {
+        setTimeout(function () {
+            // Abrir la seccion de servidores y luego el grupo.
+            var boton = document.getElementById("boton-servidores");
+            if (boton) boton.click();
+            setTimeout(function () {
+                var tarjeta = document.querySelector('[data-abrir-servidor="' + idGrupo + '"]');
+                if (tarjeta) tarjeta.click();
+${process.argv.includes("modal") ? `
+                // Con "modal" se abre ademas la pestanita del nombre del grupo.
+                setTimeout(function () {
+                    var abrir = document.getElementById("boton-ver-grupo");
+                    if (abrir) abrir.click();
+                }, 900);` : ""}
+            }, 1500);
+        }, 800);
+    });
+})();
+</script>
+`;
+
+const salida = html
+    .replace('<link rel="stylesheet" href="/style.css">', `<style>${css}</style>`)
+    .replace('<script src="/app.js"></script>', `<script>${app}</script>`)
+    .replace("</head>", `${arranque}</head>`);
+
+// Se escribe directamente en public para que el servidor lo sirva por HTTP:
+// abrirlo con file:// bloquearia las peticiones a la API.
+const destino = path.join(raiz, "public", "prueba-visual.html");
+fs.writeFileSync(destino, salida, "utf8");
+console.log(`Pagina de prueba creada en ${destino}`);
+console.log(`Servidor: ${creado.grupo.id}`);

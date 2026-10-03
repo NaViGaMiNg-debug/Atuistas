@@ -1847,6 +1847,13 @@ function esPantallaAncha() {
     return window.matchMedia("(min-width: 1000px)").matches;
 }
 
+// Un servidor de chat único no tiene lista de canales: su único canal es el
+// general y nunca se enseña. En cuanto pasa a tener canales, vuelve a verse.
+function servidorUsaCanales() {
+    const modelo = detalleGrupo?.modelo ?? grupoActual?.modelo ?? null;
+    return modelo === "canales";
+}
+
 function actualizarContextoServidor() {
     const titulo = document.getElementById("titulo-contexto-servidor");
     const subtitulo = document.getElementById("subtitulo-contexto-servidor");
@@ -1858,6 +1865,7 @@ function actualizarContextoServidor() {
     const ancho = esPantallaAncha();
     const crear = document.getElementById("boton-crear-servidor");
     const avatar = document.getElementById("avatar-contexto-servidor");
+    const botonFoto = document.getElementById("boton-foto-servidor");
 
     // La foto del servidor acompaña al nombre; sin foto, se muestra la inicial.
     if (avatar) {
@@ -1866,6 +1874,11 @@ function actualizarContextoServidor() {
             ? `<img src="${escapeHtml(ruta)}" alt="" loading="lazy">`
             : `<span aria-hidden="true">${escapeHtml((grupoActual?.nombre || "?").charAt(0).toUpperCase())}</span>`;
         avatar.hidden = !grupoActual || panel.hidden;
+    }
+
+    // El botón de la foto solo existe con un servidor abierto.
+    if (botonFoto) {
+        botonFoto.hidden = !grupoActual || panel.hidden;
     }
 
     if (!grupoActual || panel.hidden) {
@@ -1880,9 +1893,13 @@ function actualizarContextoServidor() {
     }
 
     const nombreServidor = grupoActual.nombre ?? "";
+
     if (vistaServidorActual === "chat") {
-        titulo.textContent = canalActual ? `#${canalActual.nombre}` : nombreServidor;
-        subtitulo.textContent = canalActual ? nombreServidor : "";
+        // Con canales se enseña cuál está abierto; en chat único el título
+        // es directamente el nombre del servidor.
+        const tituloCanal = servidorUsaCanales() && canalActual;
+        titulo.textContent = tituloCanal ? `#${canalActual.nombre}` : nombreServidor;
+        subtitulo.textContent = tituloCanal ? nombreServidor : "";
     } else {
         titulo.textContent = nombreServidor;
         const etiquetaRol = detalleGrupo?.mi_rol === "creador" ? "Creador"
@@ -1895,15 +1912,18 @@ function actualizarContextoServidor() {
         ].filter(Boolean).join(" · ");
     }
 
+    // La fila de botones ya no se muestra: sus acciones viven en el modal
+    // que abre el nombre del grupo. Se deja oculta siempre.
     volver.hidden = false;
-    acciones.hidden = false;
+    acciones.hidden = true;
     if (crear) crear.hidden = true;
     if (pestanas) pestanas.hidden = true;
 
     // En escritorio los canales permanecen a la izquierda siempre que haya chat.
-    const verColumna = canalesGrupo.length > 0 && (ancho || vistaServidorActual === "canales");
+    // Un chat único no los muestra nunca, porque solo tiene el general.
+    const verColumna = servidorUsaCanales() && (ancho || vistaServidorActual === "canales");
     columna.hidden = !verColumna;
-    zonaChatServidor.hidden = !(ancho || vistaServidorActual === "chat");
+    zonaChatServidor.hidden = !verColumna && !(ancho || vistaServidorActual === "chat");
 }
 
 // Navega a una de las tres fases y refleja el cambio en el panel.
@@ -1938,8 +1958,9 @@ function mostrarFaseServidor(fase) {
 
 document.getElementById("boton-volver-servidor").addEventListener("click", () => {
     // En escritorio los canales y el chat conviven: la flecha vuelve directo a la lista.
-    // En móvil se retrocede un paso: chat -> canales -> lista.
-    if (!esPantallaAncha() && vistaServidorActual === "chat") {
+    // En móvil se retrocede un paso: chat -> canales -> lista. Un chat único
+    // no tiene pantalla de canales, así que vuelve directo a la lista.
+    if (servidorUsaCanales() && !esPantallaAncha() && vistaServidorActual === "chat") {
         mostrarFaseServidor("canales");
     } else {
         mostrarFaseServidor("lista");
@@ -2071,8 +2092,10 @@ async function abrirServidor(grupo) {
     // El composer no arrastra nada de un servidor a otro.
     composerServidor?.limpiar();
 
-    // En escritorio se entra directo al chat; en móvil primero se ven los canales.
-    mostrarFaseServidor(esPantallaAncha() ? "chat" : "canales");
+    // Un chat único no tiene fase intermedia: se entra directo al chat,
+    // también en móvil. Los que sí tienen canales conservan la pantalla
+    // de canales como paso previo en móvil.
+    mostrarFaseServidor(servidorUsaCanales() ? (esPantallaAncha() ? "chat" : "canales") : "chat");
 
     document.getElementById("boton-eliminar-servidor").hidden = !grupo.es_creador;
     mensajesServidor.innerHTML = "";
@@ -2081,7 +2104,7 @@ async function abrirServidor(grupo) {
 
     await refrescarDetalleServidor();
 
-    if (esPantallaAncha()) {
+    if (servidorUsaCanales() || esPantallaAncha()) {
         await abrirChatServidor();
     }
 
@@ -2594,12 +2617,13 @@ async function refrescarDetalleServidor() {
 
 function renderizarCanales() {
     const lista = document.getElementById("lista-canales");
-    const esGestor = Boolean(detalleGrupo) && (detalleGrupo.mi_rol === "creador" || detalleGrupo.mi_rol === "moderador");
-    const esCreador = Boolean(detalleGrupo) && detalleGrupo.mi_rol === "creador";
     const usaCanales = Boolean(detalleGrupo) && detalleGrupo.modelo === "canales";
 
     // El canal ya no lleva botón de editar encima: la gestión va en su pantalla.
-    lista.innerHTML = canalesGrupo.map((canal) => {
+    // En chat único la lista no se pinta: su único canal es el general, que no
+    // se enseña nunca como botón.
+    lista.innerHTML = usaCanales
+        ? canalesGrupo.map((canal) => {
         const activo = Boolean(canalActual) && canal.id === canalActual.id;
         return `
             <button class="canal-item ${activo ? "activo" : ""}" type="button" role="tab" aria-selected="${activo}" data-canal-id="${escapeHtml(canal.id)}">
@@ -2608,9 +2632,9 @@ function renderizarCanales() {
                 ${canal.permite_ocultos ? '<span class="insignia-oculto insignia-mini" title="Permite mensajes ocultos">OC</span>' : ""}
             </button>
         `;
-    }).join("");
+    }).join("")
+        : "";
 
-    document.getElementById("boton-activar-canales").hidden = !(esCreador && !usaCanales);
     actualizarContextoServidor();
 }
 
@@ -2627,7 +2651,8 @@ function actualizarControlesComposer() {
     botonOculto.setAttribute("aria-pressed", String(ocultoServidorActivo));
 
     if (!mensajeRespuestaChat && !mensajeEdicionChat) {
-        entrada.placeholder = canalActual
+        // En chat único no se nombra el canal: se escribe en el servidor entero.
+        entrada.placeholder = servidorUsaCanales() && canalActual
             ? `Escribe un mensaje en #${canalActual.nombre}...`
             : "Escribe un mensaje...";
     }
@@ -2690,25 +2715,202 @@ document.getElementById("boton-oculto-servidor").addEventListener("click", () =>
     boton.setAttribute("aria-pressed", String(ocultoServidorActivo));
 });
 
-document.getElementById("boton-activar-canales").addEventListener("click", async () => {
+// ========================================
+// ACCIONES DEL SERVIDOR
+// Se abren al pulsar el nombre del grupo, con el mismo criterio que el
+// nombre de una persona: una pantalla propia en lugar de botones de
+// siempre arriba.
+// ========================================
+
+const modalAccionesServidor =
+    document.getElementById("modal-acciones-servidor");
+
+const estadoAccionesServidor =
+    document.getElementById("estado-acciones-servidor");
+
+function abrirAccionesServidor() {
+    if (!grupoActual || !modalAccionesServidor) return;
+
+    const esGestor = detalleGrupo?.mi_rol === "creador" || detalleGrupo?.mi_rol === "moderador";
+    const esCreador = detalleGrupo?.mi_rol === "creador";
+    const usaCanales = servidorUsaCanales();
+    const nombre = grupoActual.nombre ?? "";
+
+    document.getElementById("titulo-acciones-servidor").textContent = nombre;
+    document.getElementById("resumen-nombre-servidor").textContent = nombre;
+
+    const miembros = detalleGrupo?.miembros ?? grupoActual.miembros ?? 0;
+    document.getElementById("resumen-miembros-servidor").textContent =
+        `${miembros} ${miembros === 1 ? "miembro" : "miembros"}`;
+
+    // La foto se ve en grande con el mismo modal que las fotos de perfil.
+    const resumenFoto = document.getElementById("resumen-foto-servidor");
+    const ruta = detalleGrupo?.imagen_ruta ?? grupoActual.imagen_ruta ?? null;
+    resumenFoto.innerHTML = ruta
+        ? `<img src="${escapeHtml(ruta)}" alt="">`
+        : `<span aria-hidden="true">${escapeHtml(nombre.charAt(0).toUpperCase())}</span>`;
+
+    // La descripción se muestra solo en los servidores de chat único. En los
+    // que tienen canales no se enseña, pero se conserva por si se vuelve.
+    const bloqueDescripcion = document.getElementById("bloque-descripcion-servidor");
+    const textoDescripcion = document.getElementById("resumen-descripcion-servidor");
+    const entradaDescripcion = document.getElementById("editar-descripcion-servidor");
+    const descripcion = detalleGrupo?.descripcion ?? "";
+
+    bloqueDescripcion.hidden = !esGestor || usaCanales;
+    textoDescripcion.hidden = usaCanales || Boolean(descripcion);
+    textoDescripcion.textContent = descripcion;
+    entradaDescripcion.value = descripcion;
+
+    document.getElementById("boton-acciones-ajustes-servidor").hidden = !esGestor;
+    document.getElementById("boton-activar-canales-acciones").hidden = !(esCreador && !usaCanales);
+    document.getElementById("boton-eliminar-servidor-acciones").hidden = !esCreador;
+
+    estadoAccionesServidor.textContent = "";
+    modalAccionesServidor.hidden = false;
+}
+
+function cerrarAccionesServidor() {
+    if (modalAccionesServidor) modalAccionesServidor.hidden = true;
+}
+
+document.getElementById("boton-ver-grupo").addEventListener("click", abrirAccionesServidor);
+
+document.getElementById("boton-cerrar-acciones-servidor").addEventListener("click", cerrarAccionesServidor);
+
+// Al pulsar fuera se cierra, igual que en las demás pantallas.
+modalAccionesServidor.addEventListener("click", (evento) => {
+    if (evento.target === modalAccionesServidor) {
+        cerrarAccionesServidor();
+    }
+});
+
+document.getElementById("boton-acciones-miembros-servidor").addEventListener("click", () => {
+    cerrarAccionesServidor();
+    abrirMiembrosServidor();
+});
+
+document.getElementById("boton-acciones-ajustes-servidor").addEventListener("click", () => {
+    cerrarAccionesServidor();
+    abrirAjustesServidor();
+});
+
+document.getElementById("boton-salir-servidor-acciones").addEventListener("click", async () => {
+    if (!grupoActual || !confirm(`¿Quieres salir de ${grupoActual.nombre}?`)) return;
+    try {
+        await solicitarGrupo(`/api/grupos/${encodeURIComponent(grupoActual.id)}/salir`, { method: "POST" });
+        cerrarAccionesServidor();
+        volverAListaServidores();
+    } catch (error) {
+        estadoAccionesServidor.textContent = error.message;
+    }
+});
+
+document.getElementById("boton-eliminar-servidor-acciones").addEventListener("click", async () => {
+    if (!grupoActual || !confirm(`¿Eliminar ${grupoActual.nombre} y todo su contenido?`)) return;
+    try {
+        await solicitarGrupo(`/api/grupos/${encodeURIComponent(grupoActual.id)}`, { method: "DELETE" });
+        cerrarAccionesServidor();
+        volverAListaServidores();
+    } catch (error) {
+        estadoAccionesServidor.textContent = error.message;
+    }
+});
+
+document.getElementById("boton-activar-canales-acciones").addEventListener("click", async () => {
     if (!grupoActual) return;
     if (!confirm("¿Activar los canales en este servidor? Esta acción es irreversible.")) return;
     try {
         await solicitarGrupo(`/api/grupos/${encodeURIComponent(grupoActual.id)}/activar-canales`, { method: "POST" });
         await refrescarDetalleServidor();
-        if (vistaServidorActual === "chat") {
+        await refrescarListaServidores();
+        cerrarAccionesServidor();
+
+        // En móvil la lista de canales pasa a ser la pantalla de entrada.
+        if (!esPantallaAncha()) {
+            mostrarFaseServidor("canales");
+        } else if (vistaServidorActual === "chat") {
             await cargarMensajesServidor();
         }
     } catch (error) {
-        estadoServidores.textContent = error.message;
+        estadoAccionesServidor.textContent = error.message;
     }
 });
+
+/* ---------- Descripción del servidor ---------- */
+
+document.getElementById("boton-guardar-descripcion-servidor").addEventListener("click", async (evento) => {
+    if (!grupoActual) return;
+    const boton = evento.currentTarget;
+    const entrada = document.getElementById("editar-descripcion-servidor");
+
+    try {
+        boton.disabled = true;
+        await solicitarGrupo(`/api/grupos/${encodeURIComponent(grupoActual.id)}/descripcion`, {
+            method: "PUT",
+            body: JSON.stringify({ descripcion: entrada.value })
+        });
+        await refrescarDetalleServidor();
+        await refrescarListaServidores();
+
+        const textoDescripcion = document.getElementById("resumen-descripcion-servidor");
+        const descripcion = detalleGrupo?.descripcion ?? "";
+        textoDescripcion.textContent = descripcion;
+        textoDescripcion.hidden = Boolean(descripcion);
+        estadoAccionesServidor.textContent = "Descripción guardada.";
+    } catch (error) {
+        estadoAccionesServidor.textContent = error.message;
+    } finally {
+        boton.disabled = false;
+    }
+});
+
+/* ---------- Foto del servidor desde la cabecera ---------- */
+
+// La foto se cambia pulsando la imagen de la cabecera, pero solo quien la
+// gestiona: el resto solo puede verla en grande.
+document.getElementById("boton-foto-servidor").addEventListener("click", () => {
+    if (!grupoActual) return;
+
+    const esGestor = detalleGrupo?.mi_rol === "creador" || detalleGrupo?.mi_rol === "moderador";
+    const ruta = detalleGrupo?.imagen_ruta ?? grupoActual.imagen_ruta ?? null;
+
+    // Sin foto solo hay una opción posible: ponerla, y solo si se puede.
+    if (!ruta) {
+        if (esGestor) {
+            abrirCambioFotoServidor();
+        } else {
+            estadoServidores.textContent = "Este servidor todavía no tiene foto.";
+        }
+        return;
+    }
+
+    // Con foto, quien gestiona elige entre verla o cambiarla.
+    if (esGestor && !confirm("¿Quieres cambiar la foto del servidor?")) {
+        return;
+    }
+
+    if (esGestor) {
+        abrirCambioFotoServidor();
+    } else {
+        fotoPerfilGrande.src = ruta;
+        modalFotoGrande.hidden = false;
+    }
+});
+
+// Reutiliza el selector que ya usa el modal de ajustes.
+function abrirCambioFotoServidor() {
+    const selector = document.getElementById("archivo-imagen-servidor");
+    selector.value = "";
+    selector.click();
+}
 
 // ========================================
 // MIEMBROS Y PANELES
 // ========================================
 
 function cerrarPanelesServidor() {
+    document.getElementById("modal-acciones-servidor").hidden = true;
     document.getElementById("modal-miembros-servidor").hidden = true;
     document.getElementById("modal-ajustes-servidor").hidden = true;
     document.getElementById("modal-canal-servidor").hidden = true;

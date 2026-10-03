@@ -15,6 +15,12 @@ data/push-vapid.*.tmp
 *.log
 .vscode/
 
+# Paginillas de las pruebas visuales y credenciales de prueba.
+prueba-visual.html
+cap-*.png
+.tok-*.txt
+.gid-*.txt
+
 # Secretos de produccion: nunca al repositorio.
 clave-produccion.txt
 env-produccion.txt

@@ -75,6 +75,32 @@
     /* Medidas del layout de servidores */
     --ancho-columna-canales: 240px;
     --alto-barra-contexto: 52px;
+
+    /* Alturas del armazón de la aplicación. Se usan para calcular el alto de
+       la zona del chat del servidor: el composer queda pegado al borde
+       inferior de la pantalla, como en el chat privado. */
+    --alto-cabecera-app: 73px;
+    --alto-rejilla-app: 50px;
+
+    /* Hueco que deja body en su parte inferior (padding-bottom) para que la
+       barra de navegación no tape el composer. */
+    --holura-navegacion: 80px;
+
+    /* Reparto de la ventana que ocupa la zona del chat del servidor: lo que
+       queda tras descontar cabecera, barra de contexto, márgenes de la
+       rejilla y barra de navegación. */
+    --alto-zona-chat-servidor: calc(
+        100vh - var(--alto-cabecera-app) - var(--alto-barra-contexto)
+        - var(--alto-rejilla-app) - var(--holura-navegacion)
+    );
+
+    /* dvh ignora la barra de direcciones del móvil, así que el composer no
+       queda tapado al abrirla. El navegador que no lo soporta usa el vvh
+       de arriba. */
+    --alto-zona-chat-servidor: calc(
+        100dvh - var(--alto-cabecera-app) - var(--alto-barra-contexto)
+        - var(--alto-rejilla-app) - var(--holura-navegacion)
+    );
 }
 
 
@@ -1925,9 +1951,13 @@ button.servidor-item {
     margin-top: 5px;
 }
 
+/* Los mensajes ocupan todo el espacio sobrante y llevan su propio scroll:
+   el composer deja de depender del scroll de la página y se queda abajo. */
 .mensajes-servidor {
-    height: min(42vh, 420px);
-    min-height: 220px;
+    flex: 1;
+
+    min-height: 0;
+
     overflow-y: auto;
     display: flex;
     flex-direction: column;
@@ -1975,13 +2005,17 @@ button.servidor-item {
     cursor: pointer;
 }
 
+/* El composer ya no se pega con "sticky" porque la zona del chat tiene alto
+   propio: basta con ser el último hijo del flex y no encoger. */
 .formulario-mensaje-servidor {
     display: flex;
     align-items: center;
     gap: 8px;
-    position: sticky;
-    bottom: 0;
+    flex-shrink: 0;
+
+    /* Respeta el borde inferior del móvil y deja hueco a la navegación. */
     padding-top: 8px;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
     background: #111;
 }
 
@@ -2048,6 +2082,55 @@ button.servidor-item {
     align-items: center;
     gap: 10px;
     min-width: 0;
+}
+
+/* El nombre del grupo abre su propia pantalla de acciones, igual que el
+   nombre de una persona abre la suya. */
+.boton-datos-contexto-servidor {
+    min-width: 0;
+
+    display: flex;
+    align-items: center;
+    flex: 1;
+
+    padding: 0;
+
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+
+    cursor: pointer;
+}
+
+.boton-datos-contexto-servidor:hover .barra-contexto-textos strong {
+    color: var(--texto-principal);
+}
+
+/* La foto también es pulsable: quien gestiona el servidor la cambia desde ahí. */
+.boton-foto-contexto-servidor {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    flex-shrink: 0;
+
+    padding: 0;
+
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+
+    cursor: pointer;
+}
+
+.boton-foto-contexto-servidor:hover .avatar-contexto-servidor {
+    filter: brightness(0.8);
+}
+
+.boton-foto-contexto-servidor:disabled {
+    cursor: default;
 }
 
 .barra-contexto-textos {
@@ -2407,6 +2490,11 @@ button.servidor-tarjeta:focus-visible {
     flex: 1;
     min-width: 0;
     min-height: 0;
+
+    /* El alto se mide contra la ventana para que la zona del chat use
+       justo lo que queda entre la cabecera de la aplicación y la barra de
+       navegación. Así el composer puede quedar siempre pegado abajo. */
+    height: var(--alto-zona-chat-servidor);
 }
 
 .zona-chat-servidor[hidden] {
@@ -2850,6 +2938,142 @@ button.servidor-tarjeta:focus-visible {
 .formulario-mensaje-servidor input {
     flex: 1;
     min-width: 0;
+}
+
+/* ========================================
+   ACCIONES DEL SERVIDOR
+   El resumen y los botones del modal que se
+   abre al pulsar el nombre del grupo.
+   ======================================== */
+
+.resumen-servidor {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px;
+    border: 1px solid var(--borde-medio);
+    border-radius: var(--radio-md);
+    background: var(--fondo-elevado);
+}
+
+.resumen-foto-servidor {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 54px;
+    height: 54px;
+
+    flex-shrink: 0;
+
+    border-radius: var(--radio-md);
+    overflow: hidden;
+
+    background: var(--fondo-hover);
+    color: var(--texto-apagado);
+    font-size: 22px;
+    font-weight: 700;
+}
+
+.resumen-foto-servidor img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+}
+
+.resumen-datos {
+    min-width: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.resumen-datos strong {
+    font-size: 17px;
+    overflow-wrap: anywhere;
+}
+
+.acciones-servidor-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 14px;
+}
+
+.acciones-servidor-lista button {
+    min-height: 44px;
+    padding: 10px 16px;
+    border: 1px solid var(--borde-medio);
+    border-radius: var(--radio-sm);
+    background: var(--fondo-hover);
+    color: var(--texto-principal);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-align: left;
+    cursor: pointer;
+    transition: background var(--transicion-rapida), border-color var(--transicion-rapida);
+}
+
+.acciones-servidor-lista button:hover {
+    background: var(--fondo-activo);
+    border-color: var(--borde-fuerte);
+}
+
+.acciones-servidor-lista button.peligro {
+    border-color: var(--peligro);
+    color: var(--peligro);
+}
+
+.acciones-servidor-lista button.peligro:hover {
+    background: var(--peligro-suave);
+}
+
+#bloque-descripcion-servidor textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--borde-medio);
+    border-radius: var(--radio-sm);
+    background: var(--fondo-base);
+    color: var(--texto-principal);
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.4;
+    resize: vertical;
+}
+
+#bloque-descripcion-servidor textarea:focus {
+    outline: none;
+    border-color: var(--acento);
+}
+
+#boton-guardar-descripcion-servidor {
+    min-height: 40px;
+    margin-top: 8px;
+    padding: 9px 14px;
+    border: 1px solid var(--borde-medio);
+    border-radius: var(--radio-sm);
+    background: var(--fondo-hover);
+    color: var(--texto-principal);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    cursor: pointer;
+}
+
+#boton-guardar-descripcion-servidor:hover {
+    background: var(--fondo-activo);
+}
+
+#boton-guardar-descripcion-servidor:disabled {
+    opacity: 0.55;
+    cursor: default;
+}
+
+#bloque-descripcion-servidor[hidden] {
+    display: none;
 }
 
 /* ========================================

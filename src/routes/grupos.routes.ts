@@ -4,6 +4,7 @@ import { detectarTipoArchivo, guardarArchivoSubido, limiteParaTipo } from "../se
 import {
     activarCanales,
     actualizarCanal,
+    actualizarDescripcionGrupo,
     actualizarImagenGrupo,
     bloquearAutorDeMensaje,
     bloquearMiembro,
@@ -213,6 +214,23 @@ export async function gruposRoutes(app: FastifyInstance) {
             return reply.code(400).send({ error: message });
         }
     });
+
+    app.put<{ Params: { grupoId: string }; Body: { descripcion?: string } }>(
+        "/api/grupos/:grupoId/descripcion",
+        { preHandler: autenticar },
+        async (request, reply) => {
+            try {
+                return await actualizarDescripcionGrupo(
+                    request.usuario!.id,
+                    request.params.grupoId,
+                    request.body.descripcion
+                );
+            } catch (error) {
+                const message = error instanceof Error ? error.message : "No se pudo actualizar la descripción";
+                return reply.code(400).send({ error: message });
+            }
+        }
+    );
 
     app.post<{
         Params: { grupoId: string };

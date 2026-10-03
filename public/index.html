@@ -867,12 +867,28 @@
                             </svg>
                         </button>
                         <div class="barra-contexto-datos">
-                            <span id="avatar-contexto-servidor" class="avatar-contexto-servidor" hidden></span>
-                            <span class="barra-contexto-textos">
-                                <strong id="titulo-contexto-servidor">Servidores</strong>
-                                <span id="subtitulo-contexto-servidor"></span>
-                            </span>
+                            <button
+                                id="boton-foto-servidor"
+                                class="boton-foto-contexto-servidor"
+                                type="button"
+                                aria-label="Foto del servidor"
+                            >
+                                <span id="avatar-contexto-servidor" class="avatar-contexto-servidor" hidden></span>
+                            </button>
+                            <button
+                                id="boton-ver-grupo"
+                                class="boton-datos-contexto-servidor"
+                                type="button"
+                                aria-label="Ver opciones del servidor"
+                            >
+                                <span class="barra-contexto-textos">
+                                    <strong id="titulo-contexto-servidor">Servidores</strong>
+                                    <span id="subtitulo-contexto-servidor"></span>
+                                </span>
+                            </button>
                         </div>
+                        <!-- Las acciones del servidor salen en su propia pantalla,
+                             al pulsar el nombre del grupo. -->
                         <div class="barra-contexto-acciones" id="acciones-contexto-servidor" hidden>
                             <button id="boton-miembros-servidor" type="button">MIEMBROS</button>
                             <button id="boton-ajustes-servidor" type="button" hidden>AJUSTES</button>
@@ -926,9 +942,6 @@
 
                         <aside id="columna-canales" class="columna-canales" hidden aria-label="Canales del servidor">
                             <div id="lista-canales" class="lista-canales" role="tablist"></div>
-                            <div class="acciones-columna-canales">
-                                <button id="boton-activar-canales" type="button" hidden>ACTIVAR CANALES</button>
-                            </div>
                         </aside>
 
                         <div class="zona-chat-servidor">
@@ -1069,6 +1082,48 @@
                     </header>
                     <div id="lista-miembros-servidor" class="lista-filas-servidor"></div>
                     <p id="estado-miembros-servidor" class="estado-amigos" aria-live="polite"></p>
+                </section>
+            </div>
+
+            <!-- ==============================
+                 MODAL ACCIONES DEL SERVIDOR
+                 Se abre al pulsar el nombre del grupo
+                 ============================== -->
+
+            <div id="modal-acciones-servidor" class="modal modal-contenido-social" hidden>
+                <section class="dialogo-social" role="dialog" aria-modal="true" aria-labelledby="titulo-acciones-servidor">
+                    <header class="cabecera-dialogo-social">
+                        <h2 id="titulo-acciones-servidor">Servidor</h2>
+                        <button id="boton-cerrar-acciones-servidor" class="boton-cerrar-modal" type="button" aria-label="Cerrar">×</button>
+                    </header>
+
+                    <div class="resumen-servidor">
+                        <span id="resumen-foto-servidor" class="resumen-foto-servidor" aria-hidden="true"></span>
+                        <div class="resumen-datos">
+                            <strong id="resumen-nombre-servidor"></strong>
+                            <span id="resumen-miembros-servidor" class="estado-amigos"></span>
+
+                            <!-- La descripción se escribe aquí. En los servidores
+                                 con canales no se muestra: la de cada canal va en
+                                 su propia ficha. -->
+                            <div id="bloque-descripcion-servidor" class="bloque-ajuste">
+                                <label for="editar-descripcion-servidor">Descripción</label>
+                                <textarea id="editar-descripcion-servidor" rows="3" maxlength="500" placeholder="Cuenta de qué va este servidor..."></textarea>
+                                <button id="boton-guardar-descripcion-servidor" type="button">GUARDAR DESCRIPCIÓN</button>
+                            </div>
+                            <p id="resumen-descripcion-servidor" class="estado-amigos"></p>
+                        </div>
+                    </div>
+
+                    <div class="acciones-servidor-lista">
+                        <button id="boton-acciones-miembros-servidor" type="button">MIEMBROS</button>
+                        <button id="boton-acciones-ajustes-servidor" type="button" hidden>AJUSTES</button>
+                        <button id="boton-activar-canales-acciones" type="button" hidden>ACTIVAR CANALES</button>
+                        <button id="boton-salir-servidor-acciones" type="button">SALIR</button>
+                        <button id="boton-eliminar-servidor-acciones" type="button" class="peligro" hidden>ELIMINAR</button>
+                    </div>
+
+                    <p id="estado-acciones-servidor" class="estado-amigos" aria-live="polite"></p>
                 </section>
             </div>
 

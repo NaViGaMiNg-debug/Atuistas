@@ -439,6 +439,33 @@ export async function activarCanales(usuarioId: string, grupoId: string) {
     return { mensaje: "Canales activados" };
 }
 
+// La descripción solo la escriben el creador y los moderadores. Vaciarla es
+// lo mismo que quitarla: se guarda como NULL en la base de datos.
+export async function actualizarDescripcionGrupo(
+    usuarioId: string,
+    grupoId: string,
+    descripcion?: string
+) {
+    await comprobarGestor(usuarioId, grupoId);
+
+    const limpia = (descripcion ?? "").trim();
+    if (limpia.length > 500) {
+        throw new Error("La descripción no puede superar los 500 caracteres");
+    }
+
+    await db.query(
+        `UPDATE grupos SET descripcion = $2, actualizado_en = NOW() WHERE id = $1`,
+        [grupoId, limpia || null]
+    );
+
+    emitirAUsuarios(await obtenerIdsMiembros(grupoId), {
+        tipo: "grupo_actualizado",
+        grupoId
+    });
+
+    return { mensaje: "Descripción actualizada" };
+}
+
 export async function crearCanal(
     usuarioId: string,
     grupoId: string,
