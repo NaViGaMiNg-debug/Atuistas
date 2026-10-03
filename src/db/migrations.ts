@@ -84,12 +84,16 @@ export async function migrarEsquema() {
             ALTER TABLE archivos
                 DROP CONSTRAINT IF EXISTS archivos_tipo_check;
 
+            -- Los tipos de reels e historias se anaden aqui: con la lista corta
+            -- volver a crear la restriccion fallaria en cuanto hubiera un reel
+            -- o una historia guardados.
             ALTER TABLE archivos
                 ADD CONSTRAINT archivos_tipo_check
                 CHECK (tipo IN (
                     'avatar', 'grupo_imagen', 'publicacion_imagen',
                     'publicacion_video', 'mensaje_imagen', 'mensaje_audio',
-                    'mensaje_video', 'estado_imagen', 'estado_video', 'estado_audio'
+                    'mensaje_video', 'estado_imagen', 'estado_video', 'estado_audio',
+                    'reel_video', 'historia_imagen', 'historia_video', 'historia_audio'
                 ));
 
             UPDATE sesiones
@@ -441,23 +445,6 @@ export async function migrarEsquema() {
             CREATE INDEX IF NOT EXISTS idx_historias_items_historia
                 ON historias_items(historia_id, orden);
 
-            -- ==========================================
-            -- TIPOS DE ARCHIVO NUEVOS
-            -- Reels e historias guardan sus vídeos y
-            -- fotos en la tabla común de archivos.
-            -- ==========================================
-
-            ALTER TABLE archivos
-                DROP CONSTRAINT IF EXISTS archivos_tipo_check;
-
-            ALTER TABLE archivos
-                ADD CONSTRAINT archivos_tipo_check
-                CHECK (tipo IN (
-                    'avatar', 'grupo_imagen', 'publicacion_imagen',
-                    'publicacion_video', 'mensaje_imagen', 'mensaje_audio',
-                    'mensaje_video', 'estado_imagen', 'estado_video', 'estado_audio',
-                    'reel_video', 'historia_imagen', 'historia_video', 'historia_audio'
-                ));
 
         `);
         await client.query("COMMIT");
