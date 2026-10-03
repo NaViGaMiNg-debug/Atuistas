@@ -5059,6 +5059,171 @@ button.servidor-tarjeta:focus-visible {
 }
 
 
+/* =============================
+   NOTIFICACIONES (ventanita desde Cuenta)
+   ============================== */
+
+#boton-abrir-notificaciones {
+    position: relative;
+
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+
+    margin-bottom: 12px;
+    padding: 14px 20px;
+
+    border: none;
+    border-radius: 12px;
+
+    background: #242424;
+    color: #fff;
+
+    font-size: 16px;
+    font-weight: bold;
+
+    cursor: pointer;
+}
+
+
+#boton-abrir-notificaciones:hover {
+    background: #333;
+}
+
+
+/* Punto rojo compartido: avisos sin leer en Cuenta/menú y mensajes sin
+   leer en la lista de amigos. */
+.punto-notificaciones,
+.chat-amigo-punto {
+    display: inline-block;
+
+    flex: 0 0 auto;
+
+    width: 11px;
+    height: 11px;
+
+    border-radius: 50%;
+
+    background: #ff4b4b;
+    box-shadow: 0 0 5px rgba(255, 75, 75, 0.75);
+}
+
+
+.punto-notificaciones[hidden],
+.chat-amigo-punto[hidden] {
+    display: none !important;
+}
+
+
+.chat-amigo-punto {
+    width: 12px;
+    height: 12px;
+}
+
+
+.dialogo-notificaciones {
+    overflow-y: auto;
+}
+
+
+/* Cabecera de los avisos: título a la izquierda, marcar todo a la derecha. */
+.cabecera-lista-notificaciones {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+
+.cabecera-lista-notificaciones h3 {
+    margin: 0;
+    font-size: 17px;
+}
+
+
+.cabecera-lista-notificaciones button {
+    padding: 6px 10px;
+
+    border: 1px solid #333;
+    border-radius: 8px;
+
+    background: #242424;
+    color: #ddd;
+
+    font-size: 12px;
+    font-weight: 700;
+
+    cursor: pointer;
+}
+
+
+.cabecera-lista-notificaciones button[hidden] {
+    display: none !important;
+}
+
+
+#lista-notificaciones-app {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    margin: 12px 0 4px;
+    max-height: 260px;
+
+    overflow-y: auto;
+}
+
+
+.aviso-notificacion {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    width: 100%;
+    padding: 10px 12px;
+
+    text-align: left;
+
+    border: 1px solid #2b2b2b;
+    border-radius: 10px;
+
+    background: #1c1c1c;
+    color: #ddd;
+
+    cursor: pointer;
+}
+
+
+.aviso-notificacion:hover {
+    background: #242424;
+}
+
+
+.aviso-notificacion.sin-leer {
+    border-left: 3px solid #ff4b4b;
+}
+
+
+.aviso-notificacion strong {
+    color: #fff;
+    font-size: 14px;
+}
+
+
+.aviso-notificacion span {
+    color: #bbb;
+    font-size: 13px;
+}
+
+
+.aviso-notificacion small {
+    color: #888;
+    font-size: 11px;
+}
+
+
 .configuracion-notificaciones {
     display: flex;
     flex-direction: column;

@@ -656,6 +656,25 @@
 
 
                     <!-- ==============================
+                         NOTIFICACIONES (ventanita)
+                         Un botón aquí dentro abre una ventanita con los
+                         avisos recientes y las casillas de preferencias.
+                         ============================== -->
+
+                    <button
+                        id="boton-abrir-notificaciones"
+                        type="button"
+                    >
+                        NOTIFICACIONES
+                        <span
+                            id="punto-notificaciones"
+                            class="punto-notificaciones"
+                            hidden
+                        ></span>
+                    </button>
+
+
+                    <!-- ==============================
                          CÓDIGO DE VINCULACIÓN
                          ============================== -->
 
@@ -689,22 +708,6 @@
                         </button>
 
                     </div>
-
-                    <section class="configuracion-notificaciones">
-                        <h3>Notificaciones</h3>
-                        <button id="boton-activar-notificaciones-dispositivo" type="button">ACTIVAR EN ESTE DISPOSITIVO</button>
-                        <p id="estado-notificaciones-dispositivo" aria-live="polite"></p>
-                        <label><input type="checkbox" data-preferencia="solicitudes_amistad"> Solicitudes de amistad</label>
-                        <label><input type="checkbox" data-preferencia="amistades_aceptadas"> Amistades aceptadas</label>
-                        <label><input type="checkbox" data-preferencia="mensajes_privados"> Mensajes privados</label>
-                        <label><input type="checkbox" data-preferencia="mensajes_grupo"> Mensajes de servidores</label>
-                        <label><input type="checkbox" data-preferencia="respuestas"> Respuestas</label>
-                        <label><input type="checkbox" data-preferencia="corazones"> Corazones</label>
-                        <label><input type="checkbox" data-preferencia="comentarios"> Comentarios</label>
-                        <button id="boton-guardar-notificaciones" type="button">GUARDAR NOTIFICACIONES</button>
-                        <p id="estado-notificaciones" aria-live="polite"></p>
-                    </section>
-
 
                     <!-- ==============================
                          CERRAR SESIÓN
@@ -1368,6 +1371,89 @@
             </div>
 
             <!-- ==============================
+                 MODAL NOTIFICACIONES
+                 Ventanita desde Cuenta: avisos recientes, activación del
+                 dispositivo y casillas de preferencias (auto-guardado).
+                 ============================== -->
+
+            <div
+                id="modal-notificaciones"
+                class="modal modal-contenido-social"
+                hidden
+            >
+
+                <section
+                    class="dialogo-social dialogo-notificaciones"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="titulo-modal-notificaciones"
+                >
+
+                    <header class="cabecera-dialogo-social">
+
+                        <h2 id="titulo-modal-notificaciones">
+                            Notificaciones
+                        </h2>
+
+                        <button
+                            id="boton-cerrar-notificaciones"
+                            class="boton-cerrar-modal"
+                            type="button"
+                            aria-label="Cerrar notificaciones"
+                        >
+                            ×
+                        </button>
+
+                    </header>
+
+                    <section class="lista-notificaciones-app">
+
+                        <div class="cabecera-lista-notificaciones">
+                            <h3>Avisos recientes</h3>
+                            <button
+                                id="boton-leer-todas-notificaciones"
+                                type="button"
+                                hidden
+                            >
+                                MARCAR COMO LEÍDAS
+                            </button>
+                        </div>
+
+                        <div id="lista-notificaciones-app" aria-live="polite"></div>
+
+                    </section>
+
+                    <section class="configuracion-notificaciones">
+
+                        <h3>Dispositivo</h3>
+
+                        <button id="boton-activar-notificaciones-dispositivo" type="button">
+                            ACTIVAR EN ESTE DISPOSITIVO
+                        </button>
+
+                        <p id="estado-notificaciones-dispositivo" aria-live="polite"></p>
+
+                        <h3>Preferencias</h3>
+
+                        <label><input type="checkbox" data-preferencia="solicitudes_amistad"> Solicitudes de amistad</label>
+                        <label><input type="checkbox" data-preferencia="amistades_aceptadas"> Amistades aceptadas</label>
+                        <label><input type="checkbox" data-preferencia="mensajes_privados"> Mensajes privados</label>
+                        <label><input type="checkbox" data-preferencia="mensajes_grupo"> Mensajes de servidores</label>
+                        <label><input type="checkbox" data-preferencia="respuestas"> Respuestas</label>
+                        <label><input type="checkbox" data-preferencia="corazones"> Corazones</label>
+                        <label><input type="checkbox" data-preferencia="comentarios"> Comentarios</label>
+
+                        <!-- Sin botón de guardar: las casillas se guardan solas
+                             al cerrar la ventanita. -->
+                        <p id="estado-notificaciones" aria-live="polite"></p>
+
+                    </section>
+
+                </section>
+
+            </div>
+
+            <!-- ==============================
                  MODAL EDITOR DE FOTO
                  Recortar, pintar y poner texto antes de publicar.
                  ============================== -->
@@ -1644,6 +1730,11 @@
 
                 <button id="boton-cuenta">
                     CUENTA
+                    <span
+                        id="punto-notificaciones-cuenta"
+                        class="punto-notificaciones"
+                        hidden
+                    ></span>
                 </button>
 
             </nav>

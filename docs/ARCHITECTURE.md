@@ -976,7 +976,8 @@ Actualmente existe código para:
 - Modal para ver estados activos propios y elegir verlos o añadir otro.
 - Publicaciones de texto, hasta 10 fotos o un vídeo de hasta 4 minutos, para amistades o públicas.
 - Comentarios y corazones de publicaciones.
-- Notificaciones Push del dispositivo con vista previa del contenido y preferencias por categoría; no hay bandeja de notificaciones dentro de la aplicación.
+- Notificaciones Push del dispositivo con vista previa del contenido, el nombre de quien avisa y un enlace directo al chat o a la pantalla principal.
+- Ventanita de notificaciones dentro de Cuenta: avisos recientes, marcar como leídos, activación del dispositivo y preferencias por categoría (se guardan solas al cerrar, sin botón).
 - Service worker, manifest y suscripciones Push por dispositivo.
 - Limpieza periódica de estados vencidos, servidores temporales y mensajes antiguos de servidor.
 - Migración de compatibilidad para las columnas de autenticación y sesiones.

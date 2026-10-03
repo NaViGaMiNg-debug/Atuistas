@@ -287,6 +287,16 @@ function crearComposer(config) {
             avisar("Solo se pueden adjuntar fotos, vídeos o audios");
             return;
         }
+        // Las fotos pasan por el editor universal (recortar, pintar, texto).
+        // Si se cierra sin confirmar, no se adjunta nada.
+        if (tipo === "imagen") {
+            abrirEditorFoto(archivo, (resultado) => {
+                adjunto = { archivo: resultado, tipo };
+                pintarChip();
+                actualizarBoton();
+            });
+            return;
+        }
         adjunto = { archivo, tipo };
         pintarChip();
         actualizarBoton();
@@ -877,6 +887,14 @@ function vigilarActualizaciones(registration) {
     // recarga una vez y la app queda al dia sin que haya que instalar nada.
     let recargando = false;
     navigator.serviceWorker.addEventListener("message", (event) => {
+        // Un aviso Push pulsado con la app ya abierta: se salta al chat.
+        if (event.data?.tipo === "abrir-notificacion") {
+            const datos = event.data.data || {};
+            if (datos.type === "mensaje_privado" && datos.usuarioId) {
+                abrirChatPorId(datos.usuarioId);
+            }
+            return;
+        }
         if (event.data?.tipo !== "version-aplicada") return;
         if (recargando) return;
         recargando = true;
@@ -1022,6 +1040,16 @@ function mostrarAplicacion() {
 
     mostrarSeccion("entrar");
     cargarConfiguracionNotificaciones();
+    actualizarPuntoNotificaciones();
+
+    // Enlace directo de un aviso Push (/?chat=<id>): se abre ese chat y la
+    // dirección se limpia para que no se reabra al recargar.
+    const chatPendiente = new URLSearchParams(window.location?.search || "").get("chat");
+    if (chatPendiente) {
+        window.history?.replaceState?.(null, "", window.location?.pathname || "/");
+        setTimeout(() => abrirChatPorId(chatPendiente), 800);
+    }
+
     solicitarGrupo("/api/auth/me")
         .then((datos) => {
             localStorage.setItem("atuistas_cache_cuenta", JSON.stringify(datos.usuario));
@@ -1031,6 +1059,10 @@ function mostrarAplicacion() {
 
 }
 
+// Las preferencias no tienen botón de guardar: se guardan solas cuando se
+// cierra la ventanita de notificaciones. La bandera avisa si hubo cambios.
+let preferenciasNotificacionesSucias = false;
+
 async function cargarConfiguracionNotificaciones() {
     const estado = document.getElementById("estado-notificaciones");
     try {
@@ -1038,6 +1070,7 @@ async function cargarConfiguracionNotificaciones() {
         document.querySelectorAll("[data-preferencia]").forEach((entrada) => {
             entrada.checked = datos.configuracion[entrada.dataset.preferencia] === true;
         });
+        preferenciasNotificacionesSucias = false;
         estado.textContent = "";
     } catch (error) {
         estado.textContent = error.message;
@@ -1078,12 +1111,21 @@ document.getElementById("boton-activar-notificaciones-dispositivo").addEventList
             })
         });
         estado.textContent = "Los avisos se mostrarán en este dispositivo.";
+        actualizarBotonActivarDispositivo();
     } catch (error) {
         estado.textContent = error.message || "No se pudieron activar los avisos.";
     }
 });
 
-document.getElementById("boton-guardar-notificaciones").addEventListener("click", async () => {
+// Las casillas se marcan como sucias al tocarlas y se guardan al cerrar.
+document.querySelectorAll("[data-preferencia]").forEach((entrada) => {
+    entrada.addEventListener("change", () => {
+        preferenciasNotificacionesSucias = true;
+    });
+});
+
+async function guardarConfiguracionNotificaciones() {
+    if (!preferenciasNotificacionesSucias) return;
     const estado = document.getElementById("estado-notificaciones");
     const configuracion = {};
     document.querySelectorAll("[data-preferencia]").forEach((entrada) => {
@@ -1094,10 +1136,136 @@ document.getElementById("boton-guardar-notificaciones").addEventListener("click"
             method: "PUT",
             body: JSON.stringify(configuracion)
         });
+        preferenciasNotificacionesSucias = false;
         estado.textContent = "Preferencias guardadas.";
     } catch (error) {
         estado.textContent = error.message;
     }
+}
+
+/* ---------- Ventanita de notificaciones ---------- */
+
+const modalNotificaciones = document.getElementById("modal-notificaciones");
+
+function fechaAviso(iso) {
+    const fecha = new Date(iso);
+    if (Number.isNaN(fecha.getTime())) return "";
+    return fecha.toLocaleString(undefined, {
+        day: "2-digit",
+        month: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit"
+    });
+}
+
+function pintarPuntoNotificaciones(cantidad) {
+    const haySinLeer = Number(cantidad) > 0;
+    const punto = document.getElementById("punto-notificaciones");
+    const puntoCuenta = document.getElementById("punto-notificaciones-cuenta");
+    if (punto) punto.hidden = !haySinLeer;
+    if (puntoCuenta) puntoCuenta.hidden = !haySinLeer;
+}
+
+// Solo se ofrece activar el dispositivo mientras el navegador no haya dado ya
+// permiso: con el permiso concedido el botón deja de salir.
+function actualizarBotonActivarDispositivo() {
+    const boton = document.getElementById("boton-activar-notificaciones-dispositivo");
+    const estado = document.getElementById("estado-notificaciones-dispositivo");
+    if (!boton || !("Notification" in window)) return;
+    const concedido = Notification.permission === "granted";
+    boton.hidden = concedido;
+    if (concedido && estado && !estado.textContent) {
+        estado.textContent = "Los avisos ya están activos en este dispositivo.";
+    }
+}
+
+async function cargarListaNotificaciones() {
+    const lista = document.getElementById("lista-notificaciones-app");
+    const botonLeerTodas = document.getElementById("boton-leer-todas-notificaciones");
+    if (!lista) return;
+    try {
+        const datos = await solicitarGrupo("/api/notificaciones");
+        const notificaciones = datos.notificaciones || [];
+        const noLeidas = Number(datos.no_leidas) || 0;
+        pintarPuntoNotificaciones(noLeidas);
+        if (botonLeerTodas) botonLeerTodas.hidden = noLeidas === 0;
+        lista.innerHTML = "";
+        if (notificaciones.length === 0) {
+            lista.innerHTML = `<p class="sin-contenido">Todavía no hay avisos.</p>`;
+            return;
+        }
+        notificaciones.forEach((aviso) => {
+            const elemento = document.createElement("button");
+            elemento.type = "button";
+            elemento.className = aviso.leida ? "aviso-notificacion" : "aviso-notificacion sin-leer";
+            elemento.innerHTML = `
+                <strong>${escapeHtml(aviso.titulo || "")}</strong>
+                <span>${escapeHtml(aviso.contenido || "")}</span>
+                <small>${fechaAviso(aviso.creada_en)}</small>
+            `;
+            elemento.addEventListener("click", () => marcarAvisoLeido(aviso));
+            lista.appendChild(elemento);
+        });
+    } catch (error) {
+        lista.innerHTML = `<p class="sin-contenido">${escapeHtml(error.message || "No se pudieron cargar los avisos.")}</p>`;
+    }
+}
+
+// Al tocar un aviso se marca como leída y, si viene de un mensaje privado,
+// se salta directamente a esa conversación.
+async function marcarAvisoLeido(aviso) {
+    try {
+        await solicitarGrupo(`/api/notificaciones/${aviso.id}/leer`, { method: "POST" });
+    } catch {
+        // Aunque falle el marcado, el enlace sigue siendo útil.
+    }
+    const usuarioId = aviso.datos?.usuarioId;
+    if (aviso.tipo === "mensaje_privado" && usuarioId) {
+        cerrarModalNotificaciones();
+        await abrirChatPorId(usuarioId);
+        return;
+    }
+    await cargarListaNotificaciones();
+}
+
+// Punto rojo del menú y del botón de Cuenta: solo hace falta el recuento.
+async function actualizarPuntoNotificaciones() {
+    try {
+        const datos = await solicitarGrupo("/api/notificaciones");
+        pintarPuntoNotificaciones(datos.no_leidas);
+    } catch {
+        // Sin conexión no hay recuento que actualizar.
+    }
+}
+
+function abrirModalNotificaciones() {
+    if (!modalNotificaciones) return;
+    modalNotificaciones.hidden = false;
+    cargarConfiguracionNotificaciones();
+    cargarListaNotificaciones();
+    actualizarBotonActivarDispositivo();
+}
+
+function cerrarModalNotificaciones() {
+    if (!modalNotificaciones) return;
+    // Se guardan las casillas pendientes justo al cerrar: no hay botón.
+    guardarConfiguracionNotificaciones();
+    modalNotificaciones.hidden = true;
+}
+
+document.getElementById("boton-abrir-notificaciones")?.addEventListener("click", abrirModalNotificaciones);
+document.getElementById("boton-cerrar-notificaciones")?.addEventListener("click", cerrarModalNotificaciones);
+modalNotificaciones?.addEventListener("click", (evento) => {
+    if (evento.target === modalNotificaciones) cerrarModalNotificaciones();
+});
+
+document.getElementById("boton-leer-todas-notificaciones")?.addEventListener("click", async () => {
+    try {
+        await solicitarGrupo("/api/notificaciones/leer-todas", { method: "POST" });
+    } catch {
+        // La lista se refresca de todos modos.
+    }
+    await cargarListaNotificaciones();
 });
 
 async function abrirChat(amigo) {
@@ -1752,6 +1920,8 @@ async function cargarAmigos() {
             elemento.className =
                 "chat-amigo";
 
+            const sinLeer = Number(amigo.mensajes_sin_leer) || 0;
+
             elemento.innerHTML = `
                 <div class="chat-amigo-avatar con-anillo-nombre" style="--anillo-avatar:${colorDeAnillo(amigo.color_nombre)};">
 
@@ -1775,6 +1945,12 @@ async function cargarAmigos() {
                     </strong>
 
                 </div>
+
+                ${
+                    sinLeer > 0
+                        ? `<span class="chat-amigo-punto" aria-label="Mensajes sin leer"></span>`
+                        : ""
+                }
             `;
 
             elemento.addEventListener("click", () => {
@@ -1794,6 +1970,43 @@ async function cargarAmigos() {
 
     }
 }
+
+/* =============================
+   ABRIR CHAT POR ID
+   Sirve para los enlaces de los avisos Push (/?chat=<id>) y para cuando se
+   pulsa un aviso de mensaje privado con la app ya abierta.
+   ============================== */
+
+async function abrirChatPorId(usuarioId) {
+    const token = localStorage.getItem("atuistas_token");
+
+    if (!token || !usuarioId) {
+        return;
+    }
+
+    try {
+        const respuesta = await fetch(
+            "/api/amigos",
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            }
+        );
+        const datos = await respuesta.json();
+        const amigo = (datos.amigos || []).find((persona) => persona.id === usuarioId);
+
+        if (!amigo) {
+            return;
+        }
+
+        mostrarSeccion("entrar");
+        await abrirChat(amigo);
+    } catch (error) {
+        console.error("No se pudo abrir el chat:", error);
+    }
+}
+
 
 /* ==============================
    CAMBIAR SECCIÓN
@@ -4708,107 +4921,64 @@ inputFotoPerfil.addEventListener(
 
 
         /*
-         * PREVISUALIZACIÓN INMEDIATA
+         * EDITOR ANTES DE SUBIR
+         * La foto pasa por el editor universal (recortar, pintar, texto) y
+         * solo lo que se confirma aquí se sube al servidor. El input se
+         * limpia ya, para que cancelar no impida volver a elegir la misma
+         * imagen.
          */
 
-        const url =
-            URL.createObjectURL(archivo);
+        inputFotoPerfil.value = "";
 
-        fotoPerfilCuenta.src = url;
-        fotoPerfilGrande.src = url;
-
-
-        /*
-         * SUBIR AL SERVIDOR
-         */
-
-        const token =
-            localStorage.getItem("atuistas_token");
-
-
-        if (!token) {
-
-            alert(
-                "Tu sesión ha expirado."
-            );
-
-            return;
-        }
-
-
-        const formulario =
-            new FormData();
-
-        formulario.append(
-            "avatar",
-            archivo
-        );
-
-
-        try {
-
-            botonCambiarFoto.disabled = true;
-
-
-            const respuesta =
-                await fetch(
-                    "/api/auth/avatar",
-                    {
-                        method: "POST",
-
-                        headers: {
-                            Authorization:
-                                `Bearer ${token}`
-                        },
-
-                        body: formulario
-                    }
-                );
-
-
-            const datos =
-                await respuesta.json();
-
-
-            if (!respuesta.ok) {
-
-                throw new Error(
-                    datos.error ||
-                    "No se pudo subir la imagen"
-                );
-
-            }
-
-
-            alert(
-                "Foto de perfil actualizada correctamente."
-            );
-
-
-        } catch (error) {
-
-            console.error(
-                "Error subiendo avatar:",
-                error
-            );
-
-
-            alert(
-                error.message ||
-                "Error al subir la foto de perfil"
-            );
-
-
-        } finally {
-
-            botonCambiarFoto.disabled = false;
-
-            inputFotoPerfil.value = "";
-
-        }
+        abrirEditorFoto(archivo, subirAvatarEditada);
 
     }
 );
+
+
+/* ==============================
+   SUBIDA DE LA FOTO DE PERFIL
+   Recibe la imagen ya editada, la previsualiza en la cuenta y la sube.
+   ============================== */
+
+async function subirAvatarEditada(archivo) {
+    const url = URL.createObjectURL(archivo);
+
+    fotoPerfilCuenta.src = url;
+    fotoPerfilGrande.src = url;
+
+    const token = localStorage.getItem("atuistas_token");
+
+    if (!token) {
+        alert("Tu sesión ha expirado.");
+        return;
+    }
+
+    const formulario = new FormData();
+    formulario.append("avatar", archivo);
+
+    try {
+        botonCambiarFoto.disabled = true;
+
+        const respuesta = await fetch("/api/auth/avatar", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}` },
+            body: formulario
+        });
+        const datos = await respuesta.json();
+
+        if (!respuesta.ok) {
+            throw new Error(datos.error || "No se pudo subir la imagen");
+        }
+
+        alert("Foto de perfil actualizada correctamente.");
+    } catch (error) {
+        console.error("Error subiendo avatar:", error);
+        alert(error.message || "Error al subir la foto de perfil");
+    } finally {
+        botonCambiarFoto.disabled = false;
+    }
+}
 
 
 /* ==============================
@@ -5004,6 +5174,11 @@ function pintarNombreCuenta(nombre, color) {
     if (vistaNombreCuenta) {
         vistaNombreCuenta.textContent = nombre || "Tu nombre";
         vistaNombreCuenta.setAttribute("style", estiloNombre(color));
+    }
+    if (colorNombreCuenta) {
+        // El botón del color se rodea de un borde claro cuando el color elegido
+        // es oscuro, para que no se pierda sobre el fondo de la aplicación.
+        colorNombreCuenta.style.borderColor = colorDeAnillo(color);
     }
 }
 
