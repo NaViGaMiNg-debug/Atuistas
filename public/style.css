@@ -4018,6 +4018,118 @@ button.servidor-tarjeta:focus-visible {
     text-align: center;
 }
 
+/* Vista previa de fotos antes de publicar: miniaturas en vez de solo el
+   nombre del archivo. Pulsar una miniatura abre el editor. */
+.vista-previa-social {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.vista-previa-social[hidden] {
+    display: none;
+}
+
+.miniatura-social {
+    width: 96px;
+    padding: 0;
+    border: 1px solid #444;
+    border-radius: 8px;
+    background: #181818;
+    color: #ddd;
+    font-size: 10px;
+    cursor: pointer;
+    overflow: hidden;
+}
+
+.miniatura-social img {
+    width: 100%;
+    height: 72px;
+    display: block;
+    object-fit: cover;
+}
+
+.miniatura-social span {
+    display: block;
+    padding: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.aviso-compresion-social {
+    width: 100%;
+    margin: 0;
+    color: #f0c36d;
+    font-size: 12px;
+}
+
+/* Editor de foto: recortar, pintar encima y añadir texto. */
+.dialogo-editor-foto {
+    width: min(560px, 94vw);
+}
+
+.lienzo-editor-foto {
+    max-height: 60vh;
+    display: grid;
+    place-items: center;
+    overflow: auto;
+    border: 1px solid #333;
+    border-radius: 8px;
+    background: #000;
+}
+
+.lienzo-editor-foto canvas {
+    max-width: 100%;
+    touch-action: none;
+    cursor: crosshair;
+}
+
+.herramientas-editor-foto {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.herramientas-editor-foto button {
+    min-height: 40px;
+    padding: 8px 12px;
+    border: 1px solid #444;
+    border-radius: 8px;
+    background: #202020;
+    color: #fff;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.herramientas-editor-foto button[aria-pressed="true"] {
+    border-color: #888;
+    background: #383838;
+}
+
+.ayuda-editor-foto {
+    margin: 0;
+    color: #aaa;
+    font-size: 12px;
+}
+
+.acciones-editor-foto {
+    display: flex;
+    gap: 8px;
+}
+
+.acciones-editor-foto button {
+    flex: 1;
+    min-height: 44px;
+    border: 1px solid #373737;
+    border-radius: 8px;
+    background: #252525;
+    color: #fff;
+    font-weight: 700;
+    cursor: pointer;
+}
+
 
 .modal-contenido > button:not(.boton-cerrar-modal) {
     width: 100%;

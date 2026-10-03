@@ -768,6 +768,7 @@ const mensajesServidor = document.getElementById("mensajes-servidor");
 let mensajesSeleccionadosServidor = new Set();
 const modalEstado = document.getElementById("modal-estado");
 const modalPublicacion = document.getElementById("modal-publicacion");
+const modalEditorFoto = document.getElementById("modal-editor-foto");
 let grabadoraAudio = null;
 let flujoAudio = null;
 let blobAudioEstado = null;
@@ -5827,12 +5828,17 @@ document.addEventListener("keydown", (evento) => {
     }
 });
 
-function configurarSelectorMedio(formId, fileLabelId, fileInputId, typeName, textAreaId, audioControlsId = null) {
+function configurarSelectorMedio(formId, fileLabelId, fileInputId, typeName, textAreaId, audioControlsId = null, vistaPreviaId = null) {
     const form = document.getElementById(formId);
     const fileLabel = document.getElementById(fileLabelId);
     const fileInput = document.getElementById(fileInputId);
     const textArea = document.getElementById(textAreaId);
     const audioControls = audioControlsId ? document.getElementById(audioControlsId) : null;
+    const vistaPrevia = vistaPreviaId ? document.getElementById(vistaPreviaId) : null;
+    // Fotos ya comprimidas o editadas que sustituyen a lo elegido en el input.
+    // Clave: nombre original del archivo. Sin esto, el input seguiría subiendo
+    // el original pesado aunque la vista previa muestre la versión comprimida.
+    let fotosProcesadas = new Map();
     const actualizar = () => {
         const mode = form.querySelector(`input[name="${typeName}"]:checked`).value;
         const audioMode = mode === "audio";
@@ -5868,25 +5874,355 @@ function configurarSelectorMedio(formId, fileLabelId, fileInputId, typeName, tex
                         : "Seleccionar foto";
         }
     };
-    form.querySelectorAll(`input[name="${typeName}"]`).forEach((input) => input.addEventListener("change", actualizar));
-    fileInput.addEventListener("change", () => {
-        const files = [...fileInput.files];
+    form.querySelectorAll(`input[name="${typeName}"]`).forEach((input) => input.addEventListener("change", () => {
+        fotosProcesadas = new Map();
+        fileInput.value = "";
+        pintarVistaPrevia();
+        actualizar();
+    }));
+    fileInput.addEventListener("change", async () => {
         const mode = form.querySelector(`input[name="${typeName}"]:checked`).value;
-        const label = fileLabel.querySelector("span");
+        const esFoto = mode === "imagen" || mode === "imagenes";
+        fotosProcesadas = new Map();
+        const errorId = formId === "formulario-estado" ? "error-estado-social" : "error-publicacion-social";
+        const destinoError = document.getElementById(errorId);
+        if (destinoError) destinoError.textContent = "";
         if (formId === "formulario-estado" && mode === "audio") blobAudioEstado = null;
+        let files = [...fileInput.files];
         if (mode === "imagenes" && files.length > 10) {
             fileInput.value = "";
-            document.getElementById("error-estado-social").textContent = "Puedes seleccionar hasta 10 fotos.";
+            if (destinoError) destinoError.textContent = "Puedes seleccionar hasta 10 fotos.";
+            pintarVistaPrevia();
             return;
         }
-        if (label) label.textContent = files.map((file) => file.name).join(", ") || "Seleccionar archivo";
+        if (esFoto && files.length) {
+            try {
+                await comprimirFotosSiHaceFalta(fileInput, fotosProcesadas);
+                files = [...fileInput.files];
+            } catch (error) {
+                if (destinoError) destinoError.textContent = error.message || "No se pudieron preparar las fotos.";
+                fileInput.value = "";
+                pintarVistaPrevia();
+                return;
+            }
+        }
+        pintarVistaPrevia();
+        actualizar();
     });
-    actualizar();
+    function pintarVistaPrevia() {
+        if (!vistaPrevia) return;
+        vistaPrevia.innerHTML = "";
+        const mode = form.querySelector(`input[name="${typeName}"]:checked`).value;
+        const esFoto = mode === "imagen" || mode === "imagenes";
+        const files = [...fileInput.files];
+        if (!esFoto || !files.length) {
+            vistaPrevia.hidden = true;
+            return;
+        }
+        vistaPrevia.hidden = false;
+        files.forEach((file) => {
+            const proc = fotosProcesadas.get(file.name);
+            const url = URL.createObjectURL(proc?.archivo ?? file);
+            const boton = document.createElement("button");
+            boton.type = "button";
+            boton.className = "miniatura-social";
+            boton.setAttribute("aria-label", `Editar ${file.name}`);
+            boton.innerHTML = `<img src="${url}" alt=""><span>${escapeHtml(file.name)}${proc ? " · comprimida" : ""}</span>`;
+            boton.addEventListener("click", () => {
+                abrirEditorFoto(proc?.archivo ?? file, (resultado) => {
+                    fotosProcesadas.set(file.name, { archivo: resultado });
+                    pintarVistaPrevia();
+                });
+            });
+            vistaPrevia.appendChild(boton);
+        });
+        const n = files.filter((file) => fotosProcesadas.has(file.name)).length;
+        if (n > 0) {
+            const aviso = document.createElement("p");
+            aviso.className = "aviso-compresion-social";
+            aviso.textContent = n === 1
+                ? "Una foto superaba el tamaño máximo y se ha comprimido con menos calidad para poder subirla."
+                : `${n} fotos superaban el tamaño máximo y se han comprimido con menos calidad para poder subirlas.`;
+            vistaPrevia.appendChild(aviso);
+        }
+    }
+
+    function archivosFinales() {
+        const files = [...fileInput.files];
+        if (!files.length) return files;
+        const data = new DataTransfer();
+        files.forEach((file) => {
+            const proc = fotosProcesadas.get(file.name);
+            data.items.add(proc?.archivo ?? file);
+        });
+        return [...data.files];
+    }
+
+    // Punto único de verdad para publicar: devuelve los archivos procesados
+    // (comprimidos o editados). Sin esto, el envío usaría fileInput.files, que
+    // sigue siendo el original pesado.
+    fileInput.archivosFinales = archivosFinales;
+
+    return { archivosFinales, repintarVistaPrevia: pintarVistaPrevia };
 }
 
-configurarSelectorMedio("formulario-estado", "etiqueta-archivo-estado", "archivo-estado", "tipo-estado", "texto-estado", "controles-grabar-audio");
-configurarSelectorMedio("formulario-publicacion", "etiqueta-archivo-publicacion", "archivo-publicacion", "tipo-publicacion", "texto-publicacion");
+const LIMITE_FOTO_BYTES = 12 * 1024 * 1024;
 
+async function comprimirFoto(archivo) {
+    let bitmap = null;
+    try {
+        bitmap = await createImageBitmap(archivo);
+    } catch {
+        throw new Error(`"${archivo.name}" no se pudo leer como imagen.`);
+    }
+    const escalas = [1920, 1600, 1280, 960];
+    const calidades = [0.82, 0.7, 0.6, 0.5];
+    for (const maxLado of escalas) {
+        const escala = Math.min(1, maxLado / Math.max(bitmap.width, bitmap.height));
+        const w = Math.max(1, Math.round(bitmap.width * escala));
+        const h = Math.max(1, Math.round(bitmap.height * escala));
+        const lienzo = document.createElement("canvas");
+        lienzo.width = w;
+        lienzo.height = h;
+        lienzo.getContext("2d").drawImage(bitmap, 0, 0, w, h);
+        for (const calidad of calidades) {
+            const blob = await new Promise((resolver) => lienzo.toBlob(resolver, "image/jpeg", calidad));
+            if (!blob) continue;
+            if (blob.size <= LIMITE_FOTO_BYTES) {
+                const nombre = (archivo.name || "foto").replace(/\.\w+$/, "") + ".jpg";
+                return new File([blob], nombre, { type: "image/jpeg" });
+            }
+        }
+    }
+    throw new Error(`"${archivo.name}" pesa demasiado incluso comprimida.`);
+}
+
+async function comprimirFotosSiHaceFalta(fileInput, mapa) {
+    const files = [...fileInput.files];
+    for (const file of files) {
+        if (!file.type?.startsWith("image/")) continue;
+        if (file.size <= LIMITE_FOTO_BYTES) continue;
+        if (mapa.has(file.name)) continue;
+        const comprimida = await comprimirFoto(file);
+        mapa.set(file.name, { archivo: comprimida });
+    }
+}
+
+let editorFotoCallback = null;
+let editorFotoNombre = "foto.jpg";
+let editorFotoTipo = "image/jpeg";
+let editorHerramienta = "pincel";
+let editorHistorial = [];
+let editorDibujando = false;
+let editorUltimo = null;
+let editorRecorte = null;
+
+function editorLienzo() {
+    return document.getElementById("lienzo-editor-foto");
+}
+
+function editorGuardarPaso() {
+    const lienzo = editorLienzo();
+    if (!lienzo) return;
+    editorHistorial.push(lienzo.toDataURL("image/png"));
+    if (editorHistorial.length > 20) editorHistorial.shift();
+}
+
+function editorRepintarDesde(url) {
+    return new Promise((resolver, rechazar) => {
+        const lienzo = editorLienzo();
+        const img = new Image();
+        img.onload = () => {
+            lienzo.width = img.naturalWidth;
+            lienzo.height = img.naturalHeight;
+            lienzo.getContext("2d").drawImage(img, 0, 0);
+            URL.revokeObjectURL(img.src);
+            resolver();
+        };
+        img.onerror = () => rechazar(new Error("No se pudo cargar la foto."));
+        img.src = url;
+    });
+}
+
+function editorMarcarHerramienta() {
+    const mapa = {
+        recorte: document.getElementById("editor-herramienta-recorte"),
+        pincel: document.getElementById("editor-herramienta-pincel"),
+        texto: document.getElementById("editor-herramienta-texto")
+    };
+    for (const [clave, boton] of Object.entries(mapa)) {
+        if (boton) boton.setAttribute("aria-pressed", String(clave === editorHerramienta));
+    }
+}
+
+async function abrirEditorFoto(archivo, alConfirmar) {
+    const lienzo = editorLienzo();
+    if (!lienzo || !modalEditorFoto) return;
+    editorFotoCallback = typeof alConfirmar === "function" ? alConfirmar : null;
+    editorFotoNombre = (archivo?.name || "foto").replace(/\.\w+$/, "") + ".jpg";
+    editorFotoTipo = "image/jpeg";
+    editorHistorial = [];
+    editorDibujando = false;
+    editorRecorte = null;
+    editorHerramienta = "pincel";
+    editorMarcarHerramienta();
+    try {
+        await editorRepintarDesde(URL.createObjectURL(archivo));
+    } catch (error) {
+        alert(error.message || "No se pudo abrir la foto.");
+        return;
+    }
+    modalEditorFoto.hidden = false;
+}
+
+function editorPosicion(evento) {
+    const lienzo = editorLienzo();
+    const rect = lienzo.getBoundingClientRect();
+    const x = (evento.clientX - rect.left) * (lienzo.width / rect.width);
+    const y = (evento.clientY - rect.top) * (lienzo.height / rect.height);
+    return { x, y };
+}
+
+function editorIniciarTrazo(evento) {
+    const lienzo = editorLienzo();
+    if (!lienzo || modalEditorFoto.hidden) return;
+    evento.preventDefault();
+    const pos = editorPosicion(evento);
+    if (editorHerramienta === "texto") {
+        const texto = window.prompt("Texto para la foto:");
+        if (!texto) return;
+        editorGuardarPaso();
+        const ctx = lienzo.getContext("2d");
+        ctx.fillStyle = document.getElementById("editor-color")?.value || "#ff3344";
+        ctx.font = `700 ${Math.max(24, Number(document.getElementById("editor-grosor")?.value || 6) * 6)}px sans-serif`;
+        ctx.fillText(texto, pos.x, pos.y);
+        return;
+    }
+    editorDibujando = true;
+    editorUltimo = pos;
+    editorRecorte = editorHerramienta === "recorte" ? { ...pos, w: 0, h: 0 } : null;
+    if (editorHerramienta === "pincel") editorGuardarPaso();
+}
+
+function editorMoverTrazo(evento) {
+    if (!editorDibujando) return;
+    const lienzo = editorLienzo();
+    evento.preventDefault();
+    const pos = editorPosicion(evento);
+    const ctx = lienzo.getContext("2d");
+    if (editorHerramienta === "pincel") {
+        ctx.strokeStyle = document.getElementById("editor-color")?.value || "#ff3344";
+        ctx.lineWidth = Number(document.getElementById("editor-grosor")?.value || 6);
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        ctx.moveTo(editorUltimo.x, editorUltimo.y);
+        ctx.lineTo(pos.x, pos.y);
+        ctx.stroke();
+        editorUltimo = pos;
+    } else if (editorHerramienta === "recorte" && editorRecorte) {
+        editorRecorte.w = pos.x - editorRecorte.x;
+        editorRecorte.h = pos.y - editorRecorte.y;
+    }
+}
+
+function editorTerminarTrazo() {
+    if (!editorDibujando) return;
+    editorDibujando = false;
+    if (editorHerramienta === "recorte" && editorRecorte) {
+        const lienzo = editorLienzo();
+        const x = Math.round(Math.min(editorRecorte.x, editorRecorte.x + editorRecorte.w));
+        const y = Math.round(Math.min(editorRecorte.y, editorRecorte.y + editorRecorte.h));
+        const w = Math.round(Math.abs(editorRecorte.w));
+        const h = Math.round(Math.abs(editorRecorte.h));
+        editorRecorte = null;
+        if (w >= 10 && h >= 10 && x + w <= lienzo.width && y + h <= lienzo.height) {
+            editorGuardarPaso();
+            const copia = document.createElement("canvas");
+            copia.width = w;
+            copia.height = h;
+            copia.getContext("2d").drawImage(lienzo, x, y, w, h, 0, 0, w, h);
+            lienzo.width = w;
+            lienzo.height = h;
+            lienzo.getContext("2d").drawImage(copia, 0, 0);
+        }
+    }
+    editorUltimo = null;
+}
+
+// Cierre y botones del editor: sin esto, el modal se abría pero ningún botón
+// respondía (ni herramientas, ni deshacer, ni usar foto). El lienzo también
+// se queda sin puntero si no se conectan los eventos táctiles y de ratón.
+if (modalEditorFoto) {
+    modalEditorFoto.addEventListener("click", (evento) => {
+        if (evento.target === modalEditorFoto) modalEditorFoto.hidden = true;
+    });
+    document.getElementById("boton-cerrar-editor-foto")?.addEventListener("click", () => {
+        modalEditorFoto.hidden = true;
+        editorFotoCallback = null;
+    });
+    document.getElementById("editor-herramienta-recorte")?.addEventListener("click", () => {
+        editorHerramienta = "recorte";
+        editorMarcarHerramienta();
+    });
+    document.getElementById("editor-herramienta-pincel")?.addEventListener("click", () => {
+        editorHerramienta = "pincel";
+        editorMarcarHerramienta();
+    });
+    document.getElementById("editor-herramienta-texto")?.addEventListener("click", () => {
+        editorHerramienta = "texto";
+        editorMarcarHerramienta();
+    });
+    document.getElementById("boton-editor-deshacer")?.addEventListener("click", () => {
+        const lienzo = editorLienzo();
+        const paso = editorHistorial.pop();
+        if (!lienzo || !paso) return;
+        const img = new Image();
+        img.onload = () => {
+            lienzo.width = img.naturalWidth;
+            lienzo.height = img.naturalHeight;
+            lienzo.getContext("2d").drawImage(img, 0, 0);
+        };
+        img.src = paso;
+    });
+    document.getElementById("boton-editor-restablecer")?.addEventListener("click", () => {
+        const lienzo = editorLienzo();
+        const primero = editorHistorial[0];
+        if (!lienzo || !primero) return;
+        editorHistorial = [primero];
+        const img = new Image();
+        img.onload = () => {
+            lienzo.width = img.naturalWidth;
+            lienzo.height = img.naturalHeight;
+            lienzo.getContext("2d").drawImage(img, 0, 0);
+        };
+        img.src = primero;
+    });
+    document.getElementById("boton-editor-confirmar")?.addEventListener("click", () => {
+        const lienzo = editorLienzo();
+        if (!lienzo) return;
+        lienzo.toBlob((blob) => {
+            if (!blob) {
+                modalEditorFoto.hidden = true;
+                return;
+            }
+            const resultado = new File([blob], editorFotoNombre, { type: editorFotoTipo });
+            modalEditorFoto.hidden = true;
+            if (editorFotoCallback) {
+                const continuar = editorFotoCallback;
+                editorFotoCallback = null;
+                continuar(resultado);
+            }
+        }, editorFotoTipo, 0.92);
+    });
+    const lienzoEditor = editorLienzo();
+    if (lienzoEditor) {
+        lienzoEditor.addEventListener("pointerdown", editorIniciarTrazo);
+        lienzoEditor.addEventListener("pointermove", editorMoverTrazo);
+        lienzoEditor.addEventListener("pointerup", editorTerminarTrazo);
+        lienzoEditor.addEventListener("pointerleave", editorTerminarTrazo);
+        lienzoEditor.addEventListener("pointercancel", editorTerminarTrazo);
+    }
+}
 document.getElementById("boton-iniciar-audio").addEventListener("click", async () => {
     try {
         flujoAudio = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -5939,9 +6275,10 @@ document.getElementById("formulario-estado").addEventListener("submit", async (e
                 body: JSON.stringify({ texto: document.getElementById("texto-estado").value, visibilidad: document.getElementById("visibilidad-estado").value })
             });
         } else {
+            const inputEstado = document.getElementById("archivo-estado");
             const files = mode === "audio" && blobAudioEstado
                 ? [new File([blobAudioEstado], `estado-audio.${blobAudioEstado.type.includes("ogg") ? "ogg" : "webm"}`, { type: blobAudioEstado.type })]
-                : [...document.getElementById("archivo-estado").files];
+                : (typeof inputEstado.archivosFinales === "function" ? inputEstado.archivosFinales() : [...inputEstado.files]);
             const body = new FormData();
             body.append("tipo", mode);
             body.append("visibilidad", document.getElementById("visibilidad-estado").value);
@@ -5978,7 +6315,8 @@ document.getElementById("formulario-publicacion").addEventListener("submit", asy
                 body: JSON.stringify({ texto: document.getElementById("texto-publicacion").value, visibilidad: document.getElementById("visibilidad-publicacion").value })
             });
         } else {
-            const files = [...document.getElementById("archivo-publicacion").files];
+            const inputPublicacion = document.getElementById("archivo-publicacion");
+            const files = typeof inputPublicacion.archivosFinales === "function" ? inputPublicacion.archivosFinales() : [...inputPublicacion.files];
             const body = new FormData();
             body.append("tipo", mode);
             body.append("visibilidad", document.getElementById("visibilidad-publicacion").value);

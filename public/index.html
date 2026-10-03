@@ -1306,6 +1306,7 @@
                             <span id="texto-archivo-estado">Seleccionar archivo</span>
                             <input id="archivo-estado" type="file" accept="image/*" hidden>
                         </label>
+                        <div id="vista-previa-estado" class="vista-previa-social" hidden></div>
                         <div id="controles-grabar-audio" class="controles-grabar-audio" hidden>
                             <button id="boton-iniciar-audio" type="button">GRABAR AUDIO</button>
                             <button id="boton-detener-audio" type="button" disabled>DETENER</button>
@@ -1354,6 +1355,7 @@
                             <span>Seleccionar fotos o vídeo</span>
                             <input id="archivo-publicacion" type="file" accept="image/*" multiple hidden>
                         </label>
+                        <div id="vista-previa-publicacion" class="vista-previa-social" hidden></div>
                         <label class="selector-audiencia-social" for="visibilidad-publicacion">Quién puede verlo</label>
                         <select id="visibilidad-publicacion">
                             <option value="amigos">Mis amigos</option>
@@ -1363,6 +1365,65 @@
                         <button class="boton-confirmar-social" type="submit">PUBLICAR</button>
                     </form>
                 </section>
+            </div>
+
+            <!-- ==============================
+                 MODAL EDITOR DE FOTO
+                 Recortar, pintar y poner texto antes de publicar.
+                 ============================== -->
+
+            <div
+                id="modal-editor-foto"
+                class="modal modal-contenido-social"
+                hidden
+            >
+
+                <section
+                    class="dialogo-social dialogo-editor-foto"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="titulo-modal-editor-foto"
+                >
+
+                    <header class="cabecera-dialogo-social">
+
+                        <h2 id="titulo-modal-editor-foto">
+                            Editar foto
+                        </h2>
+
+                        <button
+                            id="boton-cerrar-editor-foto"
+                            class="boton-cerrar-modal"
+                            type="button"
+                            aria-label="Cerrar editor"
+                        >
+                            ×
+                        </button>
+
+                    </header>
+
+                    <div class="lienzo-editor-foto">
+                        <canvas id="lienzo-editor-foto"></canvas>
+                    </div>
+
+                    <div class="herramientas-editor-foto" role="toolbar" aria-label="Herramientas de edición">
+                        <button id="editor-herramienta-recorte" type="button" aria-pressed="false">RECORTAR</button>
+                        <button id="editor-herramienta-pincel" type="button" aria-pressed="true">PINTAR</button>
+                        <button id="editor-herramienta-texto" type="button" aria-pressed="false">TEXTO</button>
+                        <input id="editor-color" type="color" value="#ff3344" aria-label="Color del trazo y del texto">
+                        <input id="editor-grosor" type="range" min="2" max="30" value="6" aria-label="Grosor del pincel">
+                    </div>
+
+                    <p class="ayuda-editor-foto">Arrastra para recortar o pintar. Con TEXTO, pulsa en la foto para escribir.</p>
+
+                    <div class="acciones-editor-foto">
+                        <button id="boton-editor-deshacer" type="button">DESHACER</button>
+                        <button id="boton-editor-restablecer" type="button">ORIGINAL</button>
+                        <button id="boton-editor-confirmar" class="boton-confirmar-social" type="button">USAR FOTO</button>
+                    </div>
+
+                </section>
+
             </div>
 
             <!-- ==============================
