@@ -51,6 +51,8 @@ DECLARE
 BEGIN
     FOREACH t IN ARRAY ARRAY[
         'votos_encuesta', 'opciones_encuesta', 'encuestas', 'comentarios',
+        'reels_comentarios', 'reels_likes', 'reels',
+        'historias_items', 'historias',
         'corazones_publicacion', 'multimedia_publicacion', 'publicaciones',
         'estados', 'mensajes_privados', 'mensajes_grupo',
         'ocultos_restricidos_grupo', 'miembros_bloqueados_grupo',

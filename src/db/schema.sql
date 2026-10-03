@@ -866,6 +866,143 @@ CREATE TABLE multimedia_estado (
 
 
 -- ============================================================
+-- REELS
+-- Vídeo corto con título obligatorio: un único archivo de vídeo
+-- y visibilidad de amigos o público.
+-- ============================================================
+
+CREATE TABLE reels (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    autor_id UUID NOT NULL
+        REFERENCES usuarios(id)
+        ON DELETE CASCADE,
+
+    -- El vídeo vive en la tabla común de archivos, como todo el multimedia.
+    archivo_id UUID NOT NULL
+        REFERENCES archivos(id)
+        ON DELETE CASCADE,
+
+    titulo VARCHAR(100) NOT NULL,
+
+    visibilidad VARCHAR(20) NOT NULL DEFAULT 'amigos',
+
+    creado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT reels_titulo_no_vacio
+        CHECK (length(trim(titulo)) > 0),
+
+    CONSTRAINT reels_visibilidad_check
+        CHECK (visibilidad IN ('amigos', 'publica'))
+);
+
+
+-- ============================================================
+-- LIKES DE REELS
+-- ============================================================
+
+CREATE TABLE reels_likes (
+    reel_id UUID NOT NULL
+        REFERENCES reels(id)
+        ON DELETE CASCADE,
+
+    usuario_id UUID NOT NULL
+        REFERENCES usuarios(id)
+        ON DELETE CASCADE,
+
+    creado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    PRIMARY KEY (reel_id, usuario_id)
+);
+
+
+-- ============================================================
+-- COMENTARIOS DE REELS
+-- ============================================================
+
+CREATE TABLE reels_comentarios (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    reel_id UUID NOT NULL
+        REFERENCES reels(id)
+        ON DELETE CASCADE,
+
+    autor_id UUID NOT NULL
+        REFERENCES usuarios(id)
+        ON DELETE CASCADE,
+
+    texto VARCHAR(1000) NOT NULL,
+
+    creado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT reels_comentarios_texto_no_vacio
+        CHECK (length(trim(texto)) > 0)
+);
+
+
+-- ============================================================
+-- HISTORIAS
+-- Carpetas permanentes: se crean con un nombre, guardan muchos
+-- elementos y se pueden editar o borrar cuando se quiera.
+-- ============================================================
+
+CREATE TABLE historias (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    autor_id UUID NOT NULL
+        REFERENCES usuarios(id)
+        ON DELETE CASCADE,
+
+    nombre VARCHAR(60) NOT NULL,
+
+    creado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    actualizado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT historias_nombre_no_vacio
+        CHECK (length(trim(nombre)) > 0)
+);
+
+
+-- ============================================================
+-- ELEMENTOS DE HISTORIA
+-- Cada elemento es un texto o un archivo (foto, vídeo o audio),
+-- como los estados, pero sin fecha de caducidad.
+-- ============================================================
+
+CREATE TABLE historias_items (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    historia_id UUID NOT NULL
+        REFERENCES historias(id)
+        ON DELETE CASCADE,
+
+    texto VARCHAR(500),
+
+    archivo_id UUID
+        REFERENCES archivos(id)
+        ON DELETE CASCADE,
+
+    tipo VARCHAR(20) NOT NULL,
+
+    orden INTEGER NOT NULL DEFAULT 0,
+
+    CONSTRAINT historias_items_tipo_check
+        CHECK (tipo IN ('texto', 'imagen', 'video', 'audio')),
+
+    -- Un elemento es texto o archivo: nunca los dos ni ninguno.
+    CONSTRAINT historias_items_contenido
+        CHECK (
+            (tipo = 'texto' AND texto IS NOT NULL AND archivo_id IS NULL)
+            OR
+            (tipo <> 'texto' AND texto IS NULL AND archivo_id IS NOT NULL)
+        ),
+
+    UNIQUE (historia_id, orden)
+);
+
+
+-- ============================================================
 -- ÍNDICES
 -- ============================================================
 
@@ -960,6 +1097,24 @@ CREATE INDEX idx_estados_expira_en
 
 CREATE INDEX idx_multimedia_estado_estado
     ON multimedia_estado(estado_id, orden);
+
+CREATE INDEX idx_reels_autor
+    ON reels(autor_id, creado_en DESC);
+
+CREATE INDEX idx_reels_visibilidad
+    ON reels(visibilidad, creado_en DESC);
+
+CREATE INDEX idx_reels_likes_reel
+    ON reels_likes(reel_id);
+
+CREATE INDEX idx_reels_comentarios_reel
+    ON reels_comentarios(reel_id, creado_en);
+
+CREATE INDEX idx_historias_autor
+    ON historias(autor_id, actualizado_en DESC);
+
+CREATE INDEX idx_historias_items_historia
+    ON historias_items(historia_id, orden);
 
 CREATE INDEX idx_archivos_propietario
     ON archivos(propietario_id);

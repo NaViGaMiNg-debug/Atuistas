@@ -343,6 +343,104 @@ export async function migrarEsquema() {
                 ON mensajes_privados(conversacion_id, autor_id)
                 WHERE leido_en IS NULL;
 
+            -- ==========================================
+            -- REELS
+            -- Vídeo corto con título obligatorio, sus
+            -- likes y sus comentarios.
+            -- ==========================================
+
+            CREATE TABLE IF NOT EXISTS reels (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                autor_id UUID NOT NULL
+                    REFERENCES usuarios(id) ON DELETE CASCADE,
+                archivo_id UUID NOT NULL
+                    REFERENCES archivos(id) ON DELETE CASCADE,
+                titulo VARCHAR(100) NOT NULL,
+                visibilidad VARCHAR(20) NOT NULL DEFAULT 'amigos',
+                creado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                CONSTRAINT reels_titulo_no_vacio
+                    CHECK (length(trim(titulo)) > 0),
+                CONSTRAINT reels_visibilidad_check
+                    CHECK (visibilidad IN ('amigos', 'publica'))
+            );
+
+            CREATE TABLE IF NOT EXISTS reels_likes (
+                reel_id UUID NOT NULL
+                    REFERENCES reels(id) ON DELETE CASCADE,
+                usuario_id UUID NOT NULL
+                    REFERENCES usuarios(id) ON DELETE CASCADE,
+                creado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                PRIMARY KEY (reel_id, usuario_id)
+            );
+
+            CREATE TABLE IF NOT EXISTS reels_comentarios (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                reel_id UUID NOT NULL
+                    REFERENCES reels(id) ON DELETE CASCADE,
+                autor_id UUID NOT NULL
+                    REFERENCES usuarios(id) ON DELETE CASCADE,
+                texto VARCHAR(1000) NOT NULL,
+                creado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                CONSTRAINT reels_comentarios_texto_no_vacio
+                    CHECK (length(trim(texto)) > 0)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_reels_autor
+                ON reels(autor_id, creado_en DESC);
+
+            CREATE INDEX IF NOT EXISTS idx_reels_visibilidad
+                ON reels(visibilidad, creado_en DESC);
+
+            CREATE INDEX IF NOT EXISTS idx_reels_likes_reel
+                ON reels_likes(reel_id);
+
+            CREATE INDEX IF NOT EXISTS idx_reels_comentarios_reel
+                ON reels_comentarios(reel_id, creado_en);
+
+            -- ==========================================
+            -- HISTORIAS
+            -- Carpetas permanentes con muchos elementos
+            -- (texto, foto, vídeo o audio) que se pueden
+            -- editar o borrar cuando se quiera.
+            -- ==========================================
+
+            CREATE TABLE IF NOT EXISTS historias (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                autor_id UUID NOT NULL
+                    REFERENCES usuarios(id) ON DELETE CASCADE,
+                nombre VARCHAR(60) NOT NULL,
+                creado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                actualizado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                CONSTRAINT historias_nombre_no_vacio
+                    CHECK (length(trim(nombre)) > 0)
+            );
+
+            CREATE TABLE IF NOT EXISTS historias_items (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                historia_id UUID NOT NULL
+                    REFERENCES historias(id) ON DELETE CASCADE,
+                texto VARCHAR(500),
+                archivo_id UUID
+                    REFERENCES archivos(id) ON DELETE CASCADE,
+                tipo VARCHAR(20) NOT NULL,
+                orden INTEGER NOT NULL DEFAULT 0,
+                CONSTRAINT historias_items_tipo_check
+                    CHECK (tipo IN ('texto', 'imagen', 'video', 'audio')),
+                CONSTRAINT historias_items_contenido
+                    CHECK (
+                        (tipo = 'texto' AND texto IS NOT NULL AND archivo_id IS NULL)
+                        OR
+                        (tipo <> 'texto' AND texto IS NULL AND archivo_id IS NOT NULL)
+                    ),
+                UNIQUE (historia_id, orden)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_historias_autor
+                ON historias(autor_id, actualizado_en DESC);
+
+            CREATE INDEX IF NOT EXISTS idx_historias_items_historia
+                ON historias_items(historia_id, orden);
+
         `);
         await client.query("COMMIT");
     } catch (error) {
