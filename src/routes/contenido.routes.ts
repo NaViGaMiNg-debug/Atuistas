@@ -53,7 +53,8 @@ export async function contenidoRoutes(app: FastifyInstance) {
                 request.usuario!.id,
                 seccionValida(fields.visibilidad),
                 mode,
-                files
+                files,
+                fields.texto ?? ""
             );
             return reply.code(201).send({ publicacion });
         } catch (error) {
@@ -150,7 +151,8 @@ export async function contenidoRoutes(app: FastifyInstance) {
                 request.usuario!.id,
                 seccionValida(fields.visibilidad),
                 mode,
-                files
+                files,
+                fields.texto ?? ""
             );
             return reply.code(201).send({ estado });
         } catch (error) {

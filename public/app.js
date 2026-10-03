@@ -5837,9 +5837,12 @@ function configurarSelectorMedio(formId, fileLabelId, fileInputId, typeName, tex
         const mode = form.querySelector(`input[name="${typeName}"]:checked`).value;
         const audioMode = mode === "audio";
         const needsFile = ["imagen", "imagenes", "video", "audio"].includes(mode);
+        const soloTexto = !needsFile;
         fileLabel.hidden = !needsFile;
-        textArea.hidden = needsFile;
-        textArea.required = !needsFile;
+        // El texto acompaña a la foto, vídeo o audio: nunca se oculta,
+        // solo deja de ser obligatorio cuando ya hay archivo.
+        textArea.hidden = false;
+        textArea.required = soloTexto;
         if (audioControls) audioControls.hidden = !audioMode;
         if (mode === "imagen") {
             fileInput.accept = "image/*";
@@ -5942,6 +5945,7 @@ document.getElementById("formulario-estado").addEventListener("submit", async (e
             const body = new FormData();
             body.append("tipo", mode);
             body.append("visibilidad", document.getElementById("visibilidad-estado").value);
+            body.append("texto", document.getElementById("texto-estado").value);
             files.forEach((file) => body.append("archivo", file));
             await solicitarGrupo("/api/estados/multimedia", { method: "POST", body });
         }
@@ -5978,6 +5982,7 @@ document.getElementById("formulario-publicacion").addEventListener("submit", asy
             const body = new FormData();
             body.append("tipo", mode);
             body.append("visibilidad", document.getElementById("visibilidad-publicacion").value);
+            body.append("texto", document.getElementById("texto-publicacion").value);
             files.forEach((file) => body.append("archivo", file));
             await solicitarGrupo("/api/publicaciones/multimedia", { method: "POST", body });
         }

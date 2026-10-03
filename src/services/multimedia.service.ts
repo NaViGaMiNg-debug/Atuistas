@@ -160,9 +160,12 @@ export async function crearEstadoMultimedia(
     usuarioId: string,
     visibilidad: "amigos" | "publica",
     mode: "imagen" | "imagenes" | "video" | "audio",
-    rawFiles: UploadFile[]
+    rawFiles: UploadFile[],
+    texto = ""
 ) {
     if (visibilidad !== "amigos" && visibilidad !== "publica") throw new Error("La visibilidad no es válida");
+    const mensaje = texto.trim();
+    if (mensaje.length > 500) throw new Error("El estado no puede superar los 500 caracteres");
     const files = await validarArchivos(rawFiles, mode);
     const client = await db.connect();
     let savedPaths: string[] = [];
@@ -170,8 +173,8 @@ export async function crearEstadoMultimedia(
         await client.query("BEGIN");
         const status = await client.query(
             `INSERT INTO estados (autor_id, texto, visibilidad, expira_en)
-             VALUES ($1, NULL, $2, NOW() + INTERVAL '24 hours') RETURNING id`,
-            [usuarioId, visibilidad]
+             VALUES ($1, NULLIF($2, ''), $3, NOW() + INTERVAL '24 hours') RETURNING id`,
+            [usuarioId, mensaje, visibilidad]
         );
         savedPaths = await guardarYEnlazarArchivos(client, usuarioId, files, "estado", status.rows[0].id);
         await client.query("COMMIT");
@@ -189,9 +192,12 @@ export async function crearPublicacionMultimedia(
     usuarioId: string,
     visibilidad: "amigos" | "publica",
     mode: "imagenes" | "video",
-    rawFiles: UploadFile[]
+    rawFiles: UploadFile[],
+    texto = ""
 ) {
     if (visibilidad !== "amigos" && visibilidad !== "publica") throw new Error("La visibilidad no es válida");
+    const mensaje = texto.trim();
+    if (mensaje.length > 5000) throw new Error("La publicación no puede superar los 5000 caracteres");
     const files = await validarArchivos(rawFiles, mode);
     if (mode === "imagenes" && files.some((file) => file.type !== "imagen")) throw new Error("Esta publicación admite solo fotos");
     if (mode === "video" && files.length !== 1) throw new Error("Una publicación admite un solo vídeo");
@@ -201,8 +207,8 @@ export async function crearPublicacionMultimedia(
     try {
         await client.query("BEGIN");
         const post = await client.query(
-            `INSERT INTO publicaciones (autor_id, texto, visibilidad) VALUES ($1, NULL, $2) RETURNING id`,
-            [usuarioId, visibilidad]
+            `INSERT INTO publicaciones (autor_id, texto, visibilidad) VALUES ($1, NULLIF($2, ''), $3) RETURNING id`,
+            [usuarioId, mensaje, visibilidad]
         );
         savedPaths = await guardarYEnlazarArchivos(client, usuarioId, files, "publicacion", post.rows[0].id);
         await client.query("COMMIT");
