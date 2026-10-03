@@ -210,7 +210,8 @@ export async function enviarSolicitudAmistad(
         "solicitud_amistad",
         "Nueva solicitud de amistad",
         "Tienes una nueva solicitud de amistad.",
-        { usuarioId }
+        { usuarioId },
+        usuarioId
     );
 
     return {
@@ -335,7 +336,8 @@ export async function aceptarSolicitudAmistad(
             "amistad_aceptada",
             "Solicitud aceptada",
             "Han aceptado tu solicitud de amistad.",
-            { usuarioId: receptorId }
+            { usuarioId: receptorId },
+            receptorId
         );
 
         return {
@@ -389,7 +391,18 @@ export async function obtenerAmigos(usuarioId: string) {
                 WHEN ar.ruta IS NOT NULL
                 THEN REPLACE(ar.ruta, '\', '/')
                 ELSE NULL
-            END AS avatar_url
+            END AS avatar_url,
+            -- Mensajes suyos que aún no se han abierto el chat: alimenta el
+            -- punto rojo de la tarjeta.
+            (
+                SELECT COUNT(*)::int
+                FROM mensajes_privados mp
+                INNER JOIN conversaciones_privadas cp ON cp.id = mp.conversacion_id
+                WHERE mp.autor_id = u.id
+                  AND mp.leido_en IS NULL
+                  AND cp.usuario_a_id = LEAST($1::uuid, u.id)
+                  AND cp.usuario_b_id = GREATEST($1::uuid, u.id)
+            ) AS mensajes_sin_leer
         FROM amistades a
         INNER JOIN usuarios u
             ON (

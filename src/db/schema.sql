@@ -342,6 +342,10 @@ CREATE TABLE mensajes_privados (
 
     editado_en TIMESTAMPTZ,
 
+    -- Momento en que la otra persona abrió el chat: los mensajes con leido_en
+    -- a NULL cuentan como sin leer para pintar el punto rojo de la lista.
+    leido_en TIMESTAMPTZ,
+
     CONSTRAINT mensajes_privados_tipo_check
         CHECK (tipo IN ('texto', 'imagen', 'audio')),
 
@@ -901,6 +905,10 @@ CREATE INDEX idx_mensajes_privados_conversacion
 
 CREATE INDEX idx_mensajes_privados_autor
     ON mensajes_privados(autor_id);
+
+CREATE INDEX idx_mensajes_privados_conversacion_sin_leer
+    ON mensajes_privados(conversacion_id, autor_id)
+    WHERE leido_en IS NULL;
 
 CREATE INDEX idx_miembros_grupo_usuario
     ON miembros_grupo(usuario_id);

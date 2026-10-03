@@ -332,6 +332,17 @@ export async function migrarEsquema() {
             CREATE INDEX IF NOT EXISTS idx_ocultos_restringidos_usuario
                 ON ocultos_restringidos_grupo(usuario_id);
 
+            -- ==========================================
+            -- MENSAJES SIN LEER (punto rojo en la lista de chats)
+            -- ==========================================
+
+            ALTER TABLE mensajes_privados
+                ADD COLUMN IF NOT EXISTS leido_en TIMESTAMPTZ;
+
+            CREATE INDEX IF NOT EXISTS idx_mensajes_privados_conversacion_sin_leer
+                ON mensajes_privados(conversacion_id, autor_id)
+                WHERE leido_en IS NULL;
+
         `);
         await client.query("COMMIT");
     } catch (error) {

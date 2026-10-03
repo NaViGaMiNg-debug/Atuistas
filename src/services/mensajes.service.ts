@@ -169,6 +169,22 @@ export async function obtenerMensajesConversacion(
         [usuarioId, otroUsuarioId, usuarioId]
     );
 
+    // Quien abre el chat da por leídos los mensajes que le escribieron: así la
+    // lista de amigos solo enseña punto rojo con lo que no se ha visto aún.
+    await db.query(
+        `
+        UPDATE mensajes_privados mp
+        SET leido_en = NOW()
+        FROM conversaciones_privadas cp
+        WHERE mp.conversacion_id = cp.id
+          AND mp.autor_id = $2::uuid
+          AND mp.leido_en IS NULL
+          AND cp.usuario_a_id = LEAST($1::uuid, $2::uuid)
+          AND cp.usuario_b_id = GREATEST($1::uuid, $2::uuid)
+        `,
+        [usuarioId, otroUsuarioId]
+    );
+
     return resultado.rows;
 }
 
@@ -262,7 +278,8 @@ export async function enviarMensajeTexto(
         "mensaje_privado",
         "Nuevo mensaje",
         texto.length > 120 ? `${texto.slice(0, 117)}...` : texto,
-        { usuarioId, mensajeId: resultado.rows[0].id }
+        { usuarioId, mensajeId: resultado.rows[0].id },
+        usuarioId
     );
 
     return resultado.rows[0];
@@ -384,7 +401,8 @@ export async function enviarMensajeAdjunto(
         "mensaje_privado",
         "Nuevo mensaje",
         texto || RESUMEN_ADJUNTO[tipo],
-        { usuarioId, mensajeId: resultado.rows[0].id }
+        { usuarioId, mensajeId: resultado.rows[0].id },
+        usuarioId
     );
 
     return resultado.rows[0];

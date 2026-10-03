@@ -390,6 +390,7 @@ Campos principales:
 - `mensaje_respondiendo_id`
 - `creado_en`
 - `editado_en`
+- `leido_en`
 
 Tipos:
 
@@ -402,6 +403,11 @@ audio
 Un mensaje de texto necesita contenido.
 
 Un mensaje multimedia necesita un archivo asociado.
+
+`leido_en` guarda el momento en que el otro usuario abrió el chat. Mientras
+vale NULL el mensaje cuenta como sin leer y la lista de amigos pinta punto
+rojo; el índice parcial `idx_mensajes_privados_conversacion_sin_leer` acelera
+ese recuento.
 
 ---
 
