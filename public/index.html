@@ -255,45 +255,24 @@
 
 
                         <!-- ==============================
-                             CHATS
+                             REELS
+                             Tira horizontal: los ultimos, y al
+                             deslizar se ven los anteriores.
                              ============================== -->
 
-                        <section class="seccion-chats">
+                        <section class="seccion-reels">
+
+                            <h2>Reels</h2>
 
                             <div
-                                id="contenedor-chats"
-                                class="contenedor-chats"
+                                id="pista-reels-amigos"
+                                class="pista-reels"
                             >
 
-                                <div class="cabecera-chats">
-
-                                    <h2>
-                                        Chats
-                                    </h2>
-
-                                </div>
-
-
-                                <div
-                                    id="lista-amigos"
-                                    class="lista-chats"
-                                >
-
-                                    <!--
-                                        Los chats reales se generarán
-                                        desde app.js.
-                                    -->
-
-                                </div>
-
-
-                                <button
-                                    id="boton-ver-mas-chats"
-                                    class="boton-ver-mas"
-                                    type="button"
-                                >
-                                    VER MÁS
-                                </button>
+                                <!--
+                                    Los reels reales se generan
+                                    desde app.js.
+                                -->
 
                             </div>
 
@@ -310,9 +289,6 @@
                                 Publicaciones de tus amigos
                             </h2>
 
-                            <button id="boton-abrir-publicacion" class="boton-crear-contenido" type="button">
-                                <span aria-hidden="true">＋</span> PUBLICAR
-                            </button>
 
 
                             <div
@@ -341,6 +317,29 @@
                         id="contenido-publico"
                         class="pagina-entrar pagina-publico"
                     >
+
+
+                        <!-- ==============================
+                             REELS PÚBLICOS
+                             ============================== -->
+
+                        <section class="seccion-reels">
+
+                            <h2>Reels</h2>
+
+                            <div
+                                id="pista-reels-publicos"
+                                class="pista-reels"
+                            >
+
+                                <!--
+                                    Los reels publicos reales se
+                                    generan desde app.js.
+                                -->
+
+                            </div>
+
+                        </section>
 
 
                         <!-- ==============================
@@ -656,6 +655,17 @@
 
 
                     <!-- ==============================
+                         HISTORIAS Y PUBLICACIONES
+                         Los dos botones van en la misma fila,
+                         entre el color del nombre y Notificaciones.
+                         ============================== -->
+
+                    <div class="fila-botones-cuenta">
+                        <button id="boton-cuenta-historias" type="button">HISTORIAS</button>
+                        <button id="boton-cuenta-publicaciones" type="button">PUBLICACIONES</button>
+                    </div>
+
+                    <!-- ==============================
                          NOTIFICACIONES (ventanita)
                          Un botón aquí dentro abre una ventanita con los
                          avisos recientes y las casillas de preferencias.
@@ -894,7 +904,7 @@
                                 aria-label="Ver opciones del servidor"
                             >
                                 <span class="barra-contexto-textos">
-                                    <strong id="titulo-contexto-servidor">Servidores</strong>
+                                    <strong id="titulo-contexto-servidor"></strong>
                                     <span id="subtitulo-contexto-servidor"></span>
                                 </span>
                             </button>
@@ -910,13 +920,42 @@
                     </header>
 
                     <div class="pestanas-amigos" role="tablist" aria-label="Servidores">
-                        <button id="boton-mis-servidores" class="pestana-amigos activa" type="button" role="tab" aria-selected="true">MIS SERVIDORES</button>
+                        <button id="boton-chats" class="pestana-amigos activa" type="button" role="tab" aria-selected="true">CHATS</button>
+                        <button id="boton-mis-servidores" class="pestana-amigos" type="button" role="tab" aria-selected="false">MIS SERVIDORES</button>
                         <button id="boton-buscar-servidores" class="pestana-amigos" type="button" role="tab" aria-selected="false">BUSCAR</button>
                     </div>
 
                     <p id="estado-servidores" class="estado-amigos" aria-live="polite"></p>
 
-                    <section id="seccion-mis-servidores" class="seccion-amigos">
+                    <!-- ==============================
+                         CHATS (pestana por defecto)
+                         ============================== -->
+
+                    <section id="seccion-chats" class="seccion-amigos">
+
+                        <div
+                            id="contenedor-chats"
+                            class="contenedor-chats"
+                        >
+
+                            <div
+                                id="lista-amigos"
+                                class="lista-chats"
+                            >
+
+                                <!--
+                                    Los chats reales se generan
+                                    desde app.js.
+                                -->
+
+                            </div>
+
+                        </div>
+
+                    </section>
+
+
+                    <section id="seccion-mis-servidores" class="seccion-amigos" hidden>
                         <div id="lista-servidores" class="lista-servidores"></div>
                     </section>
 
@@ -1454,6 +1493,331 @@
             </div>
 
             <!-- ==============================
+                 MENÚ CREAR (botón central)
+                 Tres tipos: reels, historias y
+                 publicaciones.
+                 ============================== -->
+
+            <div id="modal-crear" class="modal modal-contenido-social" hidden>
+
+                <section
+                    class="dialogo-social dialogo-crear"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="titulo-modal-crear"
+                >
+
+                    <header class="cabecera-dialogo-social">
+
+                        <h2 id="titulo-modal-crear">Crear</h2>
+
+                        <button
+                            id="boton-cerrar-crear"
+                            class="boton-cerrar-modal"
+                            type="button"
+                            aria-label="Cerrar"
+                        >
+                            ×
+                        </button>
+
+                    </header>
+
+                    <div class="opciones-crear">
+
+                        <button class="opcion-crear" data-crear="reel" type="button">
+                            <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true" focusable="false">
+                                <rect x="3" y="4" width="18" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"></rect>
+                                <path d="M10 9.5v5l4.5-2.5z" fill="currentColor"></path>
+                            </svg>
+                            <strong>REEL</strong>
+                            <span>Vídeo corto con título</span>
+                        </button>
+
+                        <button class="opcion-crear" data-crear="historia" type="button">
+                            <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true" focusable="false">
+                                <path d="M5 5h6a2 2 0 0 1 2 2v12a3 3 0 0 0-3-3H5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"></path>
+                                <path d="M19 5h-4a2 2 0 0 0-2 2v12a3 3 0 0 1 3-3h3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"></path>
+                            </svg>
+                            <strong>HISTORIA</strong>
+                            <span>Carpeta que se queda</span>
+                        </button>
+
+                        <button class="opcion-crear" data-crear="publicacion" type="button">
+                            <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true" focusable="false">
+                                <rect x="3" y="5" width="18" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"></rect>
+                                <path d="M7 15l3-3 2.5 2.5L16 11l3 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+                            </svg>
+                            <strong>PUBLICACIÓN</strong>
+                            <span>Fotos, vídeo o texto</span>
+                        </button>
+
+                    </div>
+
+                </section>
+
+            </div>
+
+            <!-- ==============================
+                 MODAL REEL
+                 Título obligatorio y un vídeo de 90 s.
+                 ============================== -->
+
+            <div id="modal-reel" class="modal modal-contenido-social" hidden>
+
+                <section
+                    class="dialogo-social"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="titulo-modal-reel"
+                >
+
+                    <header class="cabecera-dialogo-social">
+
+                        <h2 id="titulo-modal-reel">Nuevo reel</h2>
+
+                        <button
+                            id="boton-cerrar-reel"
+                            class="boton-cerrar-modal"
+                            type="button"
+                            aria-label="Cerrar"
+                        >
+                            ×
+                        </button>
+
+                    </header>
+
+                    <form id="formulario-reel" class="formulario-dialogo-social">
+
+                        <label for="titulo-reel">Título (obligatorio)</label>
+
+                        <input
+                            id="titulo-reel"
+                            type="text"
+                            maxlength="100"
+                            required
+                            placeholder="Escribe un título..."
+                        >
+
+                        <label class="selector-archivo-social" for="archivo-reel">
+                            <span>Seleccionar vídeo (máximo 90 segundos)</span>
+                            <input
+                                id="archivo-reel"
+                                type="file"
+                                accept="video/mp4,video/webm,video/quicktime"
+                                hidden
+                            >
+                        </label>
+
+                        <label class="selector-audiencia-social" for="visibilidad-reel">Quién puede verlo</label>
+
+                        <select id="visibilidad-reel">
+                            <option value="amigos">Mis amigos</option>
+                            <option value="publica">Público</option>
+                        </select>
+
+                        <p id="error-reel" class="error-social" aria-live="polite"></p>
+
+                        <button class="boton-confirmar-social" type="submit">SUBIR REEL</button>
+
+                    </form>
+
+                </section>
+
+            </div>
+            <!-- ==============================
+                 MODAL HISTORIA
+                 Carpeta permanente: nombre y elementos
+                 (texto, fotos, vídeo o audio) editables.
+                 ============================== -->
+
+            <div id="modal-historia" class="modal modal-contenido-social" hidden>
+
+                <section
+                    class="dialogo-social"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="titulo-modal-historia"
+                >
+
+                    <header class="cabecera-dialogo-social">
+
+                        <h2 id="titulo-modal-historia">Historia</h2>
+
+                        <button
+                            id="boton-cerrar-historia"
+                            class="boton-cerrar-modal"
+                            type="button"
+                            aria-label="Cerrar"
+                        >
+                            ×
+                        </button>
+
+                    </header>
+
+                    <div class="cuerpo-historia">
+
+                        <label for="nombre-historia">Nombre de la carpeta</label>
+
+                        <input
+                            id="nombre-historia"
+                            type="text"
+                            maxlength="60"
+                            placeholder="Por ejemplo: Ensayos"
+                        >
+
+                        <form id="formulario-item-historia" class="formulario-item-historia">
+
+                            <div class="selector-tipo-item">
+                                <label><input type="radio" name="tipo-item-historia" value="texto" checked> Texto</label>
+                                <label><input type="radio" name="tipo-item-historia" value="imagen"> Fotos</label>
+                                <label><input type="radio" name="tipo-item-historia" value="video"> Vídeo</label>
+                                <label><input type="radio" name="tipo-item-historia" value="audio"> Audio</label>
+                            </div>
+
+                            <textarea
+                                id="texto-item-historia"
+                                maxlength="500"
+                                placeholder="Escribe algo..."
+                            ></textarea>
+
+                            <label id="etiqueta-archivo-historia" class="selector-archivo-social" hidden>
+                                <span>Seleccionar archivo</span>
+                                <input id="archivo-historia" type="file" accept="image/*" hidden>
+                            </label>
+
+                            <button id="boton-anadir-item-historia" type="submit">AÑADIR A LA HISTORIA</button>
+
+                        </form>
+
+                        <p id="error-historia" class="error-social" aria-live="polite"></p>
+
+                        <div id="lista-items-historia" class="lista-items-historia"></div>
+
+                        <div class="acciones-historia">
+                            <button id="boton-guardar-historia" type="button">GUARDAR NOMBRE</button>
+                            <button id="boton-borrar-historia" type="button" hidden>BORRAR HISTORIA</button>
+                        </div>
+
+                    </div>
+
+                </section>
+
+            </div>
+
+            <!-- ==============================
+                 VISOR DE REELS
+                 Pantalla completa: se desliza hacia
+                 abajo para pasar de uno a otro.
+                 ============================== -->
+
+            <div id="visor-reels" class="visor-reels" hidden>
+
+                <div id="pista-reels-visor" class="pista-reels-visor"></div>
+
+                <button
+                    id="boton-cerrar-visor-reels"
+                    class="boton-cerrar-visor"
+                    type="button"
+                    aria-label="Cerrar reels"
+                >
+                    ×
+                </button>
+
+            </div>
+
+            <!-- ==============================
+                 COMENTARIOS DEL REEL
+                 Ventana centrada sobre el visor.
+                 ============================== -->
+
+            <div id="modal-comentarios-reel" class="modal modal-contenido-social" hidden>
+
+                <section
+                    class="dialogo-social dialogo-comentarios"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="titulo-comentarios-reel"
+                >
+
+                    <header class="cabecera-dialogo-social">
+
+                        <h2 id="titulo-comentarios-reel">Comentarios</h2>
+
+                        <button
+                            id="boton-cerrar-comentarios-reel"
+                            class="boton-cerrar-modal"
+                            type="button"
+                            aria-label="Cerrar"
+                        >
+                            ×
+                        </button>
+
+                    </header>
+
+                    <div id="lista-comentarios-reel" class="lista-comentarios-reel"></div>
+
+                    <form id="formulario-comentario-reel" class="formulario-comentario-reel">
+                        <input
+                            id="texto-comentario-reel"
+                            type="text"
+                            maxlength="1000"
+                            placeholder="Escribe un comentario..."
+                            required
+                        >
+                        <button type="submit">ENVIAR</button>
+                    </form>
+
+                </section>
+
+            </div>
+
+            <!-- ==============================
+                 CUENTA: HISTORIAS Y PUBLICACIONES
+                 Historias en burbujas con su nombre;
+                 publicaciones con la tira de reels
+                 arriba y la lista debajo.
+                 ============================== -->
+
+            <div id="modal-mi-contenido" class="modal modal-contenido-social" hidden>
+
+                <section
+                    class="dialogo-social dialogo-mi-contenido"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="titulo-mi-contenido"
+                >
+
+                    <header class="cabecera-dialogo-social">
+
+                        <h2 id="titulo-mi-contenido">Mi contenido</h2>
+
+                        <button
+                            id="boton-cerrar-mi-contenido"
+                            class="boton-cerrar-modal"
+                            type="button"
+                            aria-label="Cerrar"
+                        >
+                            ×
+                        </button>
+
+                    </header>
+
+                    <div id="burbujas-historias" class="burbujas-historias"></div>
+
+                    <div id="contenido-mis-reels" hidden>
+                        <h3>Tus reels</h3>
+                        <div id="pista-reels-cuenta" class="pista-reels"></div>
+                    </div>
+
+                    <div id="contenido-mis-publicaciones" hidden>
+                        <h3>Tus publicaciones</h3>
+                        <div id="lista-mis-publicaciones" class="lista-publicaciones"></div>
+                    </div>
+
+                </section>
+
+            </div>
+            <!-- ==============================
                  MODAL EDITOR DE FOTO
                  Recortar, pintar y poner texto antes de publicar.
                  ============================== -->
@@ -1742,6 +2106,18 @@
                         <circle cx="9.5" cy="8" r="3.5" fill="none" stroke="currentColor" stroke-width="1.8"></circle>
                         <path d="M3 20c.7-3.6 3.3-5.6 6.5-5.6 1.4 0 2.7.4 3.7 1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
                         <path d="M17 13.5v6M14 16.5h6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+                    </svg>
+                </button>
+
+                <button
+                    id="boton-crear"
+                    class="boton-crear-nav"
+                    type="button"
+                    aria-label="Crear reels, historias o publicaciones"
+                    title="Crear"
+                >
+                    <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true" focusable="false">
+                        <path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
                     </svg>
                 </button>
 

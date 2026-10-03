@@ -2070,7 +2070,6 @@ function mostrarSeccion(seccion) {
         contenidoPublico.hidden = true;
         cambiarFeedEntrada(false);
 
-        cargarAmigos();
         cargarContenidoInicio();
     }
 
@@ -2088,7 +2087,8 @@ function mostrarSeccion(seccion) {
 
     if (seccion === "servidores") {
         contenidoServidores.hidden = false;
-        cargarServidores();
+        mostrarPestanaServidor("chats");
+        cargarAmigos();
     }
 }
 
@@ -2240,11 +2240,15 @@ document.getElementById("boton-volver-servidor").addEventListener("click", () =>
 });
 
 function mostrarPestanaServidor(nombre) {
+    // "chats" va el primero y es la pestana de entrada: los chats
+    // viven aqui, no en Entrar.
     const secciones = {
+        chats: document.getElementById("seccion-chats"),
         propios: document.getElementById("seccion-mis-servidores"),
         buscar: document.getElementById("seccion-buscar-servidores")
     };
     const botones = {
+        chats: document.getElementById("boton-chats"),
         propios: document.getElementById("boton-mis-servidores"),
         buscar: document.getElementById("boton-buscar-servidores")
     };
@@ -2517,7 +2521,8 @@ document.getElementById("resultados-servidores").addEventListener("click", async
     }
 });
 
-document.getElementById("boton-mis-servidores").addEventListener("click", () => cargarServidores());
+document.getElementById("boton-chats").addEventListener("click", () => { mostrarPestanaServidor("chats"); cargarAmigos(); });
+document.getElementById("boton-mis-servidores").addEventListener("click", () => { mostrarPestanaServidor("propios"); cargarServidores(); });
 document.getElementById("boton-buscar-servidores").addEventListener("click", () => mostrarPestanaServidor("buscar"));
 // Vuelve a la lista de servidores desde cualquier punto (salir, eliminar, expulsión).
 function volverAListaServidores() {
@@ -5610,7 +5615,9 @@ async function cargarContenidoInicio() {
         cargarEstados("amigos", document.getElementById("lista-estados-amigos")),
         cargarEstados("publica", document.getElementById("lista-estados-publicos")),
         cargarPublicaciones("amigos", document.getElementById("lista-publicaciones-amigos")),
-        cargarPublicaciones("publica", document.getElementById("lista-publicaciones-publicas"))
+        cargarPublicaciones("publica", document.getElementById("lista-publicaciones-publicas")),
+        cargarPistaReels("amigos", document.getElementById("pista-reels-amigos")),
+        cargarPistaReels("publica", document.getElementById("pista-reels-publicos"))
     ]);
 }
 
@@ -5993,13 +6000,14 @@ document.getElementById("boton-mi-estado").addEventListener("click", async () =>
 document.getElementById("boton-ver-mis-estados").addEventListener("click", mostrarMisEstados);
 document.getElementById("boton-anadir-estado").addEventListener("click", mostrarFormularioEstado);
 document.getElementById("boton-cerrar-modal-estado").addEventListener("click", () => { modalEstado.hidden = true; });
-document.getElementById("boton-abrir-publicacion").addEventListener("click", () => {
+// Publicaciones: ahora se suben desde el boton central "+".
+function abrirFormularioPublicacion() {
     const form = document.getElementById("formulario-publicacion");
     form.reset();
     form.querySelector("input[name=tipo-publicacion]:checked").dispatchEvent(new Event("change"));
     document.getElementById("archivo-publicacion").value = "";
     modalPublicacion.hidden = false;
-});
+}
 document.getElementById("boton-cerrar-modal-publicacion").addEventListener("click", () => { modalPublicacion.hidden = true; });
 modalEstado.addEventListener("click", (evento) => {
     if (evento.target === modalEstado) modalEstado.hidden = true;
@@ -6531,6 +6539,507 @@ document.getElementById("formulario-estado").addEventListener("submit", async (e
     }
 });
 
+/* ---------- Comentarios del reel ---------- */
+
+async function abrirComentariosReel(reelId, contador) {
+    const lista = document.getElementById("lista-comentarios-reel");
+    modalComentariosReel.hidden = false;
+    lista.innerHTML = `<p class="estado-amigos">Cargando...</p>`;
+    try {
+        const datos = await solicitarGrupo(`/api/reels/${reelId}/comentarios`);
+        lista.innerHTML = datos.comentarios.map((comentario) => `
+            <p class="comentario-reel">
+                <strong style="${estiloNombre(comentario.color_nombre)}">${escapeHtml(comentario.autor_nombre)}</strong>
+                ${escapeHtml(comentario.texto)}
+            </p>
+        `).join("") || `<p class="estado-amigos">Todavía no hay comentarios.</p>`;
+    } catch (fallo) {
+        lista.innerHTML = `<p class="estado-amigos">${escapeHtml(fallo.message)}</p>`;
+    }
+    if (contador) {
+        const total = await solicitarGrupo(`/api/reels/${reelId}`);
+        if (total.reel) contador.textContent = total.reel.comentarios ?? 0;
+    }
+}
+
+document.getElementById("boton-cerrar-comentarios-reel")?.addEventListener("click", () => {
+    modalComentariosReel.hidden = true;
+});
+
+document.getElementById("formulario-comentario-reel")?.addEventListener("submit", async (evento) => {
+    evento.preventDefault();
+    const entrada = document.getElementById("texto-comentario-reel");
+    const pantalla = document.querySelector(`#pista-reels-visor [data-reel-id="${reelAbierto}"]`);
+    const texto = entrada.value.trim();
+    if (!texto || !pantalla) return;
+    try {
+        await solicitarGrupo(`/api/reels/${reelAbierto}/comentarios`, {
+            method: "POST",
+            body: JSON.stringify({ texto })
+        });
+        entrada.value = "";
+        await abrirComentariosReel(reelAbierto, pantalla.querySelector(".cuenta-comentarios"));
+    } catch (fallo) {
+        console.warn("No se pudo comentar:", fallo);
+    }
+});
+
+/* ==============================
+   CUENTA: HISTORIAS Y PUBLICACIONES
+   ============================== */
+
+async function actualizarBurbujasHistorias() {
+    const contenedor = document.getElementById("burbujas-historias");
+    if (!contenedor) return;
+    try {
+        const datos = await solicitarGrupo("/api/historias/mias");
+        contenedor.innerHTML = datos.historias.map((historia) => `
+            <button class="burbuja-historia" data-historia="${escapeHtml(historia.id)}" type="button">
+                ${historia.portada
+                    ? `<img src="${escapeHtml(historia.portada)}" alt="" loading="lazy">`
+                    : `<span class="burbuja-historia-vacia" aria-hidden="true"></span>`}
+                <span class="nombre-historia-carpeta">${escapeHtml(historia.nombre)}</span>
+            </button>
+        `).join("") || `<p class="estado-amigos">Todavía no tienes historias.</p>`;
+    } catch {
+        contenedor.innerHTML = `<p class="estado-amigos">No se pudieron cargar tus historias.</p>`;
+    }
+}
+
+document.getElementById("burbujas-historias")?.addEventListener("click", (evento) => {
+    const burbuja = evento.target.closest("[data-historia]");
+    if (!burbuja) return;
+    const id = burbuja.dataset.historia;
+    const nombre = burbuja.querySelector(".nombre-historia-carpeta")?.textContent ?? "";
+    abrirModalHistoria({ id, nombre });
+});
+
+async function actualizarPistaReelsCuenta() {
+    const pista = document.getElementById("pista-reels-cuenta");
+    if (!pista) return;
+    try {
+        const datos = await solicitarGrupo("/api/reels/mios");
+        pintarPistaReels(pista, datos.reels || []);
+    } catch {
+        pista.innerHTML = `<p class="estado-amigos">Todavía no hay reels.</p>`;
+    }
+}
+
+async function actualizarListaPublicacionesCuenta() {
+    const lista = document.getElementById("lista-mis-publicaciones");
+    if (!lista) return;
+    try {
+        const datos = await solicitarGrupo("/api/publicaciones?seccion=amigos");
+        // En Cuenta solo interesan las propias: las de los amigos ya salen en
+        // el feed de Entrar.
+        const mias = (datos.publicaciones || []).filter((publicacion) => publicacion.es_mia);
+        lista.innerHTML = mias.map((publicacion) => renderizarPublicacion(publicacion)).join("")
+            || `<p class="estado-amigos">Todavía no tienes publicaciones.</p>`;
+        conectarFeed(lista);
+    } catch {
+        lista.innerHTML = `<p class="estado-amigos">No se pudieron cargar tus publicaciones.</p>`;
+    }
+}
+
+document.getElementById("boton-cuenta-historias")?.addEventListener("click", async () => {
+    document.getElementById("titulo-mi-contenido").textContent = "Historias";
+    document.getElementById("burbujas-historias").hidden = false;
+    document.getElementById("contenido-mis-reels").hidden = true;
+    document.getElementById("contenido-mis-publicaciones").hidden = true;
+    modalMiContenido.hidden = false;
+    await actualizarBurbujasHistorias();
+});
+
+document.getElementById("boton-cuenta-publicaciones")?.addEventListener("click", async () => {
+    document.getElementById("titulo-mi-contenido").textContent = "Publicaciones";
+    document.getElementById("burbujas-historias").hidden = true;
+    document.getElementById("contenido-mis-reels").hidden = false;
+    document.getElementById("contenido-mis-publicaciones").hidden = false;
+    modalMiContenido.hidden = false;
+    await actualizarPistaReelsCuenta();
+    await actualizarListaPublicacionesCuenta();
+});
+
+document.getElementById("boton-cerrar-mi-contenido")?.addEventListener("click", () => {
+    modalMiContenido.hidden = true;
+});
+/* ==============================
+   HISTORIAS (pantalla)
+   ============================== */
+
+const modalHistoria = document.getElementById("modal-historia");
+let historiaAbierta = null;
+
+function actualizarSelectorItemHistoria() {
+    const tipo = document.querySelector('input[name="tipo-item-historia"]:checked')?.value ?? "texto";
+    const texto = document.getElementById("texto-item-historia");
+    const etiqueta = document.getElementById("etiqueta-archivo-historia");
+    const entrada = document.getElementById("archivo-historia");
+    texto.hidden = tipo !== "texto";
+    etiqueta.hidden = tipo === "texto";
+    if (tipo === "imagen") {
+        entrada.accept = "image/*";
+        entrada.multiple = true;
+    } else if (tipo === "video") {
+        entrada.accept = "video/mp4,video/webm,video/quicktime";
+        entrada.multiple = false;
+    } else {
+        entrada.accept = "audio/*";
+        entrada.multiple = false;
+    }
+}
+
+document.querySelectorAll('input[name="tipo-item-historia"]').forEach((entrada) => {
+    entrada.addEventListener("change", () => {
+        document.getElementById("archivo-historia").value = "";
+        actualizarSelectorItemHistoria();
+    });
+});
+
+document.getElementById("formulario-item-historia")?.addEventListener("submit", async (evento) => {
+    evento.preventDefault();
+    const error = document.getElementById("error-historia");
+    error.textContent = "";
+
+    if (!historiaAbierta) {
+        try {
+            const datos = await solicitarGrupo("/api/historias", {
+                method: "POST",
+                body: JSON.stringify({ nombre: document.getElementById("nombre-historia").value })
+            });
+            historiaAbierta = datos.historia.id;
+        } catch (fallo) {
+            error.textContent = fallo.message;
+            return;
+        }
+    }
+
+    const tipo = document.querySelector('input[name="tipo-item-historia"]:checked').value;
+    const body = new FormData();
+    body.append("tipo", tipo);
+    body.append("texto", document.getElementById("texto-item-historia").value);
+    const archivos = [...document.getElementById("archivo-historia").files];
+    archivos.forEach((archivo) => body.append("archivo", archivo));
+
+    try {
+        await solicitarGrupo(`/api/historias/${historiaAbierta}/items`, { method: "POST", body });
+        document.getElementById("texto-item-historia").value = "";
+        document.getElementById("archivo-historia").value = "";
+        await pintarItemsHistoria();
+        await actualizarBurbujasHistorias();
+    } catch (fallo) {
+        error.textContent = fallo.message;
+    }
+});
+
+async function pintarItemsHistoria() {
+    if (!historiaAbierta) return;
+    const lista = document.getElementById("lista-items-historia");
+    try {
+        const datos = await solicitarGrupo(`/api/historias/${historiaAbierta}`);
+        lista.innerHTML = (datos.historia.items || []).map((item) => `
+            <div class="item-historia">
+                ${item.url
+                    ? `<img src="${escapeHtml(item.url)}" alt="" loading="lazy">`
+                    : `<p>${escapeHtml(item.texto || "")}</p>`}
+                <button type="button" data-borrar-item="${escapeHtml(item.id)}" aria-label="Borrar elemento">×</button>
+            </div>
+        `).join("") || `<p class="estado-amigos">La historia todavía está vacía.</p>`;
+    } catch (fallo) {
+        lista.innerHTML = `<p class="estado-amigos">${escapeHtml(fallo.message)}</p>`;
+    }
+}
+
+document.getElementById("lista-items-historia")?.addEventListener("click", async (evento) => {
+    const boton = evento.target.closest("[data-borrar-item]");
+    if (!boton || !historiaAbierta) return;
+    try {
+        await solicitarGrupo(
+            `/api/historias/${historiaAbierta}/items/${boton.dataset.borrarItem}`,
+            { method: "DELETE" }
+        );
+        await pintarItemsHistoria();
+        await actualizarBurbujasHistorias();
+    } catch (fallo) {
+        document.getElementById("error-historia").textContent = fallo.message;
+    }
+});
+
+document.getElementById("boton-guardar-historia")?.addEventListener("click", async () => {
+    const error = document.getElementById("error-historia");
+    const nombre = document.getElementById("nombre-historia").value;
+    if (!historiaAbierta) {
+        try {
+            const datos = await solicitarGrupo("/api/historias", {
+                method: "POST",
+                body: JSON.stringify({ nombre })
+            });
+            historiaAbierta = datos.historia.id;
+        } catch (fallo) {
+            error.textContent = fallo.message;
+            return;
+        }
+    } else {
+        try {
+            await solicitarGrupo(`/api/historias/${historiaAbierta}`, {
+                method: "PUT",
+                body: JSON.stringify({ nombre })
+            });
+        } catch (fallo) {
+            error.textContent = fallo.message;
+            return;
+        }
+    }
+    await actualizarBurbujasHistorias();
+    modalHistoria.hidden = true;
+});
+
+document.getElementById("boton-borrar-historia")?.addEventListener("click", async () => {
+    if (!historiaAbierta || !confirm("¿Borrar esta historia?")) return;
+    try {
+        await solicitarGrupo(`/api/historias/${historiaAbierta}`, { method: "DELETE" });
+        historiaAbierta = null;
+        modalHistoria.hidden = true;
+        await actualizarBurbujasHistorias();
+    } catch (fallo) {
+        document.getElementById("error-historia").textContent = fallo.message;
+    }
+});
+
+document.getElementById("boton-cerrar-historia")?.addEventListener("click", () => {
+    modalHistoria.hidden = true;
+});
+
+function abrirModalHistoria(historia = null) {
+    historiaAbierta = historia?.id ?? null;
+    document.getElementById("nombre-historia").value = historia?.nombre ?? "";
+    document.getElementById("error-historia").textContent = "";
+    document.getElementById("texto-item-historia").value = "";
+    document.getElementById("archivo-historia").value = "";
+    document.getElementById("boton-borrar-historia").hidden = !historiaAbierta;
+    actualizarSelectorItemHistoria();
+    modalHistoria.hidden = false;
+    pintarItemsHistoria();
+}
+/* ==============================
+   REELS
+   ============================== */
+
+const modalCrear = document.getElementById("modal-crear");
+const modalReel = document.getElementById("modal-reel");
+const visorReels = document.getElementById("visor-reels");
+const modalComentariosReel = document.getElementById("modal-comentarios-reel");
+const modalMiContenido = document.getElementById("modal-mi-contenido");
+
+let reelsVisor = [];
+let reelAbierto = null;
+
+// Un producto del menú central abre el modal correspondiente.
+document.getElementById("boton-crear")?.addEventListener("click", () => {
+    modalCrear.hidden = false;
+});
+
+document.getElementById("boton-cerrar-crear")?.addEventListener("click", () => {
+    modalCrear.hidden = true;
+});
+
+modalCrear?.addEventListener("click", (evento) => {
+    if (evento.target === modalCrear) modalCrear.hidden = true;
+});
+
+document.querySelectorAll("[data-crear]").forEach((boton) => {
+    boton.addEventListener("click", () => {
+        modalCrear.hidden = true;
+        const tipo = boton.dataset.crear;
+        if (tipo === "reel") {
+            document.getElementById("formulario-reel").reset();
+            document.getElementById("archivo-reel").value = "";
+            document.getElementById("error-reel").textContent = "";
+            modalReel.hidden = false;
+        } else if (tipo === "historia") {
+            abrirModalHistoria();
+        } else {
+            abrirFormularioPublicacion();
+        }
+    });
+});
+
+document.getElementById("boton-cerrar-reel")?.addEventListener("click", () => {
+    modalReel.hidden = true;
+});
+
+modalReel?.addEventListener("click", (evento) => {
+    if (evento.target === modalReel) modalReel.hidden = true;
+});
+
+/* ---------- Subir un reel ---------- */
+
+document.getElementById("formulario-reel")?.addEventListener("submit", async (evento) => {
+    evento.preventDefault();
+    const error = document.getElementById("error-reel");
+    const archivo = document.getElementById("archivo-reel").files?.[0];
+    error.textContent = "";
+    if (!archivo) {
+        error.textContent = "Selecciona un vídeo.";
+        return;
+    }
+    const body = new FormData();
+    body.append("titulo", document.getElementById("titulo-reel").value);
+    body.append("visibilidad", document.getElementById("visibilidad-reel").value);
+    body.append("archivo", archivo);
+    try {
+        await solicitarGrupo("/api/reels", { method: "POST", body });
+        modalReel.hidden = true;
+        await cargarContenidoInicio();
+        await actualizarPistaReelsCuenta();
+    } catch (fallo) {
+        error.textContent = fallo.message;
+    }
+});
+
+/* ---------- Tiras horizontales de reels ---------- */
+
+function pintarPistaReels(contenedor, reels) {
+    if (!contenedor) return;
+    contenedor.innerHTML = "";
+    if (!reels.length) {
+        contenedor.innerHTML = `<p class="estado-amigos">Todavía no hay reels.</p>`;
+        return;
+    }
+    reels.forEach((reel) => {
+        const boton = document.createElement("button");
+        boton.type = "button";
+        boton.className = "miniatura-reel";
+        boton.dataset.reelId = reel.id;
+        boton.setAttribute("aria-label", reel.titulo);
+        boton.innerHTML = `
+            <img src="${escapeHtml(reel.video_url)}" alt="" loading="lazy" muted playsinline>
+            <span class="miniatura-reel-titulo">${escapeHtml(reel.titulo)}</span>
+        `;
+        boton.addEventListener("click", () => abrirVisorReels([reel], reel.id));
+        contenedor.appendChild(boton);
+    });
+}
+
+async function cargarPistaReels(seccion, contenedor) {
+    try {
+        const datos = await solicitarGrupo(`/api/reels?seccion=${seccion}`);
+        pintarPistaReels(contenedor, datos.reels || []);
+    } catch {
+        // Sin reels todavia: se deja el hueco vacio.
+    }
+}
+
+/* ---------- Visor a pantalla completa ---------- */
+
+function abrirVisorReels(reels, reelId) {
+    reelsVisor = reels;
+    reelAbierto = reelId;
+    const pista = document.getElementById("pista-reels-visor");
+    pista.innerHTML = "";
+    reels.forEach((reel) => {
+        const pantalla = document.createElement("article");
+        pantalla.className = "pantalla-reel";
+        pantalla.dataset.reelId = reel.id;
+        pantalla.innerHTML = `
+            <video class="video-reel" src="${escapeHtml(reel.video_url)}" loop muted playsinline
+                preload="metadata"></video>
+            <h3 class="titulo-reel">${escapeHtml(reel.titulo)}</h3>
+            <div class="acciones-reel">
+                <div class="acciones-reel-contador">
+                    <strong class="cuenta-likes">${reel.likes ?? 0}</strong>
+                    <button class="boton-like" data-me-gusta="${reel.me_gusta ? "1" : "0"}" type="button"
+                        aria-label="Me gusta">
+                        <svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true" focusable="false">
+                            <path class="corazon-reel" d="M12 20s-7.5-4.6-7.5-9.6A4.4 4.4 0 0 1 12 7.6a4.4 4.4 0 0 1 7.5 2.8C19.5 15.4 12 20 12 20z"
+                                fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="acciones-reel-contador">
+                    <strong class="cuenta-comentarios">${reel.comentarios ?? 0}</strong>
+                    <button class="boton-comentarios" type="button" aria-label="Comentarios">
+                        <svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true" focusable="false">
+                            <path d="M20 4H4a1.5 1.5 0 0 0-1.5 1.5v9A1.5 1.5 0 0 0 4 16h3v4l4.5-4H20a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 20 4z"
+                                fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"></path>
+                        </svg>
+                    </button>
+                </div>
+                <button class="boton-autor-reel" data-abrir-perfil="${escapeHtml(reel.autor_id)}" type="button"
+                    aria-label="Ver perfil de ${escapeHtml(reel.autor_nombre)}">
+                    ${reel.avatar_url
+                        ? `<img class="avatar-autor-reel" src="/${escapeHtml(reel.avatar_url)}" alt="">`
+                        : `<span class="avatar-autor-reel avatar-autor-reel-vacio" aria-hidden="true"></span>`}
+                </button>
+            </div>
+        `;
+        pista.appendChild(pantalla);
+    });
+
+    visorReels.hidden = false;
+    const destino = pista.querySelector(`[data-reel-id="${reelId}"]`);
+    pintarCorazonReels();
+    if (destino) {
+        destino.scrollIntoView({ block: "start" });
+        destino.querySelector("video")?.play().catch(() => {});
+    }
+}
+
+function cerrarVisorReels() {
+    visorReels.hidden = true;
+    document.querySelectorAll("#pista-reels-visor video").forEach((video) => video.pause());
+}
+
+document.getElementById("boton-cerrar-visor-reels")?.addEventListener("click", cerrarVisorReels);
+
+// Al deslizar se reproduce el reel que queda en pantalla.
+document.getElementById("pista-reels-visor")?.addEventListener("scroll", () => {
+    const pista = document.getElementById("pista-reels-visor");
+    const pantalla = pista.firstElementChild?.clientHeight || 1;
+    const indice = Math.round(pista.scrollTop / pantalla);
+    pista.querySelectorAll(".pantalla-reel video").forEach((video, posicion) => {
+        if (posicion === indice) video.play().catch(() => {});
+        else video.pause();
+    });
+});
+
+document.getElementById("pista-reels-visor")?.addEventListener("click", async (evento) => {
+    const pantalla = evento.target.closest(".pantalla-reel");
+    if (!pantalla) return;
+    const reelId = pantalla.dataset.reelId;
+
+    const like = evento.target.closest(".boton-like");
+    if (like) {
+        try {
+            const datos = await solicitarGrupo(`/api/reels/${reelId}/like`, { method: "POST" });
+            like.dataset.meGusta = datos.me_gusta ? "1" : "0";
+            like.classList.toggle("activo", Boolean(datos.me_gusta));
+            pantalla.querySelector(".cuenta-likes").textContent = datos.likes;
+        } catch (fallo) {
+            console.warn("No se pudo guardar el corazón:", fallo);
+        }
+        return;
+    }
+
+    const comentarios = evento.target.closest(".boton-comentarios");
+    if (comentarios) {
+        await abrirComentariosReel(reelId, pantalla.querySelector(".cuenta-comentarios"));
+        return;
+    }
+
+    const autor = evento.target.closest(".boton-autor-reel");
+    if (autor) {
+        cerrarVisorReels();
+        abrirPerfil(autor.dataset.abrirPerfil);
+    }
+});
+
+// El corazón relleno se pinta desde el atributo, para que sobreviva al scroll.
+function pintarCorazonReels() {
+    document.querySelectorAll("#pista-reels-visor .boton-like").forEach((boton) => {
+        boton.classList.toggle("activo", boton.dataset.meGusta === "1");
+    });
+}
 document.getElementById("formulario-publicacion").addEventListener("submit", async (evento) => {
     evento.preventDefault();
     const form = evento.currentTarget;
