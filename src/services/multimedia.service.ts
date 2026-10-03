@@ -12,6 +12,7 @@ const execFileAsync = promisify(execFile);
 const maxPhotoBytes = 12 * 1024 * 1024;
 const maxMediaBytes = 50 * 1024 * 1024;
 const maxVideoSeconds = 4 * 60;
+const maxReelSeconds = 90;
 const maxAudioSeconds = 3 * 60 + 30;
 
 export interface UploadFile {
@@ -76,7 +77,7 @@ async function comprobarDuracion(buffer: Buffer, extension: string, maximoSegund
 
 export async function validarArchivos(
     files: UploadFile[],
-    mode: "imagen" | "imagenes" | "video" | "audio"
+    mode: "imagen" | "imagenes" | "video" | "audio" | "reel"
 ): Promise<ValidatedFile[]> {
     const maximumCount = mode === "imagenes" ? 10 : 1;
     if (!files.length || files.length > maximumCount) {
@@ -94,11 +95,12 @@ export async function validarArchivos(
             continue;
         }
 
-        if (mode === "video") {
+        if (mode === "video" || mode === "reel") {
             const extension = videoTypes.get(mimeType);
             if (!extension) throw new Error("El vídeo debe ser MP4, WebM o MOV");
             if (file.buffer.length > maxMediaBytes) throw new Error("El vídeo puede pesar como máximo 50 MB");
-            await comprobarDuracion(file.buffer, extension, maxVideoSeconds);
+            // Un reel es un vídeo corto: 90 segundos como mucho.
+            await comprobarDuracion(file.buffer, extension, mode === "reel" ? maxReelSeconds : maxVideoSeconds);
             output.push({ ...file, type: "video", extension });
             continue;
         }

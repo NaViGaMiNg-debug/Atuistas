@@ -78,7 +78,11 @@ CREATE TABLE archivos (
                 'mensaje_audio',
                 'estado_imagen',
                 'estado_video',
-                'estado_audio'
+                'estado_audio',
+                'reel_video',
+                'historia_imagen',
+                'historia_video',
+                'historia_audio'
             )
         )
 );
