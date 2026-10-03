@@ -125,7 +125,8 @@ export async function comentarPublicacion(usuarioId: string, publicacionId: stri
             "comentario_publicacion",
             "Nuevo comentario",
             contenido.length > 120 ? `${contenido.slice(0, 117)}...` : contenido,
-            { publicacionId, comentarioId: resultado.rows[0].id }
+            { publicacionId, comentarioId: resultado.rows[0].id },
+            usuarioId
         );
     }
     return resultado.rows[0];
@@ -155,7 +156,8 @@ export async function alternarCorazon(usuarioId: string, publicacionId: string) 
             "corazon_publicacion",
             "Nuevo corazón",
             "A alguien le ha gustado tu publicación.",
-            { publicacionId }
+            { publicacionId },
+            usuarioId
         );
     }
     return { me_gusta: true };

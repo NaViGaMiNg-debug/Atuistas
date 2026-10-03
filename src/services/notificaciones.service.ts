@@ -71,10 +71,23 @@ export async function crearNotificacion(
     tipo: string,
     titulo: string,
     contenido: string,
-    datos: Record<string, string>
+    datos: Record<string, string>,
+    // Quién provoca la notificación: si se indica, su nombre se antepone al
+    // título para que el aviso Push diga de quién viene.
+    autorId?: string
 ) {
     if (titulo.length > 150 || contenido.length > 500) return;
     const columna = preferencias[preferencia];
+
+    let tituloFinal = titulo;
+    if (autorId && autorId !== usuarioId) {
+        const autor = await db.query(
+            `SELECT nombre FROM usuarios WHERE id = $1 AND activo = TRUE`,
+            [autorId]
+        );
+        const nombre = autor.rows[0]?.nombre as string | undefined;
+        if (nombre) tituloFinal = `${nombre} — ${titulo}`.slice(0, 150);
+    }
 
     const creada = await db.query(
         `
@@ -84,9 +97,9 @@ export async function crearNotificacion(
             SELECT 1 FROM configuracion_notificaciones
             WHERE usuario_id = $1 AND ${columna} = FALSE
         )
-        RETURNING id, tipo, titulo, contenido
+        RETURNING id, tipo, titulo, contenido, datos
         `,
-        [usuarioId, tipo, titulo, contenido, JSON.stringify(datos)]
+        [usuarioId, tipo, tituloFinal, contenido, JSON.stringify(datos)]
     );
     if (creada.rowCount === 1) {
         void enviarPush(usuarioId, creada.rows[0]);

@@ -108,7 +108,7 @@ export async function borrarSuscripcionPush(usuarioId: string, dispositivoId: st
 
 export async function enviarPush(
     usuarioId: string,
-    notification: { id: string; titulo: string; contenido: string; tipo: string }
+    notification: { id: string; titulo: string; contenido: string; tipo: string; datos?: Record<string, string> }
 ) {
     try {
         await prepararPush();
@@ -121,7 +121,9 @@ export async function enviarPush(
             title: notification.titulo,
             body: notification.contenido,
             tag: notification.id,
-            data: { notificationId: notification.id, type: notification.tipo }
+            // datos lleva el remitente y el destinatario del aviso: con él el
+            // service worker sabe a qué chat o perfil abrir al pulsar.
+            data: { notificationId: notification.id, type: notification.tipo, ...(notification.datos ?? {}) }
         });
 
         await Promise.all(subscriptions.rows.map(async (row) => {

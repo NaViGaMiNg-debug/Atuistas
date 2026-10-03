@@ -785,7 +785,9 @@ export async function enviarMensajeGrupo(
             "mensaje_grupo",
             `Mensaje en ${grupo.rows[0].nombre}`,
             resumen,
-            { grupoId, mensajeId: mensaje.id }
+            { grupoId, mensajeId: mensaje.id },
+            // En mensajes ocultos el autor no se revela, ni en el aviso.
+            oculto ? undefined : usuarioId
         );
     }
 
@@ -804,7 +806,8 @@ export async function enviarMensajeGrupo(
                     "respuesta_mensaje_grupo",
                     "Han respondido a tu mensaje",
                     resumen,
-                    { grupoId, mensajeId: mensaje.id }
+                    { grupoId, mensajeId: mensaje.id },
+                    oculto ? undefined : usuarioId
                 );
             }
         }
