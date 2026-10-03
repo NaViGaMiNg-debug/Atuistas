@@ -8,7 +8,7 @@
    lo nuevo. Asi la app instalada se actualiza sola, sin reinstalarla.
    ======================================== */
 
-const VERSION = "v3";
+const VERSION = "v4";
 const CACHE = `atuistas-${VERSION}`;
 
 // Solo se cachean estos ficheros. Todo lo demas (API, subidas) va directo a
@@ -130,15 +130,23 @@ self.addEventListener("push", (event) => {
 
 self.addEventListener("notificationclick", (event) => {
     event.notification.close();
+    // data trae el tipo y los ids del aviso: un mensaje privado abre el chat
+    // de quien lo escribió, el resto lleva a la pantalla principal.
+    const data = event.notification.data || {};
+    const destino = data.type === "mensaje_privado" && data.usuarioId
+        ? `/?chat=${encodeURIComponent(data.usuarioId)}`
+        : "/";
     event.waitUntil((async () => {
         const clientsList = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
         for (const client of clientsList) {
             if ("focus" in client) {
                 await client.focus();
+                // Con la app ya abierta le decimos a qué chat saltar.
+                client.postMessage({ tipo: "abrir-notificacion", data, destino });
                 return;
             }
         }
-        await self.clients.openWindow("/");
+        await self.clients.openWindow(destino);
     })());
 });
 
