@@ -2052,6 +2052,17 @@ function mostrarSeccion(seccion) {
     // La vista de servidores usa todo el ancho en escritorio.
     document.body.classList.toggle("vista-servidores", seccion === "servidores");
 
+    // Los botones de la barra son iconos: se marca con "activa" el de la
+    // sección abierta para saber siempre dónde estás.
+    [
+        [botonEntrarApp, "entrar"],
+        [botonAmigos, "amigos"],
+        [botonServidores, "servidores"],
+        [botonCuenta, "cuenta"]
+    ].forEach(([boton, nombre]) => {
+        if (boton) boton.classList.toggle("activa", nombre === seccion);
+    });
+
 
     if (seccion === "entrar") {
         panelInicioEntrar.hidden = false;

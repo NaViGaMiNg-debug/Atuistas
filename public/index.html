@@ -1714,22 +1714,62 @@
                  NAVEGACIÓN
                  ============================== -->
 
-            <nav class="barra-navegacion">
+            <nav class="barra-navegacion" aria-label="Secciones de la aplicación">
 
-                <button id="boton-entrar-app">
-                    ENTRAR
+                <!-- Los botones son iconos: el texto pasa a aria-label para que
+                     se siga leyendo con lector de pantalla y salga en el
+                     tooltip al pasar el ratón. -->
+
+                <button
+                    id="boton-entrar-app"
+                    type="button"
+                    aria-label="Entrar"
+                    title="Entrar"
+                >
+                    <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false">
+                        <path d="M3 10.5 12 3l9 7.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+                        <path d="M5 9.5V19a1.5 1.5 0 0 0 1.5 1.5H10v-5.5h4v5.5h3.5A1.5 1.5 0 0 0 19 19V9.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+                    </svg>
                 </button>
 
-                <button id="boton-amigos">
-                    AGREGAR AMIGOS
+                <button
+                    id="boton-amigos"
+                    type="button"
+                    aria-label="Agregar amigos"
+                    title="Agregar amigos"
+                >
+                    <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false">
+                        <circle cx="9.5" cy="8" r="3.5" fill="none" stroke="currentColor" stroke-width="1.8"></circle>
+                        <path d="M3 20c.7-3.6 3.3-5.6 6.5-5.6 1.4 0 2.7.4 3.7 1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+                        <path d="M17 13.5v6M14 16.5h6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+                    </svg>
                 </button>
 
-                <button id="boton-servidores">
-                    SERVIDORES
+                <button
+                    id="boton-servidores"
+                    type="button"
+                    aria-label="Servidores"
+                    title="Servidores"
+                >
+                    <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false">
+                        <rect x="3" y="4" width="18" height="7" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"></rect>
+                        <rect x="3" y="13" width="18" height="7" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"></rect>
+                        <circle cx="7" cy="7.5" r="1.1" fill="currentColor"></circle>
+                        <circle cx="7" cy="16.5" r="1.1" fill="currentColor"></circle>
+                    </svg>
                 </button>
 
-                <button id="boton-cuenta">
-                    CUENTA
+                <button
+                    id="boton-cuenta"
+                    type="button"
+                    aria-label="Cuenta"
+                    title="Cuenta"
+                >
+                    <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false">
+                        <circle cx="12" cy="8.5" r="3.8" fill="none" stroke="currentColor" stroke-width="1.8"></circle>
+                        <path d="M4.5 20.5c.9-3.9 3.9-6 7.5-6s6.6 2.1 7.5 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+                    </svg>
+
                     <span
                         id="punto-notificaciones-cuenta"
                         class="punto-notificaciones"

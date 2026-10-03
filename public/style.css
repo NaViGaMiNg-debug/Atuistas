@@ -1441,29 +1441,68 @@ h2 {
 }
 
 
+/* La barra lleva iconos: cada botón es un cuadrado con el dibujo centrado.
+   El texto vive en aria-label y en el title del botón. */
 .barra-navegacion button {
-    border: none;
-    border-radius: 10px;
+    position: relative;
 
-    padding: 10px 14px;
+    width: 48px;
+    height: 44px;
+
+    display: grid;
+    place-items: center;
+
+    border: none;
+    border-radius: 12px;
 
     background: #242424;
-
-    color: #fff;
+    color: #d6d6d6;
 
     cursor: pointer;
+
+    transition: background 0.15s ease, color 0.15s ease;
 }
 
 
 .barra-navegacion button:hover {
     background: #333;
+    color: #fff;
+}
+
+
+/* Sección abierta: con iconos es la única señal de dónde se está. */
+.barra-navegacion button.activa {
+    background: #333;
+    color: #fff;
+}
+
+
+.barra-navegacion button:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+}
+
+
+.barra-navegacion svg {
+    width: 24px;
+    height: 24px;
+
+    display: block;
+}
+
+
+/* El punto de avisos se pega a la esquina del botón de Cuenta. */
+#boton-cuenta .punto-notificaciones {
+    position: absolute;
+
+    top: 7px;
+    right: 9px;
 }
 
 
 #boton-cuenta {
     font-weight: bold;
 }
-
 
 /* ==============================
    PANTALLA DE ACCESO
@@ -4249,9 +4288,9 @@ button.servidor-tarjeta:focus-visible {
     .barra-navegacion button {
         flex: 1;
 
-        padding: 10px 6px;
-
-        font-size: 12px;
+        width: auto;
+        height: 44px;
+        padding: 0;
     }
 
 
