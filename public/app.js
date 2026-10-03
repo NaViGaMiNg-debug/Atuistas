@@ -6003,7 +6003,7 @@ document.addEventListener("keydown", (evento) => {
     }
 });
 
-function configurarSelectorMedio(formId, fileLabelId, fileInputId, typeName, textAreaId, audioControlsId = null, vistaPreviaId = null) {
+function configurarSelectorMedio(formId, fileLabelId, fileInputId, typeName, textAreaId, audioControlsId = null, vistaPreviaId = null, modoPorDefecto = "imagenes") {
     const form = document.getElementById(formId);
     const fileLabel = document.getElementById(fileLabelId);
     const fileInput = document.getElementById(fileInputId);
@@ -6019,7 +6019,9 @@ function configurarSelectorMedio(formId, fileLabelId, fileInputId, typeName, tex
         const audioMode = mode === "audio";
         const needsFile = ["imagen", "imagenes", "video", "audio"].includes(mode);
         const soloTexto = !needsFile;
-        fileLabel.hidden = !needsFile;
+        // El botón de subir archivos se ve siempre, incluso en modo Texto: si
+        // se pulsa ahí, el tipo pasa a fotos y el texto deja de ser obligatorio.
+        fileLabel.hidden = false;
         // El texto acompaña a la foto, vídeo o audio: nunca se oculta,
         // solo deja de ser obligatorio cuando ya hay archivo.
         textArea.hidden = false;
@@ -6046,7 +6048,9 @@ function configurarSelectorMedio(formId, fileLabelId, fileInputId, typeName, tex
                     ? "Seleccionar hasta 10 fotos"
                     : mode === "video"
                         ? "Seleccionar vídeo"
-                        : "Seleccionar foto";
+                        : soloTexto
+                            ? "Subir fotos o vídeo"
+                            : "Seleccionar foto";
         }
     };
     form.querySelectorAll(`input[name="${typeName}"]`).forEach((input) => input.addEventListener("change", () => {
@@ -6055,6 +6059,21 @@ function configurarSelectorMedio(formId, fileLabelId, fileInputId, typeName, tex
         pintarVistaPrevia();
         actualizar();
     }));
+    // Pulsar el botón estando en modo Texto pasa a fotos: es lo que espera
+    // quien quiere "subir archivos" sin cambiar antes el tipo a mano.
+    fileLabel.addEventListener("click", (evento) => {
+        const marcada = form.querySelector(`input[name="${typeName}"]:checked`);
+        if (!marcada || marcada.value !== "texto") return;
+        const destino = form.querySelector(`input[name="${typeName}"][value="${modoPorDefecto}"]`);
+        if (!destino) return;
+        evento.preventDefault();
+        destino.checked = true;
+        destino.dispatchEvent(new Event("change"));
+        fileInput.click();
+    });
+
+    actualizar();
+
     fileInput.addEventListener("change", async () => {
         const mode = form.querySelector(`input[name="${typeName}"]:checked`).value;
         const esFoto = mode === "imagen" || mode === "imagenes";
@@ -6140,6 +6159,29 @@ function configurarSelectorMedio(formId, fileLabelId, fileInputId, typeName, tex
 
     return { archivosFinales, repintarVistaPrevia: pintarVistaPrevia };
 }
+
+// Los dos formularios, el de estado y el de publicación, comparten este
+// comportamiento. Sin estas llamadas el botón de archivos se quedaba oculto
+// y el texto seguía siendo obligatorio aunque se subiera una foto o un vídeo.
+configurarSelectorMedio(
+    "formulario-estado",
+    "etiqueta-archivo-estado",
+    "archivo-estado",
+    "tipo-estado",
+    "texto-estado",
+    "controles-grabar-audio",
+    "vista-previa-estado"
+);
+
+configurarSelectorMedio(
+    "formulario-publicacion",
+    "etiqueta-archivo-publicacion",
+    "archivo-publicacion",
+    "tipo-publicacion",
+    "texto-publicacion",
+    null,
+    "vista-previa-publicacion"
+);
 
 const LIMITE_FOTO_BYTES = 12 * 1024 * 1024;
 
@@ -6454,6 +6496,11 @@ document.getElementById("formulario-estado").addEventListener("submit", async (e
             const files = mode === "audio" && blobAudioEstado
                 ? [new File([blobAudioEstado], `estado-audio.${blobAudioEstado.type.includes("ogg") ? "ogg" : "webm"}`, { type: blobAudioEstado.type })]
                 : (typeof inputEstado.archivosFinales === "function" ? inputEstado.archivosFinales() : [...inputEstado.files]);
+            // El texto acompaña al archivo, pero no lo sustituye: sin archivo
+            // no hay nada que publicar.
+            if (!files.length) {
+                throw new Error("Selecciona al menos un archivo o graba un audio.");
+            }
             const body = new FormData();
             body.append("tipo", mode);
             body.append("visibilidad", document.getElementById("visibilidad-estado").value);
@@ -6492,6 +6539,11 @@ document.getElementById("formulario-publicacion").addEventListener("submit", asy
         } else {
             const inputPublicacion = document.getElementById("archivo-publicacion");
             const files = typeof inputPublicacion.archivosFinales === "function" ? inputPublicacion.archivosFinales() : [...inputPublicacion.files];
+            // Con fotos o vídeo el texto es opcional; el archivo es lo que no
+            // puede faltar.
+            if (!files.length) {
+                throw new Error("Selecciona al menos un archivo.");
+            }
             const body = new FormData();
             body.append("tipo", mode);
             body.append("visibilidad", document.getElementById("visibilidad-publicacion").value);

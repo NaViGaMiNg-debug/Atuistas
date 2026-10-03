@@ -124,6 +124,68 @@ ${process.argv.includes("notificaciones") || process.argv.includes("avisos") ? `
                 return;
             }
 
+            // Modo publicar: abrir la ventana de publicación con el tipo Fotos
+            // ya elegido, para ver el botón de subir archivos y que el texto
+            // deje de ser obligatorio.
+            if (${process.argv.includes("publicar")}) {
+                setTimeout(function () {
+                    var abrir = document.getElementById("boton-abrir-publicacion");
+                    if (abrir) abrir.click();
+                    setTimeout(function () {
+                        var fotos = document.querySelector('input[name="tipo-publicacion"][value="imagenes"]');
+                        if (fotos) {
+                            fotos.checked = true;
+                            fotos.dispatchEvent(new Event("change"));
+                        }
+                        // Comprobacion: en Fotos el texto no es obligatorio y el
+                        // boton se ve; en Texto vuelve a ser obligatorio y, al
+                        // pulsar el boton, el tipo cambia solo a Fotos.
+                        var texto = document.getElementById("texto-publicacion");
+                        var etiqueta = document.getElementById("etiqueta-archivo-publicacion");
+                        var marca = "fotos[obligatorio=" + texto.required + ",visible=" + (!etiqueta.hidden) + "," + etiqueta.textContent.trim() + "]";
+                        var soloTexto = document.querySelector('input[name="tipo-publicacion"][value="texto"]');
+                        soloTexto.checked = true;
+                        soloTexto.dispatchEvent(new Event("change"));
+                        marca += " texto[obligatorio=" + texto.required + ",visible=" + (!etiqueta.hidden) + "," + etiqueta.textContent.trim() + "]";
+                        try {
+                            etiqueta.click();
+                            marca += " trasPulsar[tipo=" + document.querySelector('input[name="tipo-publicacion"]:checked').value + ",obligatorio=" + texto.required + "]";
+                        } catch (falla) {
+                            marca += " trasPulsar[error]";
+                        }
+                        document.body.setAttribute("data-prueba", marca);
+
+                        // Lo mismo en el formulario de estado, que es el otro
+                        // sitio donde faltaba el boton de archivos.
+                        var miEstado = document.getElementById("boton-mi-estado");
+                        if (miEstado) miEstado.click();
+                        setTimeout(function () {
+                            var formulario = document.getElementById("formulario-estado");
+                            var textoE = document.getElementById("texto-estado");
+                            var etiquetaE = document.getElementById("etiqueta-archivo-estado");
+                            if (!formulario || formulario.hidden) {
+                                document.body.setAttribute("data-prueba-estado", "formulario oculto");
+                                return;
+                            }
+                            var fotosE = document.querySelector('input[name="tipo-estado"][value="imagenes"]');
+                            fotosE.checked = true;
+                            fotosE.dispatchEvent(new Event("change"));
+                            var marcaE = "fotos[obligatorio=" + textoE.required + ",visible=" + (!etiquetaE.hidden) + "," + etiquetaE.textContent.trim() + "]";
+                            var soloTextoE = document.querySelector('input[name="tipo-estado"][value="texto"]');
+                            soloTextoE.checked = true;
+                            soloTextoE.dispatchEvent(new Event("change"));
+                            marcaE += " texto[obligatorio=" + textoE.required + ",visible=" + (!etiquetaE.hidden) + "]";
+                            var audio = document.querySelector('input[name="tipo-estado"][value="audio"]');
+                            audio.checked = true;
+                            audio.dispatchEvent(new Event("change"));
+                            marcaE += " audio[obligatorio=" + textoE.required + ",grabador=" + (!document.getElementById("controles-grabar-audio").hidden) + "]";
+                            document.body.setAttribute("data-prueba-estado", marcaE);
+                        }, 600);
+                    }, 400);
+                }, 500);
+                return;
+            }
+
             // Abrir la seccion de servidores y luego el grupo.
             var boton = document.getElementById("boton-servidores");
             if (boton) boton.click();
