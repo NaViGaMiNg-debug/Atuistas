@@ -68,6 +68,28 @@ for (const contenido of ["Hola, este es el primer mensaje", "Segundo mensaje par
     });
 }
 
+// Con "avisos" otro usuario le manda una solicitud de amistad al de prueba:
+// así la ventanita se abre con avisos de verdad y el punto rojo encendido.
+if (process.argv.includes("avisos")) {
+    const otro = await fetch(`${base}/api/auth/registro`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nombre: `avisos${sufijo}`, dispositivo_id: `avisos-${sufijo}` })
+    }).then((r) => r.json());
+
+    // La solicitud la manda "otro": si la mandase el propio usuario de prueba
+    // no habría aviso, porque nadie puede pedir amistad a sí mismo.
+    await fetch(`${base}/api/amigos/solicitud`, {
+        method: "POST",
+        headers: {
+            Authorization: `Bearer ${otro.usuario.token}`,
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ destinatarioId: registro.usuario.id })
+    });
+    console.log(`Aviso creado por ${otro.usuario.nombre}`);
+}
+
 // La pagina de prueba inyecta el token y llama a la misma funcion que usa
 // la aplicacion al tocar una tarjeta de servidor.
 const html = fs.readFileSync(path.join(raiz, "public", "index.html"), "utf8");
@@ -91,9 +113,14 @@ const arranque = `
     window.addEventListener("load", function () {
         setTimeout(function () {
             // Modo cuenta: abrir la pestana de Cuenta y no hacer nada mas.
-            if (${process.argv.includes("cuenta")}) {
+            // Con "notificaciones" o "avisos" ademas se abre la ventanita.
+            if (${process.argv.includes("cuenta") || process.argv.includes("notificaciones") || process.argv.includes("avisos")}) {
                 var cuenta = document.getElementById("boton-cuenta");
                 if (cuenta) cuenta.click();
+${process.argv.includes("notificaciones") || process.argv.includes("avisos") ? `                setTimeout(function () {
+                    var abrir = document.getElementById("boton-abrir-notificaciones");
+                    if (abrir) abrir.click();
+                }, 700);` : ""}
                 return;
             }
 
