@@ -102,16 +102,16 @@ let composerServidor = null;
 
 const ICONO_COMPOSER_ENVIAR = `
     <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
-        <path d="M3.4 20.4 21 12 3.4 3.6 3.4 10l12 2-12 2Z" fill="currentColor"></path>
+        <path d="M3.4 20.4 21 12 3.4 3.6 3.4 10l12 2-12 2Z" fill="currentColor"/>
     </svg>
 `;
 
 const ICONO_COMPOSER_MICROFONO = `
     <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
         <rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor"></rect>
-        <path d="M6 11a6 6 0 0 0 12 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
-        <path d="M12 17v4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
-        <path d="M9 21h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+        <path d="M6 11a6 6 0 0 0 12 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <path d="M12 17v4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <path d="M9 21h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
     </svg>
 `;
 
@@ -6669,6 +6669,7 @@ document.getElementById("boton-cerrar-mi-contenido")?.addEventListener("click", 
 
 const modalHistoria = document.getElementById("modal-historia");
 let historiaAbierta = null;
+let historiaViendo = null;
 
 function actualizarSelectorItemHistoria() {
     const tipo = document.querySelector('input[name="tipo-item-historia"]:checked')?.value ?? "texto";
@@ -6733,16 +6734,20 @@ document.getElementById("formulario-item-historia")?.addEventListener("submit", 
 });
 
 async function pintarItemsHistoria() {
-    if (!historiaAbierta) return;
+    const id = historiaAbierta ?? historiaViendo;
+    if (!id) return;
     const lista = document.getElementById("lista-items-historia");
     try {
-        const datos = await solicitarGrupo(`/api/historias/${historiaAbierta}`);
+        const datos = await solicitarGrupo(`/api/historias/${id}`);
+        const puedeEditar = Boolean(historiaAbierta);
         lista.innerHTML = (datos.historia.items || []).map((item) => `
             <div class="item-historia">
                 ${item.url
                     ? `<img src="${escapeHtml(item.url)}" alt="" loading="lazy">`
                     : `<p>${escapeHtml(item.texto || "")}</p>`}
-                <button type="button" data-borrar-item="${escapeHtml(item.id)}" aria-label="Borrar elemento">×</button>
+                ${puedeEditar
+                    ? `<button type="button" data-borrar-item="${escapeHtml(item.id)}" aria-label="Borrar elemento">×</button>`
+                    : ""}
             </div>
         `).join("") || `<p class="estado-amigos">La historia todavía está vacía.</p>`;
     } catch (fallo) {
@@ -6810,13 +6815,16 @@ document.getElementById("boton-cerrar-historia")?.addEventListener("click", () =
     modalHistoria.hidden = true;
 });
 
-function abrirModalHistoria(historia = null) {
-    historiaAbierta = historia?.id ?? null;
+function abrirModalHistoria(historia = null, soloLectura = false) {
+    historiaAbierta = soloLectura ? null : (historia?.id ?? null);
+    document.getElementById("formulario-item-historia").hidden = soloLectura;
+    document.getElementById("acciones-historia").hidden = soloLectura;
+    historiaViendo = historia?.id ?? null;
     document.getElementById("nombre-historia").value = historia?.nombre ?? "";
     document.getElementById("error-historia").textContent = "";
     document.getElementById("texto-item-historia").value = "";
     document.getElementById("archivo-historia").value = "";
-    document.getElementById("boton-borrar-historia").hidden = !historiaAbierta;
+    document.getElementById("boton-borrar-historia").hidden = !historiaAbierta || soloLectura;
     actualizarSelectorItemHistoria();
     modalHistoria.hidden = false;
     pintarItemsHistoria();
@@ -6913,10 +6921,11 @@ function pintarPistaReels(contenedor, reels) {
         boton.dataset.reelId = reel.id;
         boton.setAttribute("aria-label", reel.titulo);
         boton.innerHTML = `
-            <img src="${escapeHtml(reel.video_url)}" alt="" loading="lazy" muted playsinline>
+            <video src="${escapeHtml(reel.video_url)}" muted playsinline preload="metadata" aria-hidden="true"></video>
             <span class="miniatura-reel-titulo">${escapeHtml(reel.titulo)}</span>
         `;
-        boton.addEventListener("click", () => abrirVisorReels([reel], reel.id));
+        // Se pasa la tira entera: en el visor se desliza de un reel al siguiente.
+        boton.addEventListener("click", () => abrirVisorReels(reels, reel.id));
         contenedor.appendChild(boton);
     });
 }
@@ -6952,7 +6961,7 @@ function abrirVisorReels(reels, reelId) {
                         aria-label="Me gusta">
                         <svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true" focusable="false">
                             <path class="corazon-reel" d="M12 20s-7.5-4.6-7.5-9.6A4.4 4.4 0 0 1 12 7.6a4.4 4.4 0 0 1 7.5 2.8C19.5 15.4 12 20 12 20z"
-                                fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"></path>
+                                fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
                         </svg>
                     </button>
                 </div>
@@ -6961,7 +6970,7 @@ function abrirVisorReels(reels, reelId) {
                     <button class="boton-comentarios" type="button" aria-label="Comentarios">
                         <svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true" focusable="false">
                             <path d="M20 4H4a1.5 1.5 0 0 0-1.5 1.5v9A1.5 1.5 0 0 0 4 16h3v4l4.5-4H20a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 20 4z"
-                                fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"></path>
+                                fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
                         </svg>
                     </button>
                 </div>
@@ -7300,6 +7309,7 @@ async function abrirPerfil(usuarioId) {
         renderizarPerfil(datos);
 
         await cargarPublicacionesPerfil();
+        await cargarContenidoPerfil(usuarioId);
 
     } catch (error) {
         perfilActual = null;
@@ -7340,6 +7350,12 @@ function renderizarPerfil(datos) {
             </div>
         </div>
 
+        <div id="burbujas-historias-perfil"></div>
+
+        <h3 class="titulo-publicaciones-perfil">Reels</h3>
+
+        <div id="pista-reels-perfil" class="pista-reels"></div>
+
         <h3 class="titulo-publicaciones-perfil">Publicaciones</h3>
 
         <div id="lista-publicaciones-perfil" class="lista-publicaciones-perfil">
@@ -7347,6 +7363,43 @@ function renderizarPerfil(datos) {
         </div>
     `;
 }
+
+// Historias y reels de quien se está mirando: las burbujas llevan el nombre
+// de la carpeta debajo y la tira va con los reels más nuevos a la izquierda.
+async function cargarContenidoPerfil(usuarioId) {
+    const burbujas = document.getElementById("burbujas-historias-perfil");
+    const pista = document.getElementById("pista-reels-perfil");
+    if (burbujas) {
+        try {
+            const datos = await solicitarGrupo(`/api/usuarios/${encodeURIComponent(usuarioId)}/historias`);
+            burbujas.innerHTML = (datos.historias || []).map((historia) => `
+                <button class="burbuja-historia" data-historia="${escapeHtml(historia.id)}" type="button">
+                    ${historia.portada
+                        ? `<img src="${escapeHtml(historia.portada)}" alt="" loading="lazy">`
+                        : '<span class="burbuja-historia-vacia" aria-hidden="true"></span>'}
+                    <span class="nombre-historia-carpeta">${escapeHtml(historia.nombre)}</span>
+                </button>
+            `).join("");
+        } catch {
+            burbujas.innerHTML = "";
+        }
+    }
+    if (pista) {
+        try {
+            const datos = await solicitarGrupo(`/api/usuarios/${encodeURIComponent(usuarioId)}/reels`);
+            pintarPistaReels(pista, datos.reels || []);
+        } catch {
+            pista.innerHTML = "";
+        }
+    }
+}
+
+document.getElementById("contenido-perfil")?.addEventListener("click", (evento) => {
+    const burbuja = evento.target.closest("[data-historia]");
+    if (!burbuja) return;
+    const nombre = burbuja.querySelector(".nombre-historia-carpeta")?.textContent ?? "";
+    abrirModalHistoria({ id: burbuja.dataset.historia, nombre }, true);
+});
 
 async function cargarPublicacionesPerfil() {
     if (!perfilActual?.id) {

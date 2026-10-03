@@ -90,6 +90,52 @@ if (process.argv.includes("avisos")) {
     console.log(`Aviso creado por ${otro.usuario.nombre}`);
 }
 
+// Con "reels" se suben dos reels de verdad al usuario de prueba: asi la
+// tira horizontal y el visor se pueden ver con contenido, no vacios.
+function mp4DePrueba(segundos) {
+    const caja = (tipo, ...cargas) => {
+        const contenido = Buffer.concat(cargas);
+        const cabecera = Buffer.alloc(8);
+        cabecera.writeUInt32BE(contenido.length + 8, 0);
+        cabecera.write(tipo, 4, "ascii");
+        return Buffer.concat([cabecera, contenido]);
+    };
+    const entero = (valor) => {
+        const bytes = Buffer.alloc(4);
+        bytes.writeUInt32BE(valor >>> 0, 0);
+        return bytes;
+    };
+    const mvhd = Buffer.alloc(100);
+    mvhd.writeUInt32BE(1000, 12);
+    mvhd.writeUInt32BE(segundos * 1000, 16);
+    mvhd.writeUInt32BE(0x00010000, 20);
+    mvhd.writeUInt16BE(0x0100, 24);
+    mvhd.writeUInt32BE(0x00010000, 36);
+    mvhd.writeUInt32BE(0x00010000, 52);
+    mvhd.writeUInt32BE(0x40000000, 68);
+    mvhd.writeUInt32BE(2, 96);
+    return Buffer.concat([
+        caja("ftyp", Buffer.from("isom", "ascii"), entero(0x200), Buffer.from("iso2avc1mp41", "ascii")),
+        caja("moov", caja("mvhd", mvhd)),
+        caja("mdat", Buffer.alloc(64, 0))
+    ]);
+}
+
+if (process.argv.includes("reels")) {
+    const video = mp4DePrueba(3);
+    for (const titulo of ["Ensayo en la prueba", "Segundo reel de prueba"]) {
+        const formulario = new FormData();
+        formulario.append("titulo", titulo);
+        formulario.append("visibilidad", "publica");
+        formulario.append("archivo", new Blob([video], { type: "video/mp4" }), "reel.mp4");
+        await fetch(`${base}/api/reels`, {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}` },
+            body: formulario
+        });
+    }
+    console.log("Dos reels subidos al usuario de prueba");
+}
 // La pagina de prueba inyecta el token y llama a la misma funcion que usa
 // la aplicacion al tocar una tarjeta de servidor.
 const html = fs.readFileSync(path.join(raiz, "public", "index.html"), "utf8");
@@ -113,6 +159,35 @@ const arranque = `
     window.addEventListener("load", function () {
         setTimeout(function () {
             // Modo cuenta: abrir la pestana de Cuenta y no hacer nada mas.
+            // Con "entrar" se queda en la pantalla de Entrar (tira de reels).
+            if (${process.argv.includes("entrar")}) {
+                setTimeout(function () {
+                    var inicio = document.getElementById("boton-entrar-app");
+                    if (inicio) inicio.click();
+                }, 500);
+                // Con "visor" se abre el visor sobre la primera miniatura.
+                if (${process.argv.includes("visor")}) {
+                    setTimeout(function () {
+                        var primera = document.querySelector("#pista-reels-amigos .miniatura-reel");
+                        if (primera) primera.click();
+                        setTimeout(function () {
+                            var acciones = document.querySelectorAll("#pista-reels-visor .acciones-reel");
+                            var caja = acciones[0] ? acciones[0].getBoundingClientRect() : null;
+                            document.body.setAttribute("data-visor", "pantallas=" + document.querySelectorAll(".pantalla-reel").length + ",acciones=" + acciones.length + (caja ? ",x=" + Math.round(caja.x) + ",y=" + Math.round(caja.y) + ",w=" + Math.round(caja.width) + ",h=" + Math.round(caja.height) : ""));
+                        }, 1200);
+                    }, 2200);
+                }
+                return;
+            }
+
+            // Con "visor" se abre el visor de reels sobre la primera miniatura.
+            if (${process.argv.includes("visor")}) {
+                setTimeout(function () {
+                    var primera = document.querySelector("#pista-reels-amigos .miniatura-reel");
+                    if (primera) primera.click();
+                }, 1600);
+            }
+
             // Con "notificaciones" o "avisos" ademas se abre la ventanita.
             if (${process.argv.includes("cuenta") || process.argv.includes("notificaciones") || process.argv.includes("avisos")}) {
                 var cuenta = document.getElementById("boton-cuenta");

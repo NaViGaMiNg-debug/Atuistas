@@ -9,7 +9,8 @@ import {
     obtenerComentariosReel,
     obtenerMisReels,
     obtenerReel,
-    obtenerReels
+    obtenerReels,
+    obtenerReelsDeUsuario
 } from "../services/reels.service.js";
 
 type Seccion = "amigos" | "publica";
@@ -62,6 +63,10 @@ export async function reelsRoutes(app: FastifyInstance) {
     }));
 
     // Los reels de la cuenta, para la tira de Cuenta > Publicaciones.
+    // Reels de un usuario concreto, para su perfil.
+    app.get<{ Params: { usuarioId: string } }>("/api/usuarios/:usuarioId/reels", { preHandler: autenticar }, async (request) => ({
+        reels: await obtenerReelsDeUsuario(request.usuario!.id, request.params.usuarioId)
+    }));
     app.get("/api/reels/mios", { preHandler: autenticar }, async (request) => ({
         reels: await obtenerMisReels(request.usuario!.id)
     }));

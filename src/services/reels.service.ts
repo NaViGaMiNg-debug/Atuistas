@@ -138,6 +138,32 @@ export async function obtenerMisReels(usuarioId: string, limite = 50) {
     return resultado.rows;
 }
 
+// Reels de otro usuario para su perfil: solo los que puede ver quien mira.
+export async function obtenerReelsDeUsuario(visorId: string, autorId: string, limite = 30) {
+    const resultado = await db.query(
+        `
+        SELECT ${CAMPOS_REEL}
+        FROM reels r
+        INNER JOIN usuarios u ON u.id = r.autor_id AND u.activo = TRUE
+        INNER JOIN archivos v ON v.id = r.archivo_id
+        LEFT JOIN archivos ar ON ar.id = u.avatar_archivo_id
+        WHERE r.autor_id = $2
+          AND (
+              r.visibilidad = 'publica'
+              OR r.autor_id = $1
+              OR (r.visibilidad = 'amigos' AND EXISTS (
+                  SELECT 1 FROM amistades a
+                  WHERE a.usuario_a_id = LEAST(r.autor_id, $1::uuid)
+                    AND a.usuario_b_id = GREATEST(r.autor_id, $1::uuid)
+              ))
+          )
+        ORDER BY r.creado_en DESC
+        LIMIT $3
+        `,
+        [visorId, autorId, limite]
+    );
+    return resultado.rows;
+}
 export async function obtenerReel(usuarioId: string, reelId: string) {
     await puedeVerReel(usuarioId, reelId);
     const resultado = await db.query(

@@ -978,7 +978,9 @@ Actualmente existe código para:
 - Comentarios y corazones de publicaciones.
 - Notificaciones Push del dispositivo con vista previa del contenido, el nombre de quien avisa y un enlace directo al chat o a la pantalla principal.
 - Ventanita de notificaciones dentro de Cuenta: avisos recientes, marcar como leídos, activación del dispositivo y preferencias por categoría (se guardan solas al cerrar, sin botón).
-- Service worker, manifest y suscripciones Push por dispositivo.
+- Reels: vídeos cortos (máximo 90 s) con título obligatorio y visibilidad de amigos o público. Se ven en una tira horizontal en Entrar y en un visor a pantalla completa que se desliza en vertical, con corazón, comentarios y acceso al perfil del autor.
+- Historias: carpetas permanentes con nombre, editable y vaciable cuando se quiera, que guardan elementos de texto, fotos, vídeo o audio. Se ven como burbujas con el nombre de la carpeta en Cuenta y en el perfil.
+- Botón central de la barra con +: menú para subir reels, historias o publicaciones (las publicaciones ya no se suben desde el feed).- Service worker, manifest y suscripciones Push por dispositivo.
 - Limpieza periódica de estados vencidos, servidores temporales y mensajes antiguos de servidor.
 - Migración de compatibilidad para las columnas de autenticación y sesiones.
 

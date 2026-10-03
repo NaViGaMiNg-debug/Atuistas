@@ -1185,3 +1185,48 @@ Documentación
 ```
 
 Ninguna de estas capas debe modificarse de forma aislada cuando el cambio afecte al comportamiento del sistema.
+---
+
+# 41. Reels
+
+## Tabla `reels`
+
+Un reel es un vídeo corto con título obligatorio:
+
+- `id`
+- `autor_id`
+- `archivo_id` (el vídeo vive en `archivos`)
+- `titulo`
+- `visibilidad` (`amigos` o `publica`)
+- `creado_en`
+
+`reels_likes` guarda quién liked cada reel (una fila por usuario y reel) y
+`reels_comentarios` los comentarios, igual que en las publicaciones.
+
+---
+
+# 42. Historias
+
+## Tabla `historias`
+
+Una historia es una carpeta permanente del usuario:
+
+- `id`
+- `autor_id`
+- `nombre`
+- `creado_en`
+- `actualizado_en`
+
+## Tabla `historias_items`
+
+Cada elemento de la carpeta:
+
+- `id`
+- `historia_id`
+- `texto` (solo si `tipo` es `texto`)
+- `archivo_id` (si no es texto)
+- `tipo` (`texto`, `imagen`, `video` o `audio`)
+- `orden`
+
+A diferencia de los estados, las historias no caducan: se quedan hasta que su
+autor las borra.

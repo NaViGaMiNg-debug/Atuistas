@@ -6041,7 +6041,8 @@ button.estadistica-perfil:hover {
     cursor: pointer;
 }
 
-.miniatura-reel img {
+.miniatura-reel img,
+.miniatura-reel video {
     width: 100%;
     height: 100%;
     object-fit: cover;
@@ -6062,8 +6063,13 @@ button.estadistica-perfil:hover {
 }
 
 .visor-reels {
+    /* 100vw/100vh y no inset: asi el visor mide siempre la pantalla aunque un
+       ancestro con transform se convierta en su bloque contenedor. */
     position: fixed;
-    inset: 0;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
     z-index: 1100;
     background: #000;
 }
@@ -6097,7 +6103,7 @@ button.estadistica-perfil:hover {
 
 .titulo-reel {
     position: absolute;
-    top: calc(12px + env(safe-area-inset-top));
+    top: 16px;
     left: 56px;
     right: 16px;
     margin: 0;
@@ -6110,9 +6116,10 @@ button.estadistica-perfil:hover {
 }
 
 .acciones-reel {
+    z-index: 2;
     position: absolute;
     right: 10px;
-    bottom: calc(16px + env(safe-area-inset-bottom));
+    bottom: 24px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -6167,7 +6174,7 @@ button.estadistica-perfil:hover {
 
 .boton-cerrar-visor {
     position: absolute;
-    top: calc(10px + env(safe-area-inset-top));
+    top: 12px;
     left: 12px;
     z-index: 2;
     width: 40px;
@@ -6390,4 +6397,20 @@ button.estadistica-perfil:hover {
 .acciones-historia {
     display: flex;
     gap: 10px;
+}
+/* El visor y su columna de acciones se fijan a la ventana: asi no dependen
+   del ancho del bloque contenedor en el que caen. */
+.visor-reels {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+}
+
+.acciones-reel {
+    position: fixed;
+    right: 12px;
+    bottom: 24px;
+    z-index: 3;
 }
