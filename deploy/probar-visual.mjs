@@ -28,6 +28,16 @@ const creado = await fetch(`${base}/api/grupos`, {
     body: JSON.stringify({ nombre: `Servidor ${sufijo}`, modelo: "chat_unico", descripcion: "Un servidor de prueba" })
 }).then((r) => r.json());
 
+// Con "oscuro" se pone un color de nombre muy oscuro, para comprobar que sale
+// con reborde claro y que se sigue leyendo sobre el fondo negro.
+if (process.argv.includes("oscuro")) {
+    await fetch(`${base}/api/auth/cuenta`, {
+        method: "PUT",
+        headers: cabeceras,
+        body: JSON.stringify({ color_nombre: "#101030", descripcion: "Prueba de color oscuro" })
+    });
+}
+
 // Con "canales" el servidor se convierte, para comprobar que reaparece la
 // lista de canales y que la descripcion se deja de mostrar.
 if (process.argv.includes("canales")) {
@@ -80,6 +90,13 @@ const arranque = `
     });
     window.addEventListener("load", function () {
         setTimeout(function () {
+            // Modo cuenta: abrir la pestana de Cuenta y no hacer nada mas.
+            if (${process.argv.includes("cuenta")}) {
+                var cuenta = document.getElementById("boton-cuenta");
+                if (cuenta) cuenta.click();
+                return;
+            }
+
             // Abrir la seccion de servidores y luego el grupo.
             var boton = document.getElementById("boton-servidores");
             if (boton) boton.click();

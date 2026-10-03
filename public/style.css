@@ -3574,18 +3574,97 @@ button.servidor-tarjeta:focus-visible {
 }
 
 
+/* Selector del color del nombre: un cuadro redondo que hace de botón y, al
+   lado, tu nombre de verdad con ese color, para ver cómo queda sin salir. */
+.color-nombre-cuenta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    margin: 8px 0 14px;
+}
+
+
 #color-nombre-cuenta {
-    width: 60px;
-    height: 40px;
+    width: 52px;
+    height: 52px;
 
-    padding: 2px;
+    flex: 0 0 auto;
 
-    border: 1px solid #333;
-    border-radius: 8px;
+    padding: 0;
+
+    border: 2px solid #333;
+    border-radius: 50%;
 
     background: #1a1a1a;
 
     cursor: pointer;
+
+    appearance: none;
+    -webkit-appearance: none;
+
+    transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+
+#color-nombre-cuenta:hover {
+    border-color: #666;
+
+    transform: scale(1.06);
+}
+
+
+#color-nombre-cuenta:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 3px;
+}
+
+
+/* Chrome pinta el color dentro de un cuadro propio: se redondea también. */
+#color-nombre-cuenta::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+
+
+#color-nombre-cuenta::-webkit-color-swatch {
+    border: none;
+    border-radius: 50%;
+}
+
+
+#color-nombre-cuenta::-moz-color-swatch {
+    border: none;
+    border-radius: 50%;
+}
+
+
+.nombre-color-cuenta {
+    min-width: 0;
+
+    font-size: 17px;
+    font-weight: 700;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+
+/* Aviso del guardado automático: aparece un momento y se va solo. */
+#guardado-cuenta {
+    min-height: 18px;
+
+    margin: 0 0 6px;
+
+    color: #7ddba0;
+
+    font-size: 13px;
+}
+
+
+#guardado-cuenta.error {
+    color: #ff8a8a;
 }
 
 
@@ -5594,5 +5673,16 @@ button.estadistica-perfil:hover {
 
         transform: none;
     }
+}
+
+
+/* ========================================
+   ANILLO DEL AVATAR CON EL COLOR DEL NOMBRE
+   La variable la pone app.js. Si el color del nombre es muy oscuro, app.js ya
+   la cambia por un blanco suave para que el anillo se vea sobre el fondo.
+   ======================================== */
+
+.con-anillo-nombre {
+    box-shadow: 0 0 0 2px var(--anillo-avatar, transparent);
 }
 

@@ -623,22 +623,31 @@
                             Color de tu nombre
                         </label>
 
-                        <input
-                            type="color"
-                            id="color-nombre-cuenta"
-                        >
+                        <!-- El propio cuadro de color hace de botón, y al lado
+                             se ve tu nombre con ese color puesto, para que se
+                             vea cómo queda sin salir de aquí. -->
+                        <div class="color-nombre-cuenta">
 
+                            <input
+                                type="color"
+                                id="color-nombre-cuenta"
+                                aria-label="Color de tu nombre"
+                            >
 
-                        <!-- ==============================
-                             GUARDAR CAMBIOS
-                             ============================== -->
+                            <span
+                                id="nombre-color-cuenta"
+                                class="nombre-color-cuenta"
+                            >Tu nombre</span>
 
-                        <button
-                            id="boton-guardar-cuenta"
-                            type="button"
-                        >
-                            GUARDAR CAMBIOS
-                        </button>
+                        </div>
+
+                        <!-- Ya no hay botón de guardar: se guarda solo al salir
+                             del campo o al cerrar la pestaña de Cuenta. -->
+                        <p
+                            id="guardado-cuenta"
+                            class="guardado-cuenta"
+                            aria-live="polite"
+                        ></p>
 
 
                         <p id="estado-cuenta"></p>

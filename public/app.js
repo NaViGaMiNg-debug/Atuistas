@@ -664,8 +664,11 @@ const botonRegenerarCodigo =
 const botonCerrarSesion =
     document.getElementById("boton-cerrar-sesion");
 
-const botonGuardarCuenta =
-    document.getElementById("boton-guardar-cuenta");
+const guardadoCuenta =
+    document.getElementById("guardado-cuenta");
+
+const vistaNombreCuenta =
+    document.getElementById("nombre-color-cuenta");
 
 const contenidoPublico = 
     document.getElementById("contenido-publico");
@@ -959,6 +962,41 @@ function colorSeguro(color) {
     return /^#[0-9a-f]{6}$/i.test(color || "") ? color : "#ffffff";
 }
 
+// Luminancia percibida: sirve para saber si un color se pierde sobre el fondo
+// oscuro de la aplicación y hay que rodearlo de algo claro.
+function esColorOscuro(color) {
+    const hex = colorSeguro(color);
+    const rojo = parseInt(hex.slice(1, 3), 16);
+    const verde = parseInt(hex.slice(3, 5), 16);
+    const azul = parseInt(hex.slice(5, 7), 16);
+    const luminancia = 0.2126 * rojo + 0.7152 * verde + 0.0722 * azul;
+    return luminancia < 105;
+}
+
+// Color del anillo de los avatares: el del nombre, o blanco suave cuando el
+// color es tan oscuro que se confundiría con el fondo.
+function colorDeAnillo(color) {
+    return esColorOscuro(color) ? "rgba(255, 255, 255, 0.85)" : colorSeguro(color);
+}
+
+// Estilo en línea para pintar un nombre. Si el color es oscuro se añade un
+// halo claro, porque el fondo de la aplicación también es oscuro.
+function estiloNombre(color) {
+    const seguro = colorSeguro(color);
+    if (esColorOscuro(seguro)) {
+        return `color:${seguro};text-shadow:0 0 2px rgba(255,255,255,0.9),0 0 4px rgba(255,255,255,0.55);`;
+    }
+    return `color:${seguro};`;
+}
+
+// Deja el anillo del avatar del color del nombre. Se usa una variable CSS para
+// que el estilo viva en style.css y no haya que repetirlo aquí.
+function aplicarAnilloAvatar(elemento, color) {
+    if (!elemento) return;
+    elemento.style.setProperty("--anillo-avatar", colorDeAnillo(color));
+    elemento.classList.add("con-anillo-nombre");
+}
+
 function escapeHtml(texto) {
     const elemento =
         document.createElement("div");
@@ -1087,7 +1125,10 @@ async function abrirChat(amigo) {
     limpiarEstadoGestosChat();
 
     nombreChat.textContent = amigo.nombre;
-    nombreChat.style.color = colorSeguro(amigo.color_nombre);
+    nombreChat.setAttribute("style", estiloNombre(amigo.color_nombre));
+
+    // El marco de la foto va del mismo color que el nombre.
+    aplicarAnilloAvatar(avatarChat, amigo.color_nombre);
 
     avatarChat.innerHTML = amigo.avatar_url
         ? `
@@ -1711,7 +1752,7 @@ async function cargarAmigos() {
                 "chat-amigo";
 
             elemento.innerHTML = `
-                <div class="chat-amigo-avatar">
+                <div class="chat-amigo-avatar con-anillo-nombre" style="--anillo-avatar:${colorDeAnillo(amigo.color_nombre)};">
 
                     ${
                         amigo.avatar_url
@@ -1728,7 +1769,7 @@ async function cargarAmigos() {
 
                 <div class="chat-amigo-datos">
 
-                    <strong style="color: ${colorSeguro(amigo.color_nombre)};">
+                    <strong style="${estiloNombre(amigo.color_nombre)}">
                         ${escapeHtml(amigo.nombre)}
                     </strong>
 
@@ -1780,6 +1821,12 @@ function mostrarSeccion(seccion) {
     canalesGrupo = [];
     canalActual = null;
     cerrarPanelesServidor();
+
+    // Si se sale de Cuenta con algo a medio escribir, se guarda antes de
+    // ocultar el panel: así no se pierde nada por no haber botón de guardar.
+    if (!contenidoCuenta.hidden && seccion !== "cuenta") {
+        guardarCuenta();
+    }
 
     contenidoEntrar.hidden = true;
     contenidoPublico.hidden = true;
@@ -2130,7 +2177,7 @@ function plantillaMensaje(mensaje, opciones = {}) {
     const mostrarAutor = opciones.mostrarAutor === true;
     const ocultoAjeno = Boolean(mensaje.oculto) && !mensaje.es_mio && !mensaje.autor_nombre;
     const nombreAutor = mensaje.autor_nombre ?? "Desconocido";
-    const colorAutor = mensaje.autor_nombre ? colorSeguro(mensaje.color_nombre) : "#999";
+    const estiloAutor = mensaje.autor_nombre ? estiloNombre(mensaje.color_nombre) : "color:#999;";
     const gestor = Boolean(detalleGrupo) && (detalleGrupo.mi_rol === "creador" || detalleGrupo.mi_rol === "moderador");
 
     let adjunto = "";
@@ -2164,7 +2211,7 @@ function plantillaMensaje(mensaje, opciones = {}) {
 
     const cabecera = mostrarAutor && !ocultoAjeno
         ? `<div class="mensaje-servidor-cabecera">
-               <strong style="color:${colorAutor}">${escapeHtml(nombreAutor)}</strong>
+               <strong style="${estiloAutor}">${escapeHtml(nombreAutor)}</strong>
            </div>`
         : "";
 
@@ -2977,7 +3024,7 @@ async function cargarMiembrosServidor() {
             return `
                 <div class="fila-servidor ${miembro.es_mio ? "yo" : ""}">
                     <span class="fila-servidor-datos">
-                        <strong style="color:${colorSeguro(miembro.color_nombre)}">${escapeHtml(miembro.nombre)}${miembro.es_mio ? " (tú)" : ""}</strong>
+                        <strong style="${estiloNombre(miembro.color_nombre)}">${escapeHtml(miembro.nombre)}${miembro.es_mio ? " (tú)" : ""}</strong>
                         <span>${etiquetas.join(" ")}</span>
                     </span>
                     <span class="fila-servidor-acciones">${acciones.join("")}</span>
@@ -3171,7 +3218,7 @@ async function cargarBloqueadosServidor() {
         lista.innerHTML = datos.bloqueados.length ? datos.bloqueados.map((bloqueo) => `
             <div class="fila-servidor">
                 <span class="fila-servidor-datos">
-                    <strong style="color:${colorSeguro(bloqueo.color_nombre)}">${escapeHtml(bloqueo.nombre ?? "Desconocido")}</strong>
+                    <strong style="${estiloNombre(bloqueo.color_nombre)}">${escapeHtml(bloqueo.nombre ?? "Desconocido")}</strong>
                     <span>${escapeHtml(bloqueo.etiqueta)}${bloqueo.motivo ? ` · ${escapeHtml(bloqueo.motivo)}` : ""}</span>
                 </span>
                 <span class="fila-servidor-acciones">
@@ -3659,7 +3706,7 @@ async function buscarPersonas(texto) {
                     </div>
 
                     <div class="persona-resultado-datos">
-                        <strong style="color: ${colorSeguro(usuario.color_nombre)};">
+                        <strong style="${estiloNombre(usuario.color_nombre)}">
                             ${escapeHtml(usuario.nombre)}
                         </strong>
                     </div>
@@ -3867,7 +3914,7 @@ async function cargarSolicitudesRecibidas() {
                     </div>
 
                     <div class="solicitud-amistad-datos">
-                        <strong style="color: ${colorSeguro(solicitud.color_nombre)};">
+                        <strong style="${estiloNombre(solicitud.color_nombre)}">
                             ${escapeHtml(solicitud.nombre)}
                         </strong>
                     </div>
@@ -4856,12 +4903,19 @@ async function cargarCuenta() {
            DATOS BÁSICOS
            ============================== */
 
-        nombreCuenta.textContent =
-            usuario.nombre;
+        // Punto de partida del guardado automático: lo que hay en el servidor.
+        cuentaGuardada = {
+            nombre: usuario.nombre,
+            descripcion: usuario.descripcion || "",
+            color_nombre: usuario.color_nombre || "#FFFFFF"
+        };
+
+        mostrarGuardadoCuenta("");
 
         nombreCuentaEditar.value =
             usuario.nombre;
 
+        pintarNombreCuenta(usuario.nombre, usuario.color_nombre);
 
         descripcionCuenta.value =
             usuario.descripcion || "";
@@ -4894,6 +4948,9 @@ async function cargarCuenta() {
 
         }
 
+        // Anillo del avatar del mismo color que el nombre.
+        aplicarAnilloAvatar(botonFotoPerfil, usuario.color_nombre);
+
 
         /* ==============================
            CÓDIGO DE VINCULACIÓN
@@ -4916,38 +4973,80 @@ async function cargarCuenta() {
 
 
 /* ==============================
-   GUARDAR CUENTA
+   GUARDADO AUTOMÁTICO DE LA CUENTA
+   El nombre, la descripción y el color se guardan solos: al salir del campo,
+   al cambiar el color y al cerrar la pestaña de Cuenta. Ya no hay botón.
    ============================== */
+
+// Últimos valores confirmados por el servidor. Si algo se rechaza (por ejemplo
+// un nombre ya ocupado) la interfaz vuelve a estos para no dejar en pantalla
+// un nombre que en realidad no está guardado.
+let cuentaGuardada = { nombre: "", descripcion: "", color_nombre: "#FFFFFF" };
+
+let temporizadorCuenta = null;
+let guardandoCuenta = false;
+let cambioPendienteCuenta = false;
+
+function leerCacheCuenta() {
+    try {
+        return JSON.parse(localStorage.getItem("atuistas_cache_cuenta") || "null");
+    } catch {
+        return null;
+    }
+}
+
+function pintarNombreCuenta(nombre, color) {
+    if (nombreCuenta) {
+        nombreCuenta.textContent = nombre;
+        nombreCuenta.setAttribute("style", estiloNombre(color));
+    }
+    if (vistaNombreCuenta) {
+        vistaNombreCuenta.textContent = nombre || "Tu nombre";
+        vistaNombreCuenta.setAttribute("style", estiloNombre(color));
+    }
+}
+
+function mostrarGuardadoCuenta(mensaje, esError = false) {
+    if (!guardadoCuenta) return;
+    guardadoCuenta.textContent = mensaje;
+    guardadoCuenta.classList.toggle("error", esError);
+}
 
 async function guardarCuenta() {
 
     const token =
         localStorage.getItem("atuistas_token");
 
-
     if (!token) {
         return;
     }
 
+    // Si ya hay una petición en vuelo, el cambio se aplica al terminar en vez
+    // de lanzar otra: así nunca se pisan dos guardados.
+    if (guardandoCuenta) {
+        cambioPendienteCuenta = true;
+        return;
+    }
+
+    const nombre =
+        nombreCuentaEditar.value.trim();
 
     const descripcion =
         descripcionCuenta.value.trim();
 
-
     const colorNombre =
         colorNombreCuenta.value;
 
-
-    if (descripcion.length > 500) {
-
-        alert(
-            "La descripción no puede superar los 500 caracteres."
-        );
-
+    // Si no ha cambiado nada, no se molesta al servidor.
+    if (
+        nombre === cuentaGuardada.nombre &&
+        descripcion === cuentaGuardada.descripcion &&
+        colorNombre.toLowerCase() === cuentaGuardada.color_nombre.toLowerCase()
+    ) {
         return;
-
     }
 
+    guardandoCuenta = true;
 
     try {
 
@@ -4965,7 +5064,7 @@ async function guardarCuenta() {
                 },
 
                 body: JSON.stringify({
-                    nombre: nombreCuentaEditar.value.trim(),
+                    nombre,
                     descripcion,
                     color_nombre:
                         colorNombre
@@ -4990,6 +5089,16 @@ async function guardarCuenta() {
 
         if (datos.usuario) {
 
+            cuentaGuardada = {
+                nombre: datos.usuario.nombre,
+                descripcion: datos.usuario.descripcion || "",
+                color_nombre: datos.usuario.color_nombre || "#FFFFFF"
+            };
+
+            // Manda el servidor: puede haber recortado el nombre.
+            nombreCuentaEditar.value =
+                datos.usuario.nombre;
+
             descripcionCuenta.value =
                 datos.usuario.descripcion || "";
 
@@ -4997,12 +5106,29 @@ async function guardarCuenta() {
                 datos.usuario.color_nombre ||
                 "#FFFFFF";
 
+            pintarNombreCuenta(datos.usuario.nombre, datos.usuario.color_nombre);
+
+            localStorage.setItem(
+                "atuistas_cache_cuenta",
+                JSON.stringify({ ...(leerCacheCuenta() || {}), ...datos.usuario })
+            );
+
+            actualizarTarjetaMiEstado();
+
         }
 
 
-        alert(
-            "Cambios guardados correctamente."
-        );
+        mostrarGuardadoCuenta("Guardado");
+
+        setTimeout(() => {
+
+            if (guardadoCuenta && guardadoCuenta.textContent === "Guardado") {
+
+                mostrarGuardadoCuenta("");
+
+            }
+
+        }, 1600);
 
 
     } catch (error) {
@@ -5013,12 +5139,48 @@ async function guardarCuenta() {
         );
 
 
-        alert(
+        mostrarGuardadoCuenta(
             error.message ||
-            "Error al guardar los cambios"
+            "Error al guardar los cambios",
+            true
         );
 
+
+        // El nombre es único: si lo rechazan se recupera el último válido, en
+        // vez de dejar escrito uno que no existe.
+        nombreCuentaEditar.value = cuentaGuardada.nombre;
+        descripcionCuenta.value = cuentaGuardada.descripcion;
+        colorNombreCuenta.value = cuentaGuardada.color_nombre;
+        pintarNombreCuenta(cuentaGuardada.nombre, cuentaGuardada.color_nombre);
+
+
+    } finally {
+
+        guardandoCuenta = false;
+
+        if (cambioPendienteCuenta) {
+
+            cambioPendienteCuenta = false;
+            guardarCuenta();
+
+        }
+
     }
+
+}
+
+// Espera a que el usuario deje de escribir para no mandar una petición por
+// tecla.
+function programarGuardadoCuenta() {
+
+    if (temporizadorCuenta) {
+        clearTimeout(temporizadorCuenta);
+    }
+
+    temporizadorCuenta = setTimeout(() => {
+        temporizadorCuenta = null;
+        guardarCuenta();
+    }, 900);
 
 }
 
@@ -5181,17 +5343,24 @@ botonRegenerarCodigo.addEventListener(
 
 
 /* ==============================
-   GUARDAR CAMBIOS DE CUENTA
+   GUARDADO AUTOMÁTICO DE LA CUENTA
+   No hay botón: se guarda al salir del campo, al cambiar el color y al cerrar
+   la pestaña de Cuenta.
    ============================== */
 
-botonGuardarCuenta.addEventListener(
-    "click",
-    () => {
+nombreCuentaEditar.addEventListener("input", programarGuardadoCuenta);
+nombreCuentaEditar.addEventListener("blur", guardarCuenta);
 
-        guardarCuenta();
+descripcionCuenta.addEventListener("input", programarGuardadoCuenta);
+descripcionCuenta.addEventListener("blur", guardarCuenta);
 
-    }
-);
+// El color se previsualiza al momento y se guarda en cuanto se suelta.
+colorNombreCuenta.addEventListener("input", () => {
+    pintarNombreCuenta(nombreCuentaEditar.value.trim(), colorNombreCuenta.value);
+    programarGuardadoCuenta();
+});
+
+colorNombreCuenta.addEventListener("change", guardarCuenta);
 
 
 /* ==============================
@@ -5296,8 +5465,8 @@ async function cargarEstados(seccion, contenedor) {
             return `
                 <button class="tarjeta-estado tarjeta-historia" type="button" data-ver-historias="${escapeHtml(clave)}" aria-label="Ver los ${historias} estados de ${escapeHtml(persona.autor_nombre)}">
                     ${portada}
-                    ${persona.avatar_url ? `<img class="avatar-historia" src="/${escapeHtml(persona.avatar_url)}" alt="">` : '<span class="avatar-historia avatar-historia-vacio"></span>'}
-                    <span class="nombre-historia">${escapeHtml(persona.autor_nombre)}</span>
+                    ${persona.avatar_url ? `<img class="avatar-historia con-anillo-nombre" style="--anillo-avatar:${colorDeAnillo(persona.color_nombre)}" src="/${escapeHtml(persona.avatar_url)}" alt="">` : '<span class="avatar-historia avatar-historia-vacio"></span>'}
+                    <span class="nombre-historia" style="${estiloNombre(persona.color_nombre)}">${escapeHtml(persona.autor_nombre)}</span>
                     ${historias > 1 ? `<span class="cantidad-historias">${historias}</span>` : ""}
                 </button>
             `;
@@ -5326,9 +5495,9 @@ function renderizarPublicacion(publicacion) {
         <article class="publicacion-actual" data-publicacion="${escapeHtml(publicacion.id)}">
             <header class="cabecera-publicacion-actual">
                 <button class="boton-perfil-publicacion" type="button" data-abrir-perfil="${escapeHtml(publicacion.autor_id)}" aria-label="Ver el perfil de ${escapeHtml(publicacion.autor_nombre)}">
-                    ${publicacion.avatar_url ? `<img src="/${escapeHtml(publicacion.avatar_url)}" alt="">` : '<span class="avatar-publicacion-vacio"></span>'}
+                    ${publicacion.avatar_url ? `<img class="con-anillo-nombre" style="--anillo-avatar:${colorDeAnillo(publicacion.color_nombre)}" src="/${escapeHtml(publicacion.avatar_url)}" alt="">` : '<span class="avatar-publicacion-vacio"></span>'}
                     <span class="datos-publicacion-actual">
-                        <strong style="color:${colorSeguro(publicacion.color_nombre)}">${escapeHtml(publicacion.autor_nombre)}</strong>
+                        <strong style="${estiloNombre(publicacion.color_nombre)}">${escapeHtml(publicacion.autor_nombre)}</strong>
                         <time>${new Date(publicacion.creada_en).toLocaleString()}</time>
                     </span>
                 </button>
@@ -5497,7 +5666,11 @@ function mostrarHistoriaActual() {
     const avatar = document.getElementById("avatar-autor-historia");
     avatar.hidden = !estado.avatar_url;
     if (estado.avatar_url) avatar.src = `/${estado.avatar_url}`;
-    document.getElementById("nombre-autor-historia").textContent = estado.autor_nombre;
+    aplicarAnilloAvatar(avatar, estado.color_nombre);
+
+    const nombreAutorHistoria = document.getElementById("nombre-autor-historia");
+    nombreAutorHistoria.textContent = estado.autor_nombre;
+    nombreAutorHistoria.setAttribute("style", estiloNombre(estado.color_nombre));
 
     const progreso = document.getElementById("progreso-historias");
     progreso.innerHTML = secuenciaHistoriaActual.map((_, indice) => `
@@ -5836,7 +6009,7 @@ async function cargarComentariosPublicacion(publicacionId, contenedor) {
     contenedor.innerHTML = `
         <div class="lista-comentarios-actuales">
             ${datos.comentarios.map((comentario) => `
-                <p><strong style="color:${colorSeguro(comentario.color_nombre)}">${escapeHtml(comentario.autor_nombre)}</strong> ${escapeHtml(comentario.texto)}</p>
+                <p><strong style="${estiloNombre(comentario.color_nombre)}">${escapeHtml(comentario.autor_nombre)}</strong> ${escapeHtml(comentario.texto)}</p>
             `).join("") || '<p class="estado-amigos">Sé la primera persona en comentar.</p>'}
         </div>
         <form class="formulario-comentario-actual" data-publicacion="${escapeHtml(publicacionId)}">
@@ -6051,12 +6224,12 @@ function renderizarPerfil(datos) {
 
     contenidoPerfil.innerHTML = `
         <div class="cabecera-perfil">
-            <button class="avatar-perfil" type="button" data-acciones-perfil aria-label="Opciones de la foto de perfil">
+            <button class="avatar-perfil con-anillo-nombre" type="button" style="--anillo-avatar:${colorDeAnillo(perfil.color_nombre)}" data-acciones-perfil aria-label="Opciones de la foto de perfil">
                 ${perfil.avatar_url
                     ? `<img src="/${escapeHtml(perfil.avatar_url)}" alt="">`
                     : '<span class="avatar-perfil-vacio"></span>'}
             </button>
-            <strong class="nombre-perfil" style="color:${colorSeguro(perfil.color_nombre)}">${escapeHtml(perfil.nombre)}</strong>
+            <strong class="nombre-perfil" style="${estiloNombre(perfil.color_nombre)}">${escapeHtml(perfil.nombre)}</strong>
             ${perfil.descripcion
                 ? `<p class="descripcion-perfil">${escapeHtml(perfil.descripcion)}</p>`
                 : '<p class="descripcion-perfil descripcion-perfil-vacia">Sin descripción.</p>'}
@@ -6149,7 +6322,7 @@ async function abrirAmigosPerfil() {
                         ? `<img src="/${escapeHtml(amigo.avatar_url)}" alt="">`
                         : ""}
                 </span>
-                <span class="amigo-perfil-nombre" style="color:${colorSeguro(amigo.color_nombre)}">${escapeHtml(amigo.nombre)}</span>
+                <span class="amigo-perfil-nombre" style="${estiloNombre(amigo.color_nombre)}">${escapeHtml(amigo.nombre)}</span>
             </button>
         `).join("");
 
