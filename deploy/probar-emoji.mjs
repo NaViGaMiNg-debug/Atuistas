@@ -196,6 +196,23 @@ comprobar(
 
 comprobar(html.includes("/data/emojis.js"), "index.html carga la lista de emojis antes que app.js");
 
+// El boton de ubicacion tiene que estar en los dos menus de adjuntos y con el
+// atributo bien escrito: con data-adunto el menu responde y no pasa nada.
+const menus = html.match(/<div id="menu-adjuntar-(chat|servidor)"[\s\S]*?<\/div>/g) || [];
+comprobar(menus.length === 2, "Los dos menus de adjuntos estan en el HTML");
+comprobar(
+    menus.every((menu) => menu.includes('data-adjunto="ubicacion"')),
+    "Los dos menus ofrecen compartir ubicacion"
+);
+comprobar(
+    !html.includes('data-adunto="'),
+    "Ningun boton se queda con el atributo mal escrito (data-adunto)"
+);
+comprobar(
+    menus.every((menu) => !menu.includes('data-adunto="')),
+    "El menu de adjuntos no tiene atributos mutados"
+);
+
 /* ---------- El teclado del movil no se abre solo ---------- */
 
 comprobar(
