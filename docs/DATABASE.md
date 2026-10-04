@@ -93,7 +93,8 @@ Con esos poderes puede:
 
 - Borrar publicaciones, reels, estados e historias de cualquier persona
   (pulsación larga sobre el contenido en la app).
-- Poner el nombre, la descripción o la etiqueta de cualquier perfil.
+- Poner el nombre, la descripción o la etiqueta de cualquier perfil: en la app
+  esos tres datos son pulsables y se editan en el sitio, sin ventanas.
 
 La etiqueta sale en el perfil entre el nombre y la descripción. Si no tiene
 ninguna, la cuenta de desarrollador recibe `Creador` automáticamente.

@@ -5183,7 +5183,7 @@ async function cargarCuenta() {
 
         estadoCuenta.textContent =
             usuario.es_desarrollador
-                ? "Desarrollador: mantén pulsado el contenido para borrarlo y usa el botón DESARROLLADOR de cada perfil para editarlo."
+                ? "Desarrollador: en cualquier perfil puedes pulsar el nombre, la etiqueta o la descripción para cambiarla, y mantener pulsado el contenido para borrarlo."
                 : "";
 
 
@@ -7388,6 +7388,29 @@ async function abrirPerfil(usuarioId) {
 function renderizarPerfil(datos) {
     const perfil = datos.perfil;
     const conteos = datos.conteos || {};
+    // Con poderes de desarrollador los tres datos del perfil (nombre, etiqueta
+    // y descripción) se pulsan y se editan ahí mismo, sin ventanas de por
+    // medio. Para el resto de cuentas son texto normal.
+    const editable = perfil.soy_desarrollador === true;
+    const campo = (tipo, clase, contenido, etiqueta) => editable
+        ? `<button class="campo-perfil editable ${clase}" type="button" data-editar-campo="${tipo}"
+                aria-label="${escapeHtml(etiqueta)}">${contenido}</button>`
+        : contenido;
+
+    const nombreMarkup = `<strong class="nombre-perfil" style="${estiloNombre(perfil.color_nombre)}">${escapeHtml(perfil.nombre)}</strong>`;
+
+    // La etiqueta va entre el nombre y la descripción, como una pastilla.
+    const etiquetaMarkup = `
+        ${perfil.etiqueta
+            ? `<span class="etiqueta-perfil">${escapeHtml(perfil.etiqueta)}</span>`
+            : editable
+                ? '<span class="etiqueta-perfil vacia">+ Etiqueta</span>'
+                : ""}
+    `;
+
+    const descripcionMarkup = perfil.descripcion
+        ? `<p class="descripcion-perfil">${escapeHtml(perfil.descripcion)}</p>`
+        : '<p class="descripcion-perfil descripcion-perfil-vacia">Sin descripción.</p>';
 
     contenidoPerfil.innerHTML = `
         <div class="cabecera-perfil">
@@ -7396,16 +7419,10 @@ function renderizarPerfil(datos) {
                     ? `<img src="/${escapeHtml(perfil.avatar_url)}" alt="">`
                     : '<span class="avatar-perfil-vacio"></span>'}
             </button>
-            <strong class="nombre-perfil" style="${estiloNombre(perfil.color_nombre)}">${escapeHtml(perfil.nombre)}</strong>
-            ${perfil.etiqueta
-                ? `<span class="etiqueta-perfil">${escapeHtml(perfil.etiqueta)}</span>`
-                : ""}
-            ${perfil.soy_desarrollador
-                ? `<button class="boton-desarrollador-perfil" type="button" data-editar-desarrollador="${escapeHtml(perfil.id)}">DESARROLLADOR</button>`
-                : ""}
-            ${perfil.descripcion
-                ? `<p class="descripcion-perfil">${escapeHtml(perfil.descripcion)}</p>`
-                : '<p class="descripcion-perfil descripcion-perfil-vacia">Sin descripción.</p>'}
+            ${campo("nombre", "campo-nombre-perfil", nombreMarkup, "Cambiar el nombre")}
+            ${campo("etiqueta", "campo-etiqueta-perfil", etiquetaMarkup, "Cambiar la etiqueta")}
+            ${campo("descripcion", "campo-descripcion-perfil", descripcionMarkup, "Cambiar la descripción")}
+            <p id="estado-edicion-perfil" class="estado-edicion-perfil" aria-live="polite"></p>
         </div>
 
         <div class="estadisticas-perfil">
@@ -7468,12 +7485,11 @@ async function cargarContenidoPerfil(usuarioId) {
 }
 
 document.getElementById("contenido-perfil")?.addEventListener("click", (evento) => {
-    // El botón de desarrollador va antes que las burbujas: abre el editor de
-    // nombre, descripción y etiqueta de ese perfil.
-    const botonDesarrollador = evento.target.closest("[data-editar-desarrollador]");
-    if (botonDesarrollador) {
-        if (!perfilActual || perfilActual.id !== botonDesarrollador.dataset.editarDesarrollador) return;
-        abrirEditorDesarrollador(perfilActual);
+    // Con poderes de desarrollador, el nombre, la etiqueta y la descripción se
+    // editan ahí mismo, en el sitio.
+    const campoEditable = evento.target.closest("[data-editar-campo]");
+    if (campoEditable) {
+        editarCampoPerfil(campoEditable);
         return;
     }
 
@@ -7482,6 +7498,82 @@ document.getElementById("contenido-perfil")?.addEventListener("click", (evento) 
     const nombre = burbuja.querySelector(".nombre-historia-carpeta")?.textContent ?? "";
     abrirModalHistoria({ id: burbuja.dataset.historia, nombre }, true);
 });
+
+// Escribe encima del dato que se ha pulsado y lo guarda al terminar. Se
+// guarda con Enter (o al salir del campo) y se descarta con Escape.
+const LIMITES_CAMPO_PERFIL = { nombre: 25, etiqueta: 24, descripcion: 500 };
+
+function editarCampoPerfil(elemento) {
+    if (!soyDesarrollador || !perfilActual?.id) return;
+    if (elemento.dataset.editando === "1") return;
+
+    const tipo = elemento.dataset.editarCampo;
+    const perfil = perfilActual;
+    const valorActual = tipo === "nombre"
+        ? perfil.nombre || ""
+        : tipo === "etiqueta"
+            ? perfil.etiqueta || ""
+            : perfil.descripcion || "";
+
+    const editor = document.createElement(tipo === "descripcion" ? "textarea" : "input");
+    editor.type = "text";
+    editor.className = "editor-campo-perfil";
+    editor.value = valorActual;
+    editor.maxLength = LIMITES_CAMPO_PERFIL[tipo] ?? 500;
+    if (tipo === "descripcion") editor.rows = 3;
+
+    elemento.dataset.editando = "1";
+    elemento.replaceChildren(editor);
+
+    editor.focus();
+    if (tipo !== "descripcion") editor.select();
+
+    let terminado = false;
+
+    const mostrarEstado = (texto, esError) => {
+        const estado = document.getElementById("estado-edicion-perfil");
+        if (!estado) return;
+        estado.textContent = texto;
+        estado.classList.toggle("error-social", esError === true);
+    };
+
+    const terminar = async (guardar) => {
+        if (terminado) return;
+        terminado = true;
+        const valor = editor.value.trim();
+        // Sin cambios (o si se cancela) solo se vuelve a pintar el dato.
+        if (!guardar || valor === valorActual) {
+            await abrirPerfil(perfil.id);
+            return;
+        }
+        try {
+            await solicitarGrupo(
+                `/api/desarrollador/usuarios/${encodeURIComponent(perfil.id)}`,
+                { method: "PUT", body: JSON.stringify({ [tipo]: valor }) }
+            );
+            await abrirPerfil(perfil.id);
+        } catch (error) {
+            // Si el servidor lo rechaza (por ejemplo, nombre repetido) el
+            // campo vuelve a su valor original y se explica el motivo.
+            await abrirPerfil(perfil.id);
+            mostrarEstado(error.message, true);
+        }
+    };
+
+    editor.addEventListener("keydown", (evento) => {
+        if (evento.key === "Escape") {
+            evento.preventDefault();
+            terminar(false);
+            return;
+        }
+        if (evento.key === "Enter" && (tipo !== "descripcion" || evento.ctrlKey || evento.metaKey)) {
+            evento.preventDefault();
+            terminar(true);
+        }
+    });
+
+    editor.addEventListener("blur", () => terminar(true));
+}
 
 async function cargarPublicacionesPerfil() {
     if (!perfilActual?.id) {
@@ -7746,59 +7838,6 @@ async function comprobarPoderesDesarrollador() {
         marcarEstadoDesarrollador(false);
     }
 }
-
-const modalDesarrollador = document.getElementById("modal-desarrollador");
-const formularioDesarrollador = document.getElementById("formulario-desarrollador");
-const devNombre = document.getElementById("dev-nombre");
-const devDescripcion = document.getElementById("dev-descripcion");
-const devEtiqueta = document.getElementById("dev-etiqueta");
-const estadoDesarrollador = document.getElementById("estado-desarrollador");
-
-let usuarioEnEdicion = null;
-
-function abrirEditorDesarrollador(perfil) {
-    if (!soyDesarrollador || !modalDesarrollador || !perfil?.id) return;
-    usuarioEnEdicion = perfil;
-    document.getElementById("titulo-modal-desarrollador").textContent =
-        `Editar a ${perfil.nombre}`;
-    devNombre.value = perfil.nombre || "";
-    devDescripcion.value = perfil.descripcion || "";
-    devEtiqueta.value = perfil.etiqueta || "";
-    estadoDesarrollador.textContent = "";
-    modalDesarrollador.hidden = false;
-}
-
-function cerrarEditorDesarrollador() {
-    if (modalDesarrollador) modalDesarrollador.hidden = true;
-    usuarioEnEdicion = null;
-}
-
-document.getElementById("boton-cerrar-modal-desarrollador")
-    ?.addEventListener("click", cerrarEditorDesarrollador);
-
-formularioDesarrollador?.addEventListener("submit", async (evento) => {
-    evento.preventDefault();
-    if (!usuarioEnEdicion) return;
-    estadoDesarrollador.textContent = "";
-    try {
-        await solicitarGrupo(
-            `/api/desarrollador/usuarios/${encodeURIComponent(usuarioEnEdicion.id)}`,
-            {
-                method: "PUT",
-                body: JSON.stringify({
-                    nombre: devNombre.value,
-                    descripcion: devDescripcion.value,
-                    etiqueta: devEtiqueta.value
-                })
-            }
-        );
-        cerrarEditorDesarrollador();
-        // El perfil abierto se vuelve a pintar para ver el cambio al momento.
-        if (perfilActual?.id) await abrirPerfil(perfilActual.id);
-    } catch (error) {
-        estadoDesarrollador.textContent = error.message;
-    }
-});
 
 /* ---------- Borrado con pulsación larga ---------- */
 

@@ -5795,30 +5795,72 @@ button.servidor-tarjeta:focus-visible {
     overflow-wrap: anywhere;
 }
 
-.boton-desarrollador-perfil {
-    align-self: flex-start;
-    margin: 0;
-    padding: 6px 12px;
-    border: 1px solid #7a5cff;
-    border-radius: 8px;
+/* Sin etiqueta: solo se ve para quien puede escribirla. */
+.etiqueta-perfil.vacia {
+    border-style: dashed;
     background: transparent;
-    color: #b9a6ff;
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    cursor: pointer;
+    color: #7d7d7d;
 }
 
-.boton-desarrollador-perfil:hover {
-    background: #7a5cff;
+/* -----------------------------
+   EDICIÓN EN EL SITIO
+   Solo la cuenta de desarrollador ve
+   estos campos pulsables: al tocarlos
+   se escribe encima, sin ventanas.
+   ----------------------------- */
+
+.campo-perfil.editable {
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: text;
+    overflow-wrap: anywhere;
+}
+
+.campo-perfil.editable:hover {
+    text-decoration: underline dotted #6b6b6b;
+    text-underline-offset: 3px;
+}
+
+/* El texto que hay dentro se conserva tal cual (hereda el estilo). */
+.campo-nombre-perfil.editable .nombre-perfil,
+.campo-descripcion-perfil.editable .descripcion-perfil {
+    display: block;
+    margin: 0;
+    white-space: pre-wrap;
+}
+
+.campo-etiqueta-perfil.editable {
+    align-self: flex-start;
+    width: auto;
+}
+
+.editor-campo-perfil {
+    width: 100%;
+    margin: 2px 0;
+    padding: 5px 8px;
+    border: 1px solid #6b6b6b;
+    border-radius: 6px;
+    background: #1a1a1a;
     color: #fff;
+    font: inherit;
+    font-size: 14px;
+    resize: vertical;
 }
 
-.ayuda-desarrollador {
-    margin: 0 0 8px;
-    color: #999;
+.editor-campo-perfil:focus {
+    outline: 1px solid #8f8f8f;
+}
+
+.estado-edicion-perfil {
+    margin: 2px 0 0;
+    color: #ffb4b4;
     font-size: 12px;
-    line-height: 1.4;
 }
 
 .estadisticas-perfil {

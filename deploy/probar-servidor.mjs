@@ -105,6 +105,48 @@ try {
     comprobar(false, `app.js lanzo ${error.message}`);
 }
 
+/* ---------- El perfil: campos editables solo para quien puede ---------- */
+
+// Se ejecuta el render del perfil dentro del mismo sandbox y se mira el HTML
+// que genera: con poderes los tres datos son pulsables, sin poderes son texto.
+const perfilFalso = (conPoderes) => `({
+    perfil: {
+        id: "00000000-0000-0000-0000-000000000001",
+        nombre: "Persona",
+        color_nombre: "#FFFFFF",
+        descripcion: "Una descripcion",
+        etiqueta: "Creador",
+        es_mio: false,
+        es_amigo: true,
+        avatar_url: null,
+        creado_en: new Date().toISOString(),
+        soy_desarrollador: ${conPoderes}
+    },
+    conteos: { amigos: 0, solicitudes_recibidas: 0, solicitudes_enviadas: 0, publicaciones: 0 }
+})`;
+
+const htmlConPoderes = vm.runInContext(
+    `renderizarPerfil(${perfilFalso(true)}); contenidoPerfil.innerHTML`,
+    sandbox
+);
+const htmlSinPoderes = vm.runInContext(
+    `renderizarPerfil(${perfilFalso(false)}); contenidoPerfil.innerHTML`,
+    sandbox
+);
+
+comprobar(htmlConPoderes.includes('data-editar-campo="nombre"'), "El nombre es pulsable con poderes");
+comprobar(htmlConPoderes.includes('data-editar-campo="etiqueta"'), "La etiqueta es pulsable con poderes");
+comprobar(htmlConPoderes.includes('data-editar-campo="descripcion"'), "La descripcion es pulsable con poderes");
+comprobar(
+    !htmlSinPoderes.includes("data-editar-campo"),
+    "Sin poderes el perfil no tiene campos editables"
+);
+comprobar(
+    htmlConPoderes.indexOf("nombre-perfil") < htmlConPoderes.indexOf("etiqueta-perfil")
+        && htmlConPoderes.indexOf("etiqueta-perfil") < htmlConPoderes.indexOf("descripcion-perfil"),
+    "La etiqueta sale entre el nombre y la descripcion"
+);
+
 /* ---------- Los identificadores nuevos existen en el HTML ---------- */
 
 const html = fs.readFileSync(path.join(raiz, "public", "index.html"), "utf8");
@@ -115,10 +157,7 @@ const nuevos = [
     "resumen-descripcion-servidor", "boton-guardar-descripcion-servidor",
     "boton-acciones-miembros-servidor", "boton-acciones-ajustes-servidor",
     "boton-activar-canales-acciones", "boton-salir-servidor-acciones",
-    "boton-eliminar-servidor-acciones", "estado-acciones-servidor",
-    // Herramientas de desarrollador: editor de perfiles.
-    "modal-desarrollador", "formulario-desarrollador", "dev-nombre",
-    "dev-descripcion", "dev-etiqueta", "boton-cerrar-modal-desarrollador"
+    "boton-eliminar-servidor-acciones", "estado-acciones-servidor"
 ];
 for (const id of nuevos) {
     comprobar(html.includes(`id="${id}"`), `El HTML define ${id}`);
@@ -137,15 +176,23 @@ comprobar(
 );
 comprobar(
     app.includes("/api/desarrollador/usuarios/"),
-    "app.js guarda los cambios del editor de desarrollador"
+    "app.js guarda los cambios de los campos del perfil"
 );
 comprobar(
-    app.includes('class="etiqueta-perfil"') || app.includes('class="etiqueta-perfil"'),
+    app.includes('data-editar-campo') && app.includes("editarCampoPerfil"),
+    "El perfil se edita en el sitio, sin ventana aparte"
+);
+comprobar(
+    !html.includes("modal-desarrollador") && !app.includes("boton-desarrollador-perfil"),
+    "No queda ningun boton de desarrollador en el perfil"
+);
+comprobar(
+    app.includes('class="etiqueta-perfil"'),
     "El perfil pinta la insignia de etiqueta"
 );
 comprobar(
-    css.includes(".etiqueta-perfil"),
-    "style.css da estilo a la insignia de etiqueta"
+    css.includes(".etiqueta-perfil") && css.includes(".campo-perfil.editable"),
+    "style.css da estilo a la insignia y a los campos editables"
 );
 
 /* ---------- El service worker cambia de version ---------- */
