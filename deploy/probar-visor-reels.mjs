@@ -25,6 +25,11 @@ const comprobar = (ok, texto) => {
 
 /* ---------- DOM minimo con listeners reales ---------- */
 
+//(localStorage de mentira para poder comprobar que la decision se guarda)
+const guardado = new Map();
+
+
+
 function crear(nodo = {}) {
     const base = {
         listeners: {},
@@ -79,6 +84,13 @@ const video = crear({
     pause() { this.paused = true; }
 });
 
+const ondas = crear();
+const raya = crear();
+const botonSonido = crear({
+    selectores: { ".ondas-sonido": ondas, ".raya-sonido": raya },
+    querySelector(selector) { return this.selectores[selector] || null; }
+});
+
 const relleno = crear();
 const tiempo = crear();
 const pista = crear({ elementos: { pista: null } });
@@ -91,7 +103,8 @@ const pantalla = crear({
         ".barra-reel-pista": pista,
         ".barra-reel-relleno": relleno,
         ".barra-reel-tiempo": tiempo,
-        ".aviso-reproduccion": aviso
+        ".aviso-reproduccion": aviso,
+        ".boton-sonido-reel": botonSonido
     },
     querySelector(selector) { return this.selectores[selector] || null; }
 });
@@ -105,6 +118,8 @@ const toqueEnBarra = { target: crear({ closest: (sel) => (sel.includes("barra-re
 function crearElemento() { return crear(); }
 
 const codigo = fs.readFileSync(path.join(raiz, "public", "app.js"), "utf8");
+//(el codigo de la app, para comprobar que trae lo que debe)
+const app = codigo;
 const sandbox = {
     console: { log() {}, warn() {}, error() {} },
     setTimeout() {}, clearTimeout() {}, setInterval() { return 0; }, clearInterval() {},
@@ -119,7 +134,11 @@ const sandbox = {
     },
     window: { matchMedia: () => ({ matches: true, addEventListener() {} }), addEventListener() {}, isSecureContext: false },
     navigator: { onLine: true },
-    localStorage: { getItem: () => null, setItem() {}, removeItem() {} },
+    localStorage: {
+        getItem: (clave) => (guardado.has(clave) ? guardado.get(clave) : null),
+        setItem: (clave, valor) => guardado.set(clave, valor),
+        removeItem: (clave) => guardado.delete(clave)
+    },
     location: { protocol: "http:", host: "127.0.0.1:3000", href: "http://127.0.0.1:3000/", reload() {} },
     fetch: () => Promise.resolve({ ok: true, json: () => Promise.resolve({}) }),
     FormData: class { append() {} },
@@ -202,11 +221,49 @@ comprobar(video.currentTime === 100, "La tecla Fin va al final");
 disparar(pista, "keydown", { key: "Home" });
 comprobar(video.currentTime === 0, "La tecla Inicio vuelve al principio");
 
+/* ---------- El sonido ---------- */
+
+// El boton de sonido existe y arranca en silencio: los navegadores no dejan
+// reproducir con sonido sin un toque previo.
+comprobar(
+    app.includes('class="boton-sonido-reel"'),
+    "Los reels tienen boton de sonido"
+);
+comprobar(video.muted === true, "El reel arranca en silencio");
+comprobar(botonSonido.atributos["aria-pressed"] === "false", "El boton sale apagado");
+comprobar(
+    ondas.style.display === "none" && raya.style.display === "",
+    "En silencio sale el altavoz tachado"
+);
+
+// Al pulsarlo, suena y el icono se cambia.
+disparar(botonSonido, "click", { ...toqueEnVideo });
+comprobar(video.muted === false, "El boton quita el silencio");
+comprobar(botonSonido.atributos["aria-pressed"] === "true", "El boton se marca como encendido");
+comprobar(
+    ondas.style.display === "" && raya.style.display === "none",
+    "Con sonido salen las ondas"
+);
+comprobar(guardado.get("atuistas_reels_sonido") === "1", "La decision se recuerda");
+
+// Y al volver a pulsarlo vuelve a callarse.
+disparar(botonSonido, "click", { ...toqueEnVideo });
+comprobar(video.muted === true, "El boton vuelve a quitar el sonido");
+comprobar(guardado.get("atuistas_reels_sonido") === "0", "La decision se sigue guardando");
+
+// Si el navegador bloquea el sonido al cambiar de reel, se queda mudo en vez
+// de quedarse parado: aqui se comprueba que el boton refleja el estado real.
+disparar(botonSonido, "click", { ...toqueEnVideo });
+video.play = () => Promise.reject(new Error("NotAllowedError"));
+disparar(pantalla, "reel-en-pantalla");
+// La reproduccion es asincrona: hay que dejar que se rechaza.
+await new Promise((resolver) => setTimeout(resolver, 0));
+comprobar(video.muted === true, "Si no deja sonar, se queda en silencio");
+comprobar(botonSonido.atributos["aria-pressed"] === "false", "El boton vuelve a marcarse apagado");
 /* ---------- Comentarios ---------- */
 
 const html = fs.readFileSync(path.join(raiz, "public", "index.html"), "utf8");
 const css = fs.readFileSync(path.join(raiz, "public", "style.css"), "utf8");
-const app = codigo;
 
 // El modal de comentarios tiene que quedar por encima del visor: si no, se
 // abre detras del video y parece que el boton no hace nada.

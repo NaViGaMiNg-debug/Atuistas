@@ -6510,6 +6510,7 @@ button.estadistica-perfil:hover {
 
 .boton-like,
 .boton-comentarios,
+.boton-sonido-reel,
 .boton-autor-reel {
     display: grid;
     place-items: center;
@@ -6519,6 +6520,12 @@ button.estadistica-perfil:hover {
     background: rgba(0, 0, 0, 0.45);
     color: #fff;
     cursor: pointer;
+}
+
+/* El altavoz se pone blanco cuando el video suena. */
+.boton-sonido-reel.activo {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.18);
 }
 
 .boton-like.activo {

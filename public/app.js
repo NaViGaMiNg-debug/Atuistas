@@ -7114,6 +7114,13 @@ function abrirVisorReels(reels, reelId) {
                         </svg>
                     </button>
                 </div>
+                <button class="boton-sonido-reel" type="button" aria-pressed="false" aria-label="Quitar el sonido">
+                    <svg class="icono-sonido" viewBox="0 0 24 24" width="30" height="30" aria-hidden="true" focusable="false">
+                        <path d="M4 9.5h3.2L11.5 6v12L7.2 14.5H4z" fill="currentColor" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+                        <path class="ondas-sonido" d="M15 9.2a4 4 0 0 1 0 5.6M17.4 6.8a7.4 7.4 0 0 1 0 10.4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+                        <path class="raya-sonido" d="M15.5 9.5l5 5m0-5l-5 5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+                    </svg>
+                </button>
                 <button class="boton-autor-reel" data-abrir-perfil="${escapeHtml(reel.autor_id)}" type="button"
                     aria-label="Ver perfil de ${escapeHtml(nombreVisible(reel.autor_id, reel.autor_nombre))}">
                     ${reel.avatar_url
@@ -7150,7 +7157,9 @@ function abrirVisorReels(reels, reelId) {
     pintarCorazonReels();
     if (destino) {
         destino.scrollIntoView({ block: "start" });
-        destino.querySelector("video")?.play().catch(() => {});
+        // El evento pone el reel en marcha con el sonido que se haya pedido: si
+        // el navegador no deja, se queda en silencio en vez de quedarse parado.
+        destino.dispatchEvent(new Event("reel-en-pantalla"));
     }
 }
 
@@ -7159,7 +7168,31 @@ function cerrarVisorReels() {
     document.querySelectorAll("#pista-reels-visor video").forEach((video) => video.pause());
 }
 
-/* ---------- Tocar para pausar y barra de avance ---------- */
+/* ---------- El sonido de los reels ----------
+   Los navegadores no dejan reproducir con sonido sin que la persona haya
+   pulsado algo, así que los reels arrancan en silencio (como en Instagram) y
+   hay un botón para quitarlo. La decisión se recuerda: si lo quitas una vez,
+   los siguientes reels suenan solos. */
+
+const PREF_SONIDO_REELS = "atuistas_reels_sonido";
+
+function leerPreferenciaSonido() {
+    try {
+        return localStorage.getItem(PREF_SONIDO_REELS) === "1";
+    } catch {
+        return false;
+    }
+}
+
+function guardarPreferenciaSonido(activo) {
+    try {
+        localStorage.setItem(PREF_SONIDO_REELS, activo ? "1" : "0");
+    } catch {
+        // Sin almacenamiento se suena solo en esta visita.
+    }
+}
+
+// ---------- Tocar para pausar y barra de avance ----------
 
 // El tiempo se ve corto y claro: 0:07.
 function tiempoReel(segundos) {
@@ -7179,6 +7212,7 @@ function configurarPantallaReel(pantalla) {
     const relleno = pantalla.querySelector(".barra-reel-relleno");
     const tiempo = pantalla.querySelector(".barra-reel-tiempo");
     const aviso = pantalla.querySelector(".aviso-reproduccion");
+    const botonSonido = pantalla.querySelector(".boton-sonido-reel");
 
     let punteroBuscando = null;
 
@@ -7194,6 +7228,52 @@ function configurarPantallaReel(pantalla) {
         if (aviso) aviso.hidden = !pausado;
     };
 
+    // El icono del botón refleja siempre el estado real del vídeo: con ondas
+    // cuando suena, con la raya cuando está en silencio.
+    const pintarSonido = () => {
+        if (!botonSonido) return;
+        const sonando = !video.muted;
+        botonSonido.classList.toggle("activo", sonando);
+        botonSonido.setAttribute("aria-pressed", String(sonando));
+        botonSonido.setAttribute("aria-label", sonando ? "Quitar el sonido" : "Poner el sonido");
+        const ondas = botonSonido.querySelector(".ondas-sonido");
+        const raya = botonSonido.querySelector(".raya-sonido");
+        if (ondas) ondas.style.display = sonando ? "" : "none";
+        if (raya) raya.style.display = sonando ? "none" : "";
+    };
+
+    // Reproducir con sonido puede estar bloqueado por el navegador (política de
+    // reproducción automática). Si pasa, se queda en silencio antes que quedarse
+    // parado sin explicar nada.
+    const reproducir = async () => {
+        try {
+            await video.play();
+        } catch {
+            video.muted = true;
+            pintarSonido();
+        }
+    };
+
+    if (botonSonido) {
+        video.muted = !leerPreferenciaSonido();
+        pintarSonido();
+        botonSonido.addEventListener("click", (evento) => {
+            evento.stopPropagation();
+            const queriendo = video.muted;
+            video.muted = !queriendo;
+            guardarPreferenciaSonido(!video.muted);
+            pintarSonido();
+            // Es un toque de la persona: aquí el navegador sí deja sonar.
+            if (video.paused) {
+                video.play().catch(() => {
+                    video.muted = true;
+                    guardarPreferenciaSonido(false);
+                    pintarSonido();
+                });
+            }
+        });
+    }
+
     video.addEventListener("timeupdate", pintar);
     video.addEventListener("loadedmetadata", pintar);
     video.addEventListener("ended", pintar);
@@ -7205,7 +7285,7 @@ function configurarPantallaReel(pantalla) {
             return;
         }
         if (video.paused) {
-            video.play().catch(() => {});
+            reproducir();
             mostrarAviso(false);
         } else {
             video.pause();
@@ -7215,14 +7295,15 @@ function configurarPantallaReel(pantalla) {
 
     aviso?.addEventListener("click", (evento) => {
         evento.stopPropagation();
-        video.play().catch(() => {});
+        reproducir();
         mostrarAviso(false);
     });
 
-    // Al pasar a otro reel no se queda pausado: cada uno arranca en marcha.
+    // Al pasar a otro reel no se queda pausado: cada uno arranca en marcha y
+    // con el sonido que se haya pedido.
     pantalla.addEventListener("reel-en-pantalla", () => {
         video.currentTime = 0;
-        video.play().catch(() => {});
+        reproducir();
         mostrarAviso(false);
         pintar();
     });
