@@ -21,6 +21,10 @@ CREATE TABLE usuarios (
 
     avatar_archivo_id UUID,
 
+    -- Imagen de fondo del perfil (portada). Se ve detrás de la cabecera del
+    -- perfil, tanto propio como ajeno.
+    fondo_archivo_id UUID,
+
     color_nombre VARCHAR(7) NOT NULL DEFAULT '#FFFFFF',
 
     -- Cuenta con poderes de desarrollador: puede borrar contenido de cualquiera
@@ -285,6 +289,39 @@ CREATE TABLE amistades (
     CONSTRAINT amistades_orden
         CHECK (usuario_a_id < usuario_b_id)
 );
+
+
+-- ============================================================
+-- APODOS
+-- ============================================================
+
+-- Cada persona le pone el apodo que quiere a quien quiera. El apodo es
+-- privado: solo lo ve quien lo puso (tú ves "Prima" para tu amiga y ella
+-- sigue viendo su nombre real en su pantalla y en la tuya al revés).
+CREATE TABLE apodos (
+    usuario_id UUID NOT NULL
+        REFERENCES usuarios(id)
+        ON DELETE CASCADE,
+
+    otro_id UUID NOT NULL
+        REFERENCES usuarios(id)
+        ON DELETE CASCADE,
+
+    apodo VARCHAR(25) NOT NULL,
+
+    creado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    PRIMARY KEY (usuario_id, otro_id),
+
+    CONSTRAINT apodos_no_propio
+        CHECK (usuario_id <> otro_id),
+
+    CONSTRAINT apodos_texto
+        CHECK (length(trim(apodo)) > 0)
+);
+
+CREATE INDEX apodos_usuario
+    ON apodos (usuario_id);
 
 
 -- ============================================================

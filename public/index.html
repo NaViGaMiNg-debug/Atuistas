@@ -655,6 +655,36 @@
 
 
                     <!-- ==============================
+                         FONDO DEL PERFIL
+                         Vista previa de la portada que se vera al abrir el
+                         perfil. Se cambia desde el boton de la foto.
+                         ============================== -->
+
+                    <div class="fondo-cuenta">
+                        <img
+                            id="fondo-perfil-cuenta"
+                            alt=""
+                            hidden
+                        >
+                        <p class="ayuda-fondo-cuenta">
+                            Esta imagen sale de fondo en tu perfil. Cambiala o
+                            quitala desde el boton de tu foto.
+                        </p>
+                    </div>
+
+
+                    <!-- ==============================
+                         TUS APODOS
+                         El nombre que le has puesto a cada persona. Solo lo
+                         ves tu: la otra persona sigue viendo su nombre real.
+                         ============================== -->
+
+                    <button id="boton-apodos-cuenta" type="button">
+                        TUS APODOS
+                    </button>
+
+
+                    <!-- ==============================
                          HISTORIAS Y PUBLICACIONES
                          Los dos botones van en la misma fila,
                          entre el color del nombre y Notificaciones.
@@ -1320,6 +1350,31 @@
                         CAMBIAR FOTO
                     </button>
 
+                    <!-- El fondo del perfil se cambia con el mismo botón que la
+                         foto, y se puede quitar cuando ya no se quiera. -->
+                    <label
+                        id="boton-cambiar-fondo"
+                        class="boton-cambiar-fondo"
+                        for="entrada-fondo-cuenta"
+                    >
+                        CAMBIAR FONDO
+                    </label>
+
+                    <input
+                        id="entrada-fondo-cuenta"
+                        type="file"
+                        accept="image/*"
+                        hidden
+                    >
+
+                    <button
+                        id="boton-quitar-fondo"
+                        type="button"
+                        hidden
+                    >
+                        QUITAR FONDO
+                    </button>
+
                 </div>
 
             </div>
@@ -1487,6 +1542,37 @@
                         <p id="estado-notificaciones" aria-live="polite"></p>
 
                     </section>
+
+                </section>
+
+            </div>
+
+            <!-- ==============================
+                 TUS APODOS
+                 Ventanita de Cuenta: el apodo que le has puesto a cada
+                 persona y el botón para quitarlo.
+                 ============================== -->
+
+            <div id="modal-apodos" class="modal modal-contenido-social" hidden>
+
+                <section
+                    class="dialogo-social"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="titulo-modal-apodos"
+                >
+
+                    <header class="cabecera-dialogo-social">
+                        <h2 id="titulo-modal-apodos">Tus apodos</h2>
+                        <button id="boton-cerrar-apodos" class="boton-cerrar-modal" type="button" aria-label="Cerrar">×</button>
+                    </header>
+
+                    <p class="ayuda-desarrollador">
+                        Estos nombres solo los ves tú. En "Agregar amigos" se
+                        sigue viendo el nombre real de cada persona.
+                    </p>
+
+                    <div id="lista-apodos"></div>
 
                 </section>
 

@@ -107,6 +107,33 @@ UPDATE usuarios SET es_desarrollador = TRUE WHERE nombre = 'Iván J.';
 UPDATE usuarios SET es_desarrollador = FALSE WHERE nombre = 'Iván J.';
 ```
 
+## Tabla `apodos`
+
+El nombre privado que le pones a cada persona.
+
+| Campo | Tipo | Función |
+|---|---|---|
+| `usuario_id` | UUID | Quién puso el apodo |
+| `otro_id` | UUID | A quién se lo puso |
+| `apodo` | VARCHAR(25) | El nombre elegido |
+| `creado_en` | TIMESTAMPTZ | Cuándo se puso |
+
+Clave primaria `(usuario_id, otro_id)`. No se puede poner apodo a uno mismo y
+el texto no puede estar vacío.
+
+El apodo es privado: solo lo ve quien lo puso. La otra persona sigue viendo su
+nombre real y ni se entera de que existe. En la aplicación sustituye al nombre
+real en todas las pantallas (chats, servidores, publicaciones, reels, estados,
+perfil y avisos), menos en **Agregar amigos**, donde se sigue viendo el nombre
+real porque ahí se buscan personas nuevas.
+
+## Fondo del perfil
+
+`usuarios.fondo_archivo_id` apunta a la imagen de la portada (tipo de archivo
+`perfil_fondo`). Cuando está puesta, sale de fondo en la cabecera del perfil,
+tanto propio como ajeno. Al cambiarla se borra la anterior de la base y del
+disco; también se puede quitar.
+
 ## Reglas
 
 El nombre:

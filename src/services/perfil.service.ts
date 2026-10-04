@@ -20,6 +20,11 @@ export async function obtenerPerfilVisible(
                 THEN REPLACE(ar.ruta, '\\', '/')
                 ELSE NULL
             END AS avatar_url,
+            CASE
+                WHEN fr.ruta IS NOT NULL
+                THEN REPLACE(fr.ruta, '\\', '/')
+                ELSE NULL
+            END AS fondo_url,
             (u.id = $1::uuid) AS es_mio,
             EXISTS (
                 SELECT 1 FROM amistades am
@@ -33,6 +38,7 @@ export async function obtenerPerfilVisible(
             ) AS hay_bloqueo
         FROM usuarios u
         LEFT JOIN archivos ar ON ar.id = u.avatar_archivo_id
+        LEFT JOIN archivos fr ON fr.id = u.fondo_archivo_id
         WHERE u.id = $2::uuid AND u.activo = TRUE
         LIMIT 1
         `,
@@ -52,6 +58,7 @@ export async function obtenerPerfilVisible(
         es_desarrollador: boolean;
         creado_en: string;
         avatar_url: string | null;
+        fondo_url: string | null;
         es_mio: boolean;
         es_amigo: boolean;
         hay_bloqueo: boolean;
@@ -110,6 +117,7 @@ export async function obtenerPerfilVisible(
             es_desarrollador: perfil.es_desarrollador === true,
             soy_desarrollador: soyDesarrollador,
             avatar_url: perfil.avatar_url,
+            fondo_url: perfil.fondo_url,
             creado_en: perfil.creado_en,
             es_mio: esPropio,
             es_amigo: perfil.es_amigo === true,

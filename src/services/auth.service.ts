@@ -293,12 +293,16 @@ export async function obtenerCuenta(
                 u.etiqueta,
                 u.es_desarrollador,
                 u.avatar_archivo_id,
+                u.fondo_archivo_id,
                 u.creado_en,
                 u.codigo_vinculacion_cifrado,
-                a.ruta AS avatar_ruta
+                a.ruta AS avatar_ruta,
+                f.ruta AS fondo_ruta
             FROM usuarios u
             LEFT JOIN archivos a
                 ON a.id = u.avatar_archivo_id
+            LEFT JOIN archivos f
+                ON f.id = u.fondo_archivo_id
             WHERE u.id = $1
             AND u.activo = TRUE
             `,
@@ -335,6 +339,10 @@ export async function obtenerCuenta(
             usuario.avatar_archivo_id,
         avatar_ruta:
             usuario.avatar_ruta,
+        fondo_archivo_id:
+            usuario.fondo_archivo_id,
+        fondo_ruta:
+            usuario.fondo_ruta,
         creado_en: usuario.creado_en,
         codigo_vinculacion: codigo
     };

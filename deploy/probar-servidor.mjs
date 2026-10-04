@@ -195,11 +195,37 @@ comprobar(
     "style.css da estilo a la insignia y a los campos editables"
 );
 
+/* ---------- Apodos y fondo de perfil ---------- */
+
+for (const id of [
+    "modal-apodos", "lista-apodos", "boton-apodos-cuenta", "boton-cerrar-apodos",
+    "fondo-perfil-cuenta", "entrada-fondo-cuenta", "boton-cambiar-fondo", "boton-quitar-fondo"
+]) {
+    comprobar(html.includes(`id="${id}"`), `El HTML define ${id}`);
+}
+
+comprobar(
+    app.includes("nombreVisible(") && app.includes("cargarApodos()"),
+    "app.js aplica los apodos al pintar los nombres"
+);
+comprobar(
+    app.includes("data-editar-apodo"),
+    "El apodo se escribe en el perfil de la persona"
+);
+comprobar(
+    app.includes("portada-perfil") && css.includes(".portada-perfil"),
+    "El perfil pinta la imagen de fondo"
+);
+comprobar(
+    app.includes("/api/auth/fondo"),
+    "app.js sube y quita el fondo del perfil"
+);
+
 /* ---------- El service worker cambia de version ---------- */
 
 const sw = fs.readFileSync(path.join(raiz, "public", "sw.js"), "utf8");
 const versionSw = sw.match(/const VERSION = "(v\d+)"/)?.[1] || "?";
-comprobar(versionSw === "v7", `El service worker subio a la version v7 (${versionSw})`);
+comprobar(versionSw === "v8", `El service worker subio a la version v8 (${versionSw})`);
 
 console.log("");
 if (fallos.length) {

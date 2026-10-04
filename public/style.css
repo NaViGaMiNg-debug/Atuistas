@@ -5863,6 +5863,175 @@ button.servidor-tarjeta:focus-visible {
     font-size: 12px;
 }
 
+/* -----------------------------
+   FONDO DEL PERFIL
+   La imagen que eligió esa persona
+   sale detrás de la cabecera, tanto
+   en su perfil como en el de los
+   demás.
+   ----------------------------- */
+
+.cabecera-perfil {
+    position: relative;
+}
+
+.portada-perfil {
+    display: none;
+}
+
+.cabecera-perfil.con-fondo {
+    padding-top: 132px;
+}
+
+.cabecera-perfil.con-fondo .portada-perfil {
+    display: block;
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 132px;
+    background-image:
+        linear-gradient(180deg, rgba(17, 17, 17, 0.35) 0%, rgba(17, 17, 17, 0.9) 100%),
+        var(--fondo-perfil);
+    background-size: cover;
+    background-position: center;
+    border-radius: 10px 10px 0 0;
+}
+
+/* -----------------------------
+   APODOS
+   El nombre privado que le pongo a
+   cada persona, editable en el
+   propio perfil.
+   ----------------------------- */
+
+.bloque-apodo-perfil {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 10px 0 0;
+    padding-top: 10px;
+    border-top: 1px solid #2b2b2b;
+}
+
+.titulo-apodo-perfil {
+    color: #9a9a9a;
+    font-size: 12px;
+}
+
+.campo-apodo-perfil {
+    align-self: flex-start;
+    max-width: 100%;
+    padding: 3px 10px;
+    border: 1px dashed #5a5a5a;
+    border-radius: 999px;
+    background: transparent;
+    color: #d8c9ff;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: text;
+    overflow-wrap: anywhere;
+}
+
+.campo-apodo-perfil:hover {
+    border-color: #8f8f8f;
+}
+
+.campo-apodo-perfil .apodo-perfil.vacio {
+    color: #7d7d7d;
+    font-weight: 500;
+}
+
+.ayuda-apodo-perfil {
+    color: #767676;
+    font-size: 11px;
+}
+
+.editor-apodo-perfil {
+    width: 100%;
+    margin: 2px 0;
+    padding: 5px 8px;
+    border: 1px solid #6b6b6b;
+    border-radius: 999px;
+    background: #1a1a1a;
+    color: #fff;
+    font: inherit;
+    font-size: 13px;
+}
+
+.fila-apodo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid #2b2b2b;
+}
+
+.avatar-apodo {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: #2a2a2a;
+    color: #d8c9ff;
+    font-weight: 700;
+}
+
+.datos-apodo {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    flex: 1;
+}
+
+.datos-apodo strong {
+    color: #fff;
+    font-size: 14px;
+    overflow-wrap: anywhere;
+}
+
+.datos-apodo small {
+    color: #8a8a8a;
+    font-size: 12px;
+    overflow-wrap: anywhere;
+}
+
+/* -----------------------------
+   FONDO EN CUENTA
+   Vista previa de la portada.
+   ----------------------------- */
+
+.fondo-cuenta {
+    margin: 16px 0;
+}
+
+.fondo-cuenta img {
+    width: 100%;
+    max-height: 140px;
+    object-fit: cover;
+    border-radius: 10px;
+    border: 1px solid #2b2b2b;
+}
+
+.ayuda-fondo-cuenta {
+    margin: 6px 0 0;
+    color: #8a8a8a;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.boton-cambiar-fondo {
+    display: block;
+    margin: 10px auto 0;
+    padding: 10px 20px;
+    border: 1px solid #444;
+    border-radius: 6px;
+    background: #2b2b2b;
+    color: #fff;
+    font-size: 14px;
+    cursor: pointer;
+    text-align: center;
+}
+
 .estadisticas-perfil {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));

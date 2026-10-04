@@ -81,6 +81,7 @@ export async function migrarEsquema() {
                     (tipo IN ('imagen', 'audio', 'video') AND archivo_id IS NOT NULL)
                 );
 
+            -- La portada del perfil tambien es una imagen guardada en archivos.
             ALTER TABLE archivos
                 DROP CONSTRAINT IF EXISTS archivos_tipo_check;
 
@@ -93,8 +94,43 @@ export async function migrarEsquema() {
                     'avatar', 'grupo_imagen', 'publicacion_imagen',
                     'publicacion_video', 'mensaje_imagen', 'mensaje_audio',
                     'mensaje_video', 'estado_imagen', 'estado_video', 'estado_audio',
-                    'reel_video', 'historia_imagen', 'historia_video', 'historia_audio'
+                    'reel_video', 'historia_imagen', 'historia_video', 'historia_audio',
+                    'perfil_fondo'
                 ));
+
+            -- ================================
+            -- FONDO DEL PERFIL Y APODOS
+            -- ================================
+
+            ALTER TABLE usuarios
+                ADD COLUMN IF NOT EXISTS fondo_archivo_id UUID;
+
+            -- Cada persona le pone a quien quiera el apodo que quiera. Solo lo
+            -- ve quien lo puso.
+            CREATE TABLE IF NOT EXISTS apodos (
+                usuario_id UUID NOT NULL
+                    REFERENCES usuarios(id)
+                    ON DELETE CASCADE,
+
+                otro_id UUID NOT NULL
+                    REFERENCES usuarios(id)
+                    ON DELETE CASCADE,
+
+                apodo VARCHAR(25) NOT NULL,
+
+                creado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+                PRIMARY KEY (usuario_id, otro_id),
+
+                CONSTRAINT apodos_no_propio
+                    CHECK (usuario_id <> otro_id),
+
+                CONSTRAINT apodos_texto
+                    CHECK (length(trim(apodo)) > 0)
+            );
+
+            CREATE INDEX IF NOT EXISTS apodos_usuario
+                ON apodos (usuario_id);
 
             -- Avisos agrupados: los mensajes seguidos de la misma persona
             -- se suman al aviso sin leer que ya exista en lugar de crear otro.

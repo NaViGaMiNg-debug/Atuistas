@@ -1,6 +1,7 @@
 import { db } from "../db/database.js";
 import { enviarPush } from "./push.service.js";
 import { estaViendoA, estaViendoServidor } from "./presencia.service.js";
+import { nombrePara } from "./apodos.service.js";
 
 // Ventana en la que se agrupan los avisos seguidos de la misma persona.
 const VENTANA_GRUPO_MINUTOS = 10;
@@ -97,7 +98,13 @@ export async function crearNotificacion(
             [autorId]
         );
         const nombre = autor.rows[0]?.nombre as string | undefined;
-        if (nombre) tituloFinal = `${nombre} — ${titulo}`.slice(0, 150);
+        // Si quien recibe el aviso le tiene puesto un apodo a quien lo escribe,
+        // el aviso sale con ese apodo: el nombre de pila solo lo ve la otra
+        // persona.
+        if (nombre) {
+            const nombreVisible = await nombrePara(usuarioId, autorId, nombre);
+            tituloFinal = `${nombreVisible} — ${titulo}`.slice(0, 150);
+        }
     }
 
     // Agrupación: varios avisos seguidos de la misma persona y del mismo tipo

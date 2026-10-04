@@ -11,6 +11,8 @@ import { db } from "../db/database.js";
 import fs from "node:fs/promises";
 import path from "node:path";
 import crypto from "node:crypto";
+import { validarArchivos } from "../services/multimedia.service.js";
+import { guardarArchivoSubido } from "../services/archivos.service.js";
 
 
 export async function authRoutes(app: FastifyInstance) {
@@ -502,6 +504,159 @@ export async function authRoutes(app: FastifyInstance) {
 
 
             return reply.status(500).send({
+                error: mensaje
+            });
+
+        }
+
+    });
+
+    /* ==============================
+       FONDO DEL PERFIL
+       Es la imagen de la cabecera del perfil. Se sube como una foto normal y
+       se puede quitar cuando quieras.
+       ============================== */
+
+    app.post("/api/auth/fondo", {
+        preHandler: autenticar
+    }, async (request, reply) => {
+
+        try {
+
+            if (!request.usuario) {
+                return reply.status(401).send({
+                    error: "No autenticado"
+                });
+            }
+
+            const usuarioId = request.usuario.id;
+
+            const archivo = await request.file();
+
+            if (!archivo) {
+                return reply.status(400).send({
+                    error: "No se ha enviado ninguna imagen"
+                });
+            }
+
+            const [validado] = await validarArchivos(
+                [{
+                    filename: archivo.filename,
+                    mimetype: archivo.mimetype,
+                    buffer: await archivo.toBuffer()
+                }],
+                "imagen"
+            );
+
+            // El fondo anterior se guarda antes de tocar nada: si el nuevo entra
+            // bien, el viejo se borra de la base y del disco.
+            const anterior = await db.query(
+                `SELECT u.fondo_archivo_id, a.ruta
+                FROM usuarios u
+                LEFT JOIN archivos a ON a.id = u.fondo_archivo_id
+                WHERE u.id = $1
+                AND u.activo = TRUE`,
+                [usuarioId]
+            );
+
+            const fondoAnteriorId = anterior.rows[0]?.fondo_archivo_id as string | undefined;
+            const fondoAnteriorRuta = anterior.rows[0]?.ruta as string | undefined;
+
+            const guardado = await guardarArchivoSubido({
+                propietarioId: usuarioId,
+                tipo: "perfil_fondo",
+                mimeType: validado.mimetype,
+                nombreOriginal: validado.filename,
+                buffer: validado.buffer,
+                carpeta: "fondos"
+            });
+
+            await db.query(
+                `UPDATE usuarios SET fondo_archivo_id = $1 WHERE id = $2 AND activo = TRUE`,
+                [guardado.id, usuarioId]
+            );
+
+            if (fondoAnteriorId) {
+                await db.query(`DELETE FROM archivos WHERE id = $1`, [fondoAnteriorId]);
+                if (fondoAnteriorRuta) {
+                    try {
+                        await fs.unlink(path.join(process.cwd(), fondoAnteriorRuta));
+                    } catch {
+                        // Si el archivo ya no estaba, el fondo nuevo sigue
+                        // puesto: no se cae por eso.
+                    }
+                }
+            }
+
+            return {
+                mensaje: "Fondo del perfil guardado",
+                fondo_url: guardado.ruta.replace(/\\/g, "/")
+            };
+
+        } catch (error) {
+
+            const mensaje = error instanceof Error
+                ? error.message
+                : "No se pudo guardar el fondo del perfil";
+
+            return reply.status(400).send({
+                error: mensaje
+            });
+
+        }
+
+    });
+
+
+    app.delete("/api/auth/fondo", {
+        preHandler: autenticar
+    }, async (request, reply) => {
+
+        try {
+
+            if (!request.usuario) {
+                return reply.status(401).send({
+                    error: "No autenticado"
+                });
+            }
+
+            const anterior = await db.query(
+                `SELECT u.fondo_archivo_id, a.ruta
+                FROM usuarios u
+                LEFT JOIN archivos a ON a.id = u.fondo_archivo_id
+                WHERE u.id = $1
+                AND u.activo = TRUE`,
+                [request.usuario.id]
+            );
+
+            const fondoId = anterior.rows[0]?.fondo_archivo_id as string | undefined;
+            const fondoRuta = anterior.rows[0]?.ruta as string | undefined;
+
+            await db.query(
+                `UPDATE usuarios SET fondo_archivo_id = NULL WHERE id = $1`,
+                [request.usuario.id]
+            );
+
+            if (fondoId) {
+                await db.query(`DELETE FROM archivos WHERE id = $1`, [fondoId]);
+                if (fondoRuta) {
+                    try {
+                        await fs.unlink(path.join(process.cwd(), fondoRuta));
+                    } catch {
+                        // El registro ya estaba borrado: da igual.
+                    }
+                }
+            }
+
+            return { mensaje: "Fondo del perfil quitado" };
+
+        } catch (error) {
+
+            const mensaje = error instanceof Error
+                ? error.message
+                : "No se pudo quitar el fondo del perfil";
+
+            return reply.status(400).send({
                 error: mensaje
             });
 

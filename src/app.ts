@@ -11,6 +11,7 @@ import { reelsRoutes } from "./routes/reels.routes.js";
 import { historiasRoutes } from "./routes/historias.routes.js";
 import { perfilRoutes } from "./routes/perfil.routes.js";
 import { desarrolladorRoutes } from "./routes/desarrollador.routes.js";
+import { apodosRoutes } from "./routes/apodos.routes.js";
 import { migrarEsquema } from "./db/migrations.js";
 import { notificacionesRoutes } from "./routes/notificaciones.routes.js";
 import { wsRoutes } from "./routes/ws.routes.js";
@@ -94,6 +95,7 @@ await app.register(reelsRoutes);
 await app.register(historiasRoutes);
 await app.register(perfilRoutes);
 await app.register(desarrolladorRoutes);
+await app.register(apodosRoutes);
 await app.register(notificacionesRoutes);
 await app.register(wsRoutes);
 

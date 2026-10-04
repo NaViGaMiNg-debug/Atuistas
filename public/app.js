@@ -1001,6 +1001,50 @@ function colorDeAnillo(color) {
     return esColorOscuro(color) ? "rgba(255, 255, 255, 0.85)" : colorSeguro(color);
 }
 
+/* ==============================
+   APODOS
+   El nombre que le pongo yo a cada persona. Es privado: solo lo veo yo, la
+   otra persona sigue viendo su nombre de verdad. Se aplica en todas partes
+   con nombreVisible(), salvo en "Agregar amigos", donde se busca gente nueva y
+   se ve el nombre real.
+   ============================== */
+
+const apodosPorUsuario = new Map();
+
+// Nombres reales de los que tengo apodo, para la lista de Cuenta.
+const nombreRealPorId = new Map();
+
+async function cargarApodos() {
+    try {
+        const datos = await solicitarGrupo("/api/apodos");
+        apodosPorUsuario.clear();
+        (datos.apodos || []).forEach((entrada) => apodosPorUsuario.set(entrada.otro_id, entrada.apodo));
+        await cargarNombresApodados();
+    } catch {
+        // Sin apodos cargados se ven los nombres reales: no se rompe nada.
+    }
+}
+
+// Para la lista de Cuenta hacen falta también los nombres reales, que no
+// vienen en /api/apodos. Se piden de los amigos que ya se conocen.
+async function cargarNombresApodados() {
+    if (apodosPorUsuario.size === 0) return;
+    const pedidos = [...apodosPorUsuario.keys()].map((id) =>
+        solicitarGrupo(`/api/perfil/${encodeURIComponent(id)}`)
+            .then((datos) => {
+                if (datos.perfil?.nombre) nombreRealPorId.set(id, datos.perfil.nombre);
+            })
+            .catch(() => {})
+    );
+    await Promise.all(pedidos);
+}
+
+// Nombre que hay que pintar para esa persona.
+function nombreVisible(usuarioId, nombreReal) {
+    if (!usuarioId) return nombreReal;
+    return apodosPorUsuario.get(usuarioId) || nombreReal;
+}
+
 // Estilo en línea para pintar un nombre. Si el color es oscuro se añade un
 // halo claro, porque el fondo de la aplicación también es oscuro.
 function estiloNombre(color) {
@@ -1045,6 +1089,7 @@ function mostrarAplicacion() {
     cargarConfiguracionNotificaciones();
     actualizarPuntoNotificaciones();
     comprobarPoderesDesarrollador();
+    cargarApodos();
 
     // Enlace directo de un aviso Push (/?chat=<id>): se abre ese chat y la
     // dirección se limpia para que no se reabra al recargar.
@@ -1348,7 +1393,7 @@ async function abrirChat(amigo) {
     amigoChatActual = amigo;
     limpiarEstadoGestosChat();
 
-    nombreChat.textContent = amigo.nombre;
+    nombreChat.textContent = nombreVisible(amigo.id, amigo.nombre);
     nombreChat.setAttribute("style", estiloNombre(amigo.color_nombre));
 
     // El marco de la foto va del mismo color que el nombre.
@@ -2002,7 +2047,7 @@ async function cargarAmigos() {
                 <div class="chat-amigo-datos">
 
                     <strong style="${estiloNombre(amigo.color_nombre)}">
-                        ${escapeHtml(amigo.nombre)}
+                        ${escapeHtml(nombreVisible(amigo.id, amigo.nombre))}
                     </strong>
 
                 </div>
@@ -2475,6 +2520,7 @@ function plantillaMensaje(mensaje, opciones = {}) {
     const mostrarAutor = opciones.mostrarAutor === true;
     const ocultoAjeno = Boolean(mensaje.oculto) && !mensaje.es_mio && !mensaje.autor_nombre;
     const nombreAutor = mensaje.autor_nombre ?? "Desconocido";
+const autorId = mensaje.autor_id;
     const estiloAutor = mensaje.autor_nombre ? estiloNombre(mensaje.color_nombre) : "color:#999;";
     const gestor = Boolean(detalleGrupo) && (detalleGrupo.mi_rol === "creador" || detalleGrupo.mi_rol === "moderador");
 
@@ -2509,7 +2555,7 @@ function plantillaMensaje(mensaje, opciones = {}) {
 
     const cabecera = mostrarAutor && !ocultoAjeno
         ? `<div class="mensaje-servidor-cabecera">
-               <strong style="${estiloAutor}">${escapeHtml(nombreAutor)}</strong>
+               <strong style="${estiloAutor}">${escapeHtml(nombreVisible(autorId, nombreAutor))}</strong>
            </div>`
         : "";
 
@@ -3323,7 +3369,7 @@ async function cargarMiembrosServidor() {
             return `
                 <div class="fila-servidor ${miembro.es_mio ? "yo" : ""}">
                     <span class="fila-servidor-datos">
-                        <strong style="${estiloNombre(miembro.color_nombre)}">${escapeHtml(miembro.nombre)}${miembro.es_mio ? " (tú)" : ""}</strong>
+                        <strong style="${estiloNombre(miembro.color_nombre)}">${escapeHtml(nombreVisible(miembro.usuario_id, miembro.nombre))}${miembro.es_mio ? " (tú)" : ""}</strong>
                         <span>${etiquetas.join(" ")}</span>
                     </span>
                     <span class="fila-servidor-acciones">${acciones.join("")}</span>
@@ -3335,7 +3381,7 @@ async function cargarMiembrosServidor() {
         selectTraspaso.innerHTML = '<option value="">Elige un miembro...</option>'
             + datos.miembros
                 .filter((miembro) => !miembro.es_mio && miembro.rol !== "creador")
-                .map((miembro) => `<option value="${escapeHtml(miembro.usuario_id)}">${escapeHtml(miembro.nombre)}</option>`)
+                .map((miembro) => `<option value="${escapeHtml(miembro.usuario_id)}">${escapeHtml(nombreVisible(miembro.usuario_id, miembro.nombre))}</option>`)
                 .join("");
         estado.textContent = "";
     } catch (error) {
@@ -4214,7 +4260,7 @@ async function cargarSolicitudesRecibidas() {
 
                     <div class="solicitud-amistad-datos">
                         <strong style="${estiloNombre(solicitud.color_nombre)}">
-                            ${escapeHtml(solicitud.nombre)}
+                            ${escapeHtml(nombreVisible(solicitud.id, solicitud.nombre))}
                         </strong>
                     </div>
 
@@ -5209,6 +5255,13 @@ async function cargarCuenta() {
 
 
         /* ==============================
+   FONDO DEL PERFIL
+   ============================== */
+
+renderizarFondoPerfil(usuario);
+
+
+        /* ==============================
            CÓDIGO DE VINCULACIÓN
            ============================== */
 
@@ -5724,10 +5777,10 @@ async function cargarEstados(seccion, contenedor) {
                 ? renderizarMedios([primerMedio])
                 : `<span class="tarjeta-historia-texto">${escapeHtml(persona.texto || "Estado")}</span>`;
             return `
-                <button class="tarjeta-estado tarjeta-historia" type="button" data-ver-historias="${escapeHtml(clave)}" aria-label="Ver los ${historias} estados de ${escapeHtml(persona.autor_nombre)}">
+                <button class="tarjeta-estado tarjeta-historia" type="button" data-ver-historias="${escapeHtml(clave)}" aria-label="Ver los ${historias} estados de ${escapeHtml(nombreVisible(persona.autor_id, persona.autor_nombre))}">
                     ${portada}
                     ${persona.avatar_url ? `<img class="avatar-historia con-anillo-nombre" style="--anillo-avatar:${colorDeAnillo(persona.color_nombre)}" src="/${escapeHtml(persona.avatar_url)}" alt="">` : '<span class="avatar-historia avatar-historia-vacio"></span>'}
-                    <span class="nombre-historia" style="${estiloNombre(persona.color_nombre)}">${escapeHtml(persona.autor_nombre)}</span>
+                    <span class="nombre-historia" style="${estiloNombre(persona.color_nombre)}">${escapeHtml(nombreVisible(persona.autor_id, persona.autor_nombre))}</span>
                     ${historias > 1 ? `<span class="cantidad-historias">${historias}</span>` : ""}
                 </button>
             `;
@@ -5755,10 +5808,10 @@ function renderizarPublicacion(publicacion) {
     return `
         <article class="publicacion-actual" data-publicacion="${escapeHtml(publicacion.id)}">
             <header class="cabecera-publicacion-actual">
-                <button class="boton-perfil-publicacion" type="button" data-abrir-perfil="${escapeHtml(publicacion.autor_id)}" aria-label="Ver el perfil de ${escapeHtml(publicacion.autor_nombre)}">
+                <button class="boton-perfil-publicacion" type="button" data-abrir-perfil="${escapeHtml(publicacion.autor_id)}" aria-label="Ver el perfil de ${escapeHtml(nombreVisible(publicacion.autor_id, publicacion.autor_nombre))}">
                     ${publicacion.avatar_url ? `<img class="con-anillo-nombre" style="--anillo-avatar:${colorDeAnillo(publicacion.color_nombre)}" src="/${escapeHtml(publicacion.avatar_url)}" alt="">` : '<span class="avatar-publicacion-vacio"></span>'}
                     <span class="datos-publicacion-actual">
-                        <strong style="${estiloNombre(publicacion.color_nombre)}">${escapeHtml(publicacion.autor_nombre)}</strong>
+                        <strong style="${estiloNombre(publicacion.color_nombre)}">${escapeHtml(nombreVisible(publicacion.autor_id, publicacion.autor_nombre))}</strong>
                         <time>${new Date(publicacion.creada_en).toLocaleString()}</time>
                     </span>
                 </button>
@@ -5930,7 +5983,7 @@ function mostrarHistoriaActual() {
     aplicarAnilloAvatar(avatar, estado.color_nombre);
 
     const nombreAutorHistoria = document.getElementById("nombre-autor-historia");
-    nombreAutorHistoria.textContent = estado.autor_nombre;
+    nombreAutorHistoria.textContent = nombreVisible(estado.autor_id, estado.autor_nombre);
     nombreAutorHistoria.setAttribute("style", estiloNombre(estado.color_nombre));
 
     const progreso = document.getElementById("progreso-historias");
@@ -6616,7 +6669,7 @@ async function abrirComentariosReel(reelId, contador) {
         const datos = await solicitarGrupo(`/api/reels/${reelId}/comentarios`);
         lista.innerHTML = datos.comentarios.map((comentario) => `
             <p class="comentario-reel">
-                <strong style="${estiloNombre(comentario.color_nombre)}">${escapeHtml(comentario.autor_nombre)}</strong>
+                <strong style="${estiloNombre(comentario.color_nombre)}">${escapeHtml(nombreVisible(comentario.autor_id, comentario.autor_nombre))}</strong>
                 ${escapeHtml(comentario.texto)}
             </p>
         `).join("") || `<p class="estado-amigos">Todavía no hay comentarios.</p>`;
@@ -7042,7 +7095,7 @@ function abrirVisorReels(reels, reelId) {
                     </button>
                 </div>
                 <button class="boton-autor-reel" data-abrir-perfil="${escapeHtml(reel.autor_id)}" type="button"
-                    aria-label="Ver perfil de ${escapeHtml(reel.autor_nombre)}">
+                    aria-label="Ver perfil de ${escapeHtml(nombreVisible(reel.autor_id, reel.autor_nombre))}">
                     ${reel.avatar_url
                         ? `<img class="avatar-autor-reel" src="/${escapeHtml(reel.avatar_url)}" alt="">`
                         : `<span class="avatar-autor-reel avatar-autor-reel-vacio" aria-hidden="true"></span>`}
@@ -7175,7 +7228,7 @@ async function cargarComentariosPublicacion(publicacionId, contenedor) {
     contenedor.innerHTML = `
         <div class="lista-comentarios-actuales">
             ${datos.comentarios.map((comentario) => `
-                <p><strong style="${estiloNombre(comentario.color_nombre)}">${escapeHtml(comentario.autor_nombre)}</strong> ${escapeHtml(comentario.texto)}</p>
+                <p><strong style="${estiloNombre(comentario.color_nombre)}">${escapeHtml(nombreVisible(comentario.autor_id, comentario.autor_nombre))}</strong> ${escapeHtml(comentario.texto)}</p>
             `).join("") || '<p class="estado-amigos">Sé la primera persona en comentar.</p>'}
         </div>
         <form class="formulario-comentario-actual" data-publicacion="${escapeHtml(publicacionId)}">
@@ -7413,7 +7466,12 @@ function renderizarPerfil(datos) {
         : '<p class="descripcion-perfil descripcion-perfil-vacia">Sin descripción.</p>';
 
     contenidoPerfil.innerHTML = `
-        <div class="cabecera-perfil">
+        <div class="cabecera-perfil${perfil.fondo_url ? " con-fondo" : ""}"${
+            perfil.fondo_url
+                ? ` style="--fondo-perfil:url('/${escapeHtml(perfil.fondo_url)}')"`
+                : ""
+        }>
+            <div class="portada-perfil" aria-hidden="true"></div>
             <button class="avatar-perfil con-anillo-nombre" type="button" style="--anillo-avatar:${colorDeAnillo(perfil.color_nombre)}" data-acciones-perfil aria-label="Opciones de la foto de perfil">
                 ${perfil.avatar_url
                     ? `<img src="/${escapeHtml(perfil.avatar_url)}" alt="">`
@@ -7423,6 +7481,9 @@ function renderizarPerfil(datos) {
             ${campo("etiqueta", "campo-etiqueta-perfil", etiquetaMarkup, "Cambiar la etiqueta")}
             ${campo("descripcion", "campo-descripcion-perfil", descripcionMarkup, "Cambiar la descripción")}
             <p id="estado-edicion-perfil" class="estado-edicion-perfil" aria-live="polite"></p>
+            ${perfil.es_mio
+                ? ""
+                : campoApodo(perfil)}
         </div>
 
         <div class="estadisticas-perfil">
@@ -7485,6 +7546,13 @@ async function cargarContenidoPerfil(usuarioId) {
 }
 
 document.getElementById("contenido-perfil")?.addEventListener("click", (evento) => {
+    // El apodo se escribe en el perfil de la persona que se está mirando.
+    const campoApodo = evento.target.closest("[data-editar-apodo]");
+    if (campoApodo) {
+        editarApodoDePerfil(campoApodo);
+        return;
+    }
+
     // Con poderes de desarrollador, el nombre, la etiqueta y la descripción se
     // editan ahí mismo, en el sitio.
     const campoEditable = evento.target.closest("[data-editar-campo]");
@@ -7498,6 +7566,202 @@ document.getElementById("contenido-perfil")?.addEventListener("click", (evento) 
     const nombre = burbuja.querySelector(".nombre-historia-carpeta")?.textContent ?? "";
     abrirModalHistoria({ id: burbuja.dataset.historia, nombre }, true);
 });
+
+// El apodo es el nombre que le pongo yo a esta persona: solo lo veo yo. Se
+// escribe pulsando encima y se guarda al salir del campo o con Enter.
+function campoApodo(perfil) {
+    const guardado = apodosPorUsuario.get(perfil.id) || "";
+    const etiqueta = guardado
+        ? escapeHtml(guardado)
+        : '<span class="apodo-perfil vacio">+ Apodo</span>';
+
+    return `
+        <p class="bloque-apodo-perfil">
+            <span class="titulo-apodo-perfil">Tu apodo para ${escapeHtml(perfil.nombre)}</span>
+            <button class="campo-apodo-perfil" type="button" data-editar-apodo="${escapeHtml(perfil.id)}">
+                ${etiqueta}
+            </button>
+            <span class="ayuda-apodo-perfil">Solo lo ves tú. Máximo 25 caracteres.</span>
+        </p>
+    `;
+}
+
+// ---------- APODO DE UNA PERSONA ----------
+
+const LIMITE_APODO = 25;
+
+async function editarApodoDePerfil(elemento) {
+    if (!perfilActual?.id || !elemento) return;
+    if (elemento.dataset.editando === "1") return;
+
+    const personaId = perfilActual.id;
+    const guardado = apodosPorUsuario.get(personaId) || "";
+
+    const editor = document.createElement("input");
+    editor.type = "text";
+    editor.className = "editor-apodo-perfil";
+    editor.value = guardado;
+    editor.maxLength = LIMITE_APODO;
+    editor.placeholder = "Escribe un apodo";
+
+    elemento.dataset.editando = "1";
+    elemento.replaceChildren(editor);
+    editor.focus();
+
+    let terminado = false;
+
+    const terminar = async (guardar) => {
+        if (terminado) return;
+        terminado = true;
+        const valor = editor.value.trim();
+
+        if (!guardar || valor === guardado) {
+            await abrirPerfil(personaId);
+            return;
+        }
+
+        try {
+            const respuesta = await solicitarGrupo(
+                `/api/apodos/${encodeURIComponent(personaId)}`,
+                { method: "PUT", body: JSON.stringify({ apodo: valor }) }
+            );
+            // Con el apodo vacío el servidor lo quita: se borra de la lista.
+            if (respuesta.apodo?.apodo) {
+                apodosPorUsuario.set(personaId, respuesta.apodo.apodo);
+            } else {
+                apodosPorUsuario.delete(personaId);
+                nombreRealPorId.delete(personaId);
+            }
+            await abrirPerfil(personaId);
+            cargarAmigos();
+        } catch (error) {
+            await abrirPerfil(personaId);
+            const estado = document.getElementById("estado-edicion-perfil");
+            if (estado) {
+                estado.textContent = error.message;
+                estado.classList.add("error-social");
+            }
+        }
+    };
+
+    editor.addEventListener("keydown", (evento) => {
+        if (evento.key === "Escape") {
+            evento.preventDefault();
+            terminar(false);
+            return;
+        }
+        if (evento.key === "Enter") {
+            evento.preventDefault();
+            terminar(true);
+        }
+    });
+
+    editor.addEventListener("blur", () => terminar(true));
+}
+
+// ---------- TUS APODOS (Cuenta) ----------
+
+const modalApodos = document.getElementById("modal-apodos");
+const listaApodos = document.getElementById("lista-apodos");
+
+function pintarListaApodos() {
+    if (!listaApodos) return;
+    if (apodosPorUsuario.size === 0) {
+        listaApodos.innerHTML = '<p class="sin-contenido">Todavía no le has puesto un apodo a nadie.</p>';
+        return;
+    }
+
+    listaApodos.innerHTML = [...apodosPorUsuario.entries()].map(([id, apodo]) => {
+        const real = nombreRealPorId.get(id) || "Esta persona";
+        const inicial = apodo.trim().charAt(0).toLocaleUpperCase();
+        return `
+            <div class="fila-apodo">
+                <span class="avatar-apodo" aria-hidden="true">${escapeHtml(inicial)}</span>
+                <span class="datos-apodo">
+                    <strong>${escapeHtml(apodo)}</strong>
+                    <small>${escapeHtml(real)}</small>
+                </span>
+                <button type="button" data-quitar-apodo="${escapeHtml(id)}">QUITAR</button>
+            </div>
+        `;
+    }).join("");
+}
+
+function abrirListaApodos() {
+    if (!modalApodos) return;
+    modalApodos.hidden = false;
+    pintarListaApodos();
+}
+
+listaApodos?.addEventListener("click", async (evento) => {
+    const boton = evento.target.closest("[data-quitar-apodo]");
+    if (!boton) return;
+    const id = boton.dataset.quitarApodo;
+    try {
+        await solicitarGrupo(`/api/apodos/${encodeURIComponent(id)}`, { method: "DELETE" });
+        apodosPorUsuario.delete(id);
+        nombreRealPorId.delete(id);
+        pintarListaApodos();
+        cargarAmigos();
+    } catch (error) {
+        console.error("No se pudo quitar el apodo:", error);
+    }
+});
+
+document.getElementById("boton-apodos-cuenta")
+    ?.addEventListener("click", abrirListaApodos);
+
+document.getElementById("boton-cerrar-apodos")
+    ?.addEventListener("click", () => { if (modalApodos) modalApodos.hidden = true; });
+
+modalApodos?.addEventListener("click", (evento) => {
+    if (evento.target === modalApodos) modalApodos.hidden = true;
+});
+
+// ---------- FONDO DEL PERFIL (Cuenta) ----------
+
+const fondoPerfil = document.getElementById("fondo-perfil-cuenta");
+
+async function subirFondoPerfil(archivo) {
+    if (!archivo) return;
+    const formulario = new FormData();
+    formulario.append("archivo", archivo);
+    try {
+        const datos = await solicitarGrupo("/api/auth/fondo", { method: "POST", body: formulario });
+        if (fondoPerfil) fondoPerfil.src = `/${datos.fondo_url}`;
+        const aviso = document.getElementById("estado-cuenta");
+        if (aviso) aviso.textContent = "Fondo del perfil guardado.";
+        await cargarCuenta();
+    } catch (error) {
+        const aviso = document.getElementById("estado-cuenta");
+        if (aviso) aviso.textContent = error.message;
+    }
+}
+
+async function quitarFondoPerfil() {
+    try {
+        await solicitarGrupo("/api/auth/fondo", { method: "DELETE" });
+        if (fondoPerfil) fondoPerfil.src = "";
+        const aviso = document.getElementById("estado-cuenta");
+        if (aviso) aviso.textContent = "Fondo del perfil quitado.";
+        await cargarCuenta();
+    } catch (error) {
+        const aviso = document.getElementById("estado-cuenta");
+        if (aviso) aviso.textContent = error.message;
+    }
+}
+
+document.getElementById("entrada-fondo-cuenta")
+    ?.addEventListener("change", (evento) => {
+        subirFondoPerfil(evento.target.files?.[0]);
+        evento.target.value = "";
+    });
+
+document.getElementById("boton-quitar-fondo")
+    ?.addEventListener("click", async () => {
+        if (modalOpcionesFoto) modalOpcionesFoto.hidden = true;
+        await quitarFondoPerfil();
+    });
 
 // Escribe encima del dato que se ha pulsado y lo guarda al terminar. Se
 // guarda con Enter (o al salir del campo) y se descarta con Escape.
@@ -7639,7 +7903,7 @@ async function abrirAmigosPerfil() {
                         ? `<img src="/${escapeHtml(amigo.avatar_url)}" alt="">`
                         : ""}
                 </span>
-                <span class="amigo-perfil-nombre" style="${estiloNombre(amigo.color_nombre)}">${escapeHtml(amigo.nombre)}</span>
+                <span class="amigo-perfil-nombre" style="${estiloNombre(amigo.color_nombre)}">${escapeHtml(nombreVisible(amigo.id, amigo.nombre))}</span>
             </button>
         `).join("");
 

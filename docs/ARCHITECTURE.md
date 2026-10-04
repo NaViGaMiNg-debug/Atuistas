@@ -984,6 +984,8 @@ Actualmente existe código para:
 - Historias: carpetas permanentes con nombre, editable y vaciable cuando se quiera, que guardan elementos de texto, fotos, vídeo o audio. Se ven como burbujas con el nombre de la carpeta en Cuenta y en el perfil.
 - Botón central de la barra con +: menú para subir reels, historias o publicaciones (las publicaciones ya no se suben desde el feed).- Service worker, manifest y suscripciones Push por dispositivo.
 - Poderes de desarrollador para una sola cuenta (la que se llama `Iván J.`, marcada por la migración): con pulsación larga sobre cualquier publicación, reel, estado o historia lo borra aunque sea de otra persona, y en cualquier perfil puede pulsar el nombre, la etiqueta o la descripción para cambiarla en el sitio (Enter o al salir del campo guarda, Escape deshace). La etiqueta es un texto corto entre el nombre y la descripción; la de esa cuenta dice `Creador`. Sin poderes, el perfil es solo texto y no se ven las herramientas.
+- Fondo de perfil: cada cuenta elige una imagen que sale de portada en su cabecera; se cambia o se quita desde el botón de su foto en Cuenta.
+- Apodos: cada persona le pone el apodo que quiera a quien quiera escribiéndolo en el perfil de esa persona (Enter o al salir guarda, vacío lo quita). El apodo es privado y sustituye al nombre real en toda la app de quien lo puso, incluidos los avisos; en «Agregar amigos» se sigue viendo el nombre real. Cuenta tiene la lista de tus apodos para quitarlos.
 - Limpieza periódica de estados vencidos, servidores temporales y mensajes antiguos de servidor.
 - Migración de compatibilidad para las columnas de autenticación y sesiones.
 
