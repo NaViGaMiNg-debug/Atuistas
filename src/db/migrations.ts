@@ -106,6 +106,33 @@ export async function migrarEsquema() {
             CREATE INDEX IF NOT EXISTS notificaciones_usuario_autor
                 ON notificaciones (usuario_id, autor_id, leida);
 
+            -- ================================
+            -- PODERES DE DESARROLLADOR
+            -- Una sola cuenta los tiene: la que se llama "Iván J.". Puede
+            -- borrar publicaciones, reels, estados e historias de cualquiera y
+            -- poner nombre, descripción o etiqueta en el perfil de otros.
+            -- La migración se aplica sola al arrancar, así que la cuenta
+            -- nombrada queda con poderes en cuanto existe en la base.
+            -- ================================
+
+            ALTER TABLE usuarios
+                ADD COLUMN IF NOT EXISTS es_desarrollador BOOLEAN NOT NULL DEFAULT FALSE,
+                ADD COLUMN IF NOT EXISTS etiqueta VARCHAR(24);
+
+            -- La cuenta se busca por nombre normalizado (en minúsculas y sin
+            -- espacios sobrantes). Se aceptan las dos formas de escribirlo:
+            -- con tilde y sin tilde.
+            UPDATE usuarios
+            SET es_desarrollador = TRUE
+            WHERE nombre_normalizado IN ('iván j.', 'ivan j.')
+              AND es_desarrollador = FALSE;
+
+            -- El desarrollador recibe la etiqueta "Creador" si no tiene otra.
+            UPDATE usuarios
+            SET etiqueta = 'Creador'
+            WHERE es_desarrollador = TRUE
+              AND (etiqueta IS NULL OR trim(etiqueta) = '');
+
             UPDATE sesiones
             SET identificador = 'migrado-' || id::text
             WHERE identificador IS NULL;

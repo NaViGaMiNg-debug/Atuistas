@@ -115,7 +115,10 @@ const nuevos = [
     "resumen-descripcion-servidor", "boton-guardar-descripcion-servidor",
     "boton-acciones-miembros-servidor", "boton-acciones-ajustes-servidor",
     "boton-activar-canales-acciones", "boton-salir-servidor-acciones",
-    "boton-eliminar-servidor-acciones", "estado-acciones-servidor"
+    "boton-eliminar-servidor-acciones", "estado-acciones-servidor",
+    // Herramientas de desarrollador: editor de perfiles.
+    "modal-desarrollador", "formulario-desarrollador", "dev-nombre",
+    "dev-descripcion", "dev-etiqueta", "boton-cerrar-modal-desarrollador"
 ];
 for (const id of nuevos) {
     comprobar(html.includes(`id="${id}"`), `El HTML define ${id}`);
@@ -124,11 +127,32 @@ for (const id of nuevos) {
 // La fila de botones antiguos no debe verse nunca.
 comprobar(html.includes('id="acciones-contexto-servidor"'), "La fila antigua sigue en el markup, pero oculta por CSS y JS");
 
+/* ---------- Las herramientas de desarrollador estan enganchadas ---------- */
+
+const app = fs.readFileSync(path.join(raiz, "public", "app.js"), "utf8");
+const css = fs.readFileSync(path.join(raiz, "public", "style.css"), "utf8");
+comprobar(
+    app.includes("contenidoPulsable") && app.includes("TIEMPO_PULSACION_LARGA"),
+    "app.js tiene la pulsacion larga para borrar contenido"
+);
+comprobar(
+    app.includes("/api/desarrollador/usuarios/"),
+    "app.js guarda los cambios del editor de desarrollador"
+);
+comprobar(
+    app.includes('class="etiqueta-perfil"') || app.includes('class="etiqueta-perfil"'),
+    "El perfil pinta la insignia de etiqueta"
+);
+comprobar(
+    css.includes(".etiqueta-perfil"),
+    "style.css da estilo a la insignia de etiqueta"
+);
+
 /* ---------- El service worker cambia de version ---------- */
 
 const sw = fs.readFileSync(path.join(raiz, "public", "sw.js"), "utf8");
 const versionSw = sw.match(/const VERSION = "(v\d+)"/)?.[1] || "?";
-comprobar(versionSw === "v6", `El service worker subio a la version v6 (${versionSw})`);
+comprobar(versionSw === "v7", `El service worker subio a la version v7 (${versionSw})`);
 
 console.log("");
 if (fallos.length) {

@@ -77,8 +77,34 @@ Campos principales:
 | `avatar_archivo_id` | UUID | Avatar |
 | `color_nombre` | VARCHAR(7) | Color hexadecimal |
 | `codigo_*` | TEXT | Credencial de vinculación |
+| `es_desarrollador` | BOOLEAN | Poderes de desarrollador (una sola cuenta) |
+| `etiqueta` | VARCHAR(24) | Texto corto del perfil ("Creador") |
 | `creado_en` | TIMESTAMPTZ | Creación |
 | `activo` | BOOLEAN | Estado de cuenta |
+
+## Poderes de desarrollador
+
+Una sola cuenta los tiene: la que se llama `Iván J.` La migración marca
+`es_desarrollador` al arrancar el servidor, así que en cuanto esa cuenta existe
+en la base de datos queda con poderes; si algún día se cambia de nombre, los
+poderes siguen ahí porque ya están en su fila.
+
+Con esos poderes puede:
+
+- Borrar publicaciones, reels, estados e historias de cualquier persona
+  (pulsación larga sobre el contenido en la app).
+- Poner el nombre, la descripción o la etiqueta de cualquier perfil.
+
+La etiqueta sale en el perfil entre el nombre y la descripción. Si no tiene
+ninguna, la cuenta de desarrollador recibe `Creador` automáticamente.
+
+Para activar o quitar los poderes a mano (por ejemplo si cambia el nombre de la
+cuenta):
+
+```sql
+UPDATE usuarios SET es_desarrollador = TRUE WHERE nombre = 'Iván J.';
+UPDATE usuarios SET es_desarrollador = FALSE WHERE nombre = 'Iván J.';
+```
 
 ## Reglas
 

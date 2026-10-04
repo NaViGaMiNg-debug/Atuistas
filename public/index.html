@@ -1493,6 +1493,47 @@
             </div>
 
             <!-- ==============================
+                 HERRAMIENTAS DE DESARROLLADOR
+                 Solo aparece en la cuenta con poderes. Permite poner nombre,
+                 descripción o etiqueta a cualquier perfil.
+                 ============================== -->
+
+            <div id="modal-desarrollador" class="modal modal-contenido-social" hidden>
+
+                <section
+                    class="dialogo-social"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="titulo-modal-desarrollador"
+                >
+
+                    <header class="cabecera-dialogo-social">
+                        <h2 id="titulo-modal-desarrollador">Desarrollador</h2>
+                        <button id="boton-cerrar-modal-desarrollador" class="boton-cerrar-modal" type="button" aria-label="Cerrar">×</button>
+                    </header>
+
+                    <form id="formulario-desarrollador" class="formulario-dialogo-social">
+                        <p class="ayuda-desarrollador">Los cambios se aplican al instante y se ven en el perfil de esa persona.</p>
+
+                        <label class="selector-audiencia-social" for="dev-etiqueta">Etiqueta del perfil</label>
+                        <input id="dev-etiqueta" type="text" maxlength="24" placeholder="Creador">
+                        <p class="ayuda-desarrollador">Sale entre el nombre y la descripción. Vacío para quitarla.</p>
+
+                        <label class="selector-audiencia-social" for="dev-nombre">Nombre</label>
+                        <input id="dev-nombre" type="text" maxlength="25">
+
+                        <label class="selector-audiencia-social" for="dev-descripcion">Descripción</label>
+                        <textarea id="dev-descripcion" maxlength="500" placeholder="Descripción del perfil"></textarea>
+
+                        <p id="estado-desarrollador" class="error-social" aria-live="polite"></p>
+                        <button id="boton-guardar-desarrollador" class="boton-confirmar-social" type="submit">GUARDAR</button>
+                    </form>
+
+                </section>
+
+            </div>
+
+            <!-- ==============================
                  MENÚ CREAR (botón central)
                  Tres tipos: reels, historias y
                  publicaciones.

@@ -1044,6 +1044,7 @@ function mostrarAplicacion() {
     mostrarSeccion("entrar");
     cargarConfiguracionNotificaciones();
     actualizarPuntoNotificaciones();
+    comprobarPoderesDesarrollador();
 
     // Enlace directo de un aviso Push (/?chat=<id>): se abre ese chat y la
     // dirección se limpia para que no se reabra al recargar.
@@ -1057,6 +1058,7 @@ function mostrarAplicacion() {
         .then((datos) => {
             localStorage.setItem("atuistas_cache_cuenta", JSON.stringify(datos.usuario));
             actualizarTarjetaMiEstado();
+            marcarEstadoDesarrollador(datos.usuario?.es_desarrollador);
         })
         .catch(() => {});
 
@@ -5180,8 +5182,8 @@ async function cargarCuenta() {
 
 
         estadoCuenta.textContent =
-            usuario.es_admin
-                ? "Developer"
+            usuario.es_desarrollador
+                ? "Desarrollador: mantén pulsado el contenido para borrarlo y usa el botón DESARROLLADOR de cada perfil para editarlo."
                 : "";
 
 
@@ -7395,6 +7397,12 @@ function renderizarPerfil(datos) {
                     : '<span class="avatar-perfil-vacio"></span>'}
             </button>
             <strong class="nombre-perfil" style="${estiloNombre(perfil.color_nombre)}">${escapeHtml(perfil.nombre)}</strong>
+            ${perfil.etiqueta
+                ? `<span class="etiqueta-perfil">${escapeHtml(perfil.etiqueta)}</span>`
+                : ""}
+            ${perfil.soy_desarrollador
+                ? `<button class="boton-desarrollador-perfil" type="button" data-editar-desarrollador="${escapeHtml(perfil.id)}">DESARROLLADOR</button>`
+                : ""}
             ${perfil.descripcion
                 ? `<p class="descripcion-perfil">${escapeHtml(perfil.descripcion)}</p>`
                 : '<p class="descripcion-perfil descripcion-perfil-vacia">Sin descripción.</p>'}
@@ -7460,6 +7468,15 @@ async function cargarContenidoPerfil(usuarioId) {
 }
 
 document.getElementById("contenido-perfil")?.addEventListener("click", (evento) => {
+    // El botón de desarrollador va antes que las burbujas: abre el editor de
+    // nombre, descripción y etiqueta de ese perfil.
+    const botonDesarrollador = evento.target.closest("[data-editar-desarrollador]");
+    if (botonDesarrollador) {
+        if (!perfilActual || perfilActual.id !== botonDesarrollador.dataset.editarDesarrollador) return;
+        abrirEditorDesarrollador(perfilActual);
+        return;
+    }
+
     const burbuja = evento.target.closest("[data-historia]");
     if (!burbuja) return;
     const nombre = burbuja.querySelector(".nombre-historia-carpeta")?.textContent ?? "";
@@ -7703,6 +7720,255 @@ document.getElementById("boton-perfil-historia")
     });
 
 
+/* ==============================
+   PODERES DE DESARROLLADOR
+   Solo la cuenta marcada en la base de datos (la que se llama "Iván J.") tiene
+   estas herramientas:
+
+   - Pulsación larga sobre cualquier publicación, reel, estado o historia
+     para borrarla, aunque sea de otra persona.
+   - Editar el nombre, la descripción o la etiqueta de cualquier perfil.
+
+   Si la cuenta no las tiene, no se enseña nada de esto.
+   ============================== */
+
+let soyDesarrollador = false;
+
+function marcarEstadoDesarrollador(activo) {
+    soyDesarrollador = activo === true;
+}
+
+async function comprobarPoderesDesarrollador() {
+    try {
+        const datos = await solicitarGrupo("/api/desarrollador/estado");
+        marcarEstadoDesarrollador(datos.es_desarrollador);
+    } catch {
+        marcarEstadoDesarrollador(false);
+    }
+}
+
+const modalDesarrollador = document.getElementById("modal-desarrollador");
+const formularioDesarrollador = document.getElementById("formulario-desarrollador");
+const devNombre = document.getElementById("dev-nombre");
+const devDescripcion = document.getElementById("dev-descripcion");
+const devEtiqueta = document.getElementById("dev-etiqueta");
+const estadoDesarrollador = document.getElementById("estado-desarrollador");
+
+let usuarioEnEdicion = null;
+
+function abrirEditorDesarrollador(perfil) {
+    if (!soyDesarrollador || !modalDesarrollador || !perfil?.id) return;
+    usuarioEnEdicion = perfil;
+    document.getElementById("titulo-modal-desarrollador").textContent =
+        `Editar a ${perfil.nombre}`;
+    devNombre.value = perfil.nombre || "";
+    devDescripcion.value = perfil.descripcion || "";
+    devEtiqueta.value = perfil.etiqueta || "";
+    estadoDesarrollador.textContent = "";
+    modalDesarrollador.hidden = false;
+}
+
+function cerrarEditorDesarrollador() {
+    if (modalDesarrollador) modalDesarrollador.hidden = true;
+    usuarioEnEdicion = null;
+}
+
+document.getElementById("boton-cerrar-modal-desarrollador")
+    ?.addEventListener("click", cerrarEditorDesarrollador);
+
+formularioDesarrollador?.addEventListener("submit", async (evento) => {
+    evento.preventDefault();
+    if (!usuarioEnEdicion) return;
+    estadoDesarrollador.textContent = "";
+    try {
+        await solicitarGrupo(
+            `/api/desarrollador/usuarios/${encodeURIComponent(usuarioEnEdicion.id)}`,
+            {
+                method: "PUT",
+                body: JSON.stringify({
+                    nombre: devNombre.value,
+                    descripcion: devDescripcion.value,
+                    etiqueta: devEtiqueta.value
+                })
+            }
+        );
+        cerrarEditorDesarrollador();
+        // El perfil abierto se vuelve a pintar para ver el cambio al momento.
+        if (perfilActual?.id) await abrirPerfil(perfilActual.id);
+    } catch (error) {
+        estadoDesarrollador.textContent = error.message;
+    }
+});
+
+/* ---------- Borrado con pulsación larga ---------- */
+
+// Se escucha en todo el documento: el contenido se pinta en sitios muy
+// distintos (feed, perfil, tiras de reels, burbujas de historias) y así no hay
+// que engancharlo tarjeta por tarjeta.
+const TIEMPO_PULSACION_LARGA = 550;
+const MARGEN_MOVIMIENTO_PULSACION = 12;
+
+let pulsacionLarga = null;
+let pulsacionConsumida = false;
+
+function contenidoPulsable(elemento) {
+    if (!elemento?.closest) return null;
+
+    const publicacion = elemento.closest("[data-publicacion]");
+    if (publicacion?.dataset.publicacion) {
+        return { tipo: "publicacion", id: publicacion.dataset.publicacion };
+    }
+
+    const reel = elemento.closest("[data-reel-id]");
+    if (reel?.dataset.reelId) {
+        return { tipo: "reel", id: reel.dataset.reelId };
+    }
+
+    const historia = elemento.closest("[data-historia]");
+    if (historia?.dataset.historia) {
+        return { tipo: "historia", id: historia.dataset.historia };
+    }
+
+    const estado = elemento.closest("[data-eliminar-estado]");
+    if (estado?.dataset.eliminarEstado) {
+        return { tipo: "estado", id: estado.dataset.eliminarEstado };
+    }
+
+    // Dentro del visor de historias el estado actual no lleva atributo: se
+    // saca del propio visor.
+    if (!document.getElementById("visor-historias-pantalla")?.hidden) {
+        const actual = secuenciaHistoriaActual[indiceHistoriaActual];
+        if (actual?.id) return { tipo: "estado", id: actual.id };
+    }
+
+    return null;
+}
+
+function terminarPulsacionLarga() {
+    if (!pulsacionLarga) return;
+    clearTimeout(pulsacionLarga.temporizador);
+    pulsacionLarga = null;
+}
+document.addEventListener("pointerdown", (evento) => {
+    // Cada pulsación nueva reinicia el "clic tragado" del anterior.
+    pulsacionConsumida = false;
+    if (!soyDesarrollador) return;
+    if (evento.pointerType === "mouse" && evento.button !== 0) return;
+    // Sobre campos de texto no se hace nada: ahí se está escribiendo.
+    if (evento.target.closest("input, textarea, select, [contenteditable]")) return;
+
+    const objetivo = contenidoPulsable(evento.target);
+    if (!objetivo) return;
+
+    terminarPulsacionLarga();
+    pulsacionLarga = {
+        temporizador: setTimeout(() => {
+            const contenido = pulsacionLarga?.objetivo;
+            terminarPulsacionLarga();
+            if (!contenido) return;
+            // El clic que viene tras la pulsación no debe abrir nada.
+            pulsacionConsumida = true;
+            // Si al final no llega ningún clic, la marca se cae sola para no
+            // tragarse el siguiente.
+            setTimeout(() => { pulsacionConsumida = false; }, 1200);
+            if (navigator.vibrate) navigator.vibrate(20);
+            borrarComoDesarrollador(contenido.tipo, contenido.id);
+        }, TIEMPO_PULSACION_LARGA),
+        objetivo,
+        inicioX: evento.clientX,
+        inicioY: evento.clientY,
+        idPuntero: evento.pointerId
+    };
+}, true);
+
+document.addEventListener("pointermove", (evento) => {
+    if (!pulsacionLarga || evento.pointerId !== pulsacionLarga.idPuntero) return;
+    const movidoX = Math.abs(evento.clientX - pulsacionLarga.inicioX);
+    const movidoY = Math.abs(evento.clientY - pulsacionLarga.inicioY);
+    // En cuanto se mueve es un deslizar o un scroll, no una pulsación larga.
+    if (movidoX > MARGEN_MOVIMIENTO_PULSACION || movidoY > MARGEN_MOVIMIENTO_PULSACION) {
+        terminarPulsacionLarga();
+    }
+}, true);
+
+for (const eventoFin of ["pointerup", "pointercancel", "pointerleave"]) {
+    document.addEventListener(eventoFin, terminarPulsacionLarga, true);
+}
+
+// Deslizar la página o cambiar de ventana cancela la pulsación.
+document.addEventListener("scroll", terminarPulsacionLarga, true);
+window.addEventListener("blur", terminarPulsacionLarga);
+
+document.addEventListener("click", (evento) => {
+    if (!pulsacionConsumida) return;
+    pulsacionConsumida = false;
+    evento.stopPropagation();
+    evento.preventDefault();
+}, true);
+
+const TEXTOS_BORRADO_DESARROLLADOR = {
+    publicacion: "¿Eliminar esta publicación?",
+    reel: "¿Eliminar este reel?",
+    historia: "¿Eliminar esta historia y todo lo que tiene dentro?",
+    estado: "¿Eliminar este estado?"
+};
+
+async function borrarComoDesarrollador(tipo, id) {
+    const pregunta = TEXTOS_BORRADO_DESARROLLADOR[tipo];
+    if (!pregunta || !confirm(pregunta)) return;
+
+    const rutas = {
+        publicacion: `/api/publicaciones/${encodeURIComponent(id)}`,
+        reel: `/api/reels/${encodeURIComponent(id)}`,
+        historia: `/api/historias/${encodeURIComponent(id)}`,
+        estado: `/api/estados/${encodeURIComponent(id)}`
+    };
+
+    try {
+        await solicitarGrupo(rutas[tipo], { method: "DELETE" });
+    } catch (error) {
+        console.error("No se pudo borrar:", error);
+        alert(error.message || "No se pudo borrar.");
+        return;
+    }
+
+    await refrescarTrasBorrar(tipo, id);
+}
+
+async function refrescarTrasBorrar(tipo, id) {
+    if (tipo === "reel") {
+        reelsVisor = (reelsVisor || []).filter((reel) => reel.id !== id);
+        document.querySelectorAll(`[data-reel-id="${CSS.escape(id)}"]`).forEach((elemento) => {
+            if (elemento.closest(".pista-reels-visor")) elemento.closest(".pantalla-reel")?.remove();
+            else elemento.remove();
+        });
+        const visor = document.getElementById("visor-reels");
+        if (visor && !visor.hidden) {
+            if (reelsVisor.length) abrirVisorReels(reelsVisor, reelsVisor[0].id);
+            else visor.hidden = true;
+        }
+        return;
+    }
+
+    if (tipo === "historia") {
+        document.querySelectorAll(`[data-historia="${CSS.escape(id)}"]`).forEach((elemento) => elemento.remove());
+        return;
+    }
+
+    // Publicaciones y estados se recargan según dónde se estaba mirando.
+    const visorHistorias = document.getElementById("visor-historias-pantalla");
+    if (tipo === "estado" && visorHistorias && !visorHistorias.hidden) {
+        cerrarVisorHistorias();
+    }
+
+    const modal = document.getElementById("modal-perfil");
+    if (modal && !modal.hidden && perfilActual?.id) {
+        await abrirPerfil(perfilActual.id);
+        return;
+    }
+
+    await cargarContenidoInicio();
+}
 /* ==============================
    INICIAR
    ============================== */

@@ -290,6 +290,8 @@ export async function obtenerCuenta(
                 u.nombre,
                 u.descripcion,
                 u.color_nombre,
+                u.etiqueta,
+                u.es_desarrollador,
                 u.avatar_archivo_id,
                 u.creado_en,
                 u.codigo_vinculacion_cifrado,
@@ -327,6 +329,8 @@ export async function obtenerCuenta(
         nombre: usuario.nombre,
         descripcion: usuario.descripcion,
         color_nombre: usuario.color_nombre,
+        etiqueta: usuario.etiqueta,
+        es_desarrollador: usuario.es_desarrollador === true,
         avatar_archivo_id:
             usuario.avatar_archivo_id,
         avatar_ruta:

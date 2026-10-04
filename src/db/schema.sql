@@ -23,6 +23,14 @@ CREATE TABLE usuarios (
 
     color_nombre VARCHAR(7) NOT NULL DEFAULT '#FFFFFF',
 
+    -- Cuenta con poderes de desarrollador: puede borrar contenido de cualquiera
+    -- y poner nombre, descripcion o etiqueta a otros usuarios.
+    es_desarrollador BOOLEAN NOT NULL DEFAULT FALSE,
+
+    -- Texto corto que sale en el perfil, entre el nombre y la descripcion
+    -- ("Creador" y lo que el desarrollador quiera escribir).
+    etiqueta VARCHAR(24),
+
     codigo_vinculacion_cifrado TEXT NOT NULL,
     codigo_vinculacion_hash TEXT NOT NULL UNIQUE,
 

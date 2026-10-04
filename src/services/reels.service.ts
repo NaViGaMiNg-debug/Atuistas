@@ -4,6 +4,7 @@ import { db } from "../db/database.js";
 import { guardarArchivoSubido } from "./archivos.service.js";
 import { validarArchivos, type UploadFile } from "./multimedia.service.js";
 import { crearNotificacion } from "./notificaciones.service.js";
+import { puedeEditarComoDesarrollador } from "./desarrollador.service.js";
 
 type Visibilidad = "amigos" | "publica";
 
@@ -263,11 +264,12 @@ export async function comentarReel(usuarioId: string, reelId: string, texto: str
 }
 
 export async function eliminarReel(usuarioId: string, reelId: string) {
+    const puedeBorrar = await puedeEditarComoDesarrollador(usuarioId, null);
     const resultado = await db.query(
         `DELETE FROM reels
-         WHERE id = $1 AND autor_id = $2
+         WHERE id = $1 AND (autor_id = $2 OR $3::boolean)
          RETURNING id, archivo_id`,
-        [reelId, usuarioId]
+        [reelId, usuarioId, puedeBorrar]
     );
     if (resultado.rowCount !== 1) {
         throw new Error("Solo el autor puede eliminar el reel");

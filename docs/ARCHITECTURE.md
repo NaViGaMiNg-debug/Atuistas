@@ -983,6 +983,7 @@ Actualmente existe código para:
 - Reels: vídeos cortos (máximo 90 s) con título obligatorio y visibilidad de amigos o público. Se ven en una tira horizontal en Entrar y en un visor a pantalla completa que se desliza en vertical, con corazón, comentarios y acceso al perfil del autor.
 - Historias: carpetas permanentes con nombre, editable y vaciable cuando se quiera, que guardan elementos de texto, fotos, vídeo o audio. Se ven como burbujas con el nombre de la carpeta en Cuenta y en el perfil.
 - Botón central de la barra con +: menú para subir reels, historias o publicaciones (las publicaciones ya no se suben desde el feed).- Service worker, manifest y suscripciones Push por dispositivo.
+- Poderes de desarrollador para una sola cuenta (la que se llama `Iván J.`, marcada por la migración): con pulsación larga sobre cualquier publicación, reel, estado o historia lo borra aunque sea de otra persona, y desde cualquier perfil puede poner el nombre, la descripción o una etiqueta corta (la propia dice `Creador`). Las herramientas no se ven en el resto de cuentas.
 - Limpieza periódica de estados vencidos, servidores temporales y mensajes antiguos de servidor.
 - Migración de compatibilidad para las columnas de autenticación y sesiones.
 

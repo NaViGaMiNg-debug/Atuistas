@@ -5773,6 +5773,54 @@ button.servidor-tarjeta:focus-visible {
     font-style: italic;
 }
 
+/* -----------------------------
+   ETIQUETA DEL PERFIL
+   Texto corto que sale entre el
+   nombre y la descripción ("Creador"
+   y lo que el desarrollador escriba).
+   ----------------------------- */
+
+.etiqueta-perfil {
+    align-self: flex-start;
+    max-width: 100%;
+    margin: 0;
+    padding: 2px 9px;
+    border: 1px solid #4a4a4a;
+    border-radius: 999px;
+    background: #232323;
+    color: #e8d9a0;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    overflow-wrap: anywhere;
+}
+
+.boton-desarrollador-perfil {
+    align-self: flex-start;
+    margin: 0;
+    padding: 6px 12px;
+    border: 1px solid #7a5cff;
+    border-radius: 8px;
+    background: transparent;
+    color: #b9a6ff;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+}
+
+.boton-desarrollador-perfil:hover {
+    background: #7a5cff;
+    color: #fff;
+}
+
+.ayuda-desarrollador {
+    margin: 0 0 8px;
+    color: #999;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
 .estadisticas-perfil {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));

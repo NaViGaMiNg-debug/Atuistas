@@ -1,4 +1,5 @@
 import { db } from "../db/database.js";
+import { esDesarrollador } from "./desarrollador.service.js";
 
 export async function obtenerPerfilVisible(
     visitanteId: string,
@@ -11,6 +12,8 @@ export async function obtenerPerfilVisible(
             u.nombre,
             u.descripcion,
             u.color_nombre,
+            u.etiqueta,
+            (u.es_desarrollador) AS es_desarrollador,
             u.creado_en,
             CASE
                 WHEN ar.ruta IS NOT NULL
@@ -45,6 +48,8 @@ export async function obtenerPerfilVisible(
         nombre: string;
         descripcion: string | null;
         color_nombre: string;
+        etiqueta: string | null;
+        es_desarrollador: boolean;
         creado_en: string;
         avatar_url: string | null;
         es_mio: boolean;
@@ -58,6 +63,10 @@ export async function obtenerPerfilVisible(
     if (!esPropio && perfil.hay_bloqueo === true) {
         throw new Error("Perfil no disponible");
     }
+
+    // Quien mira decide si tiene herramientas de desarrollador: el cliente solo
+    // las enseña si el que está mirando, no el mirado, las tiene.
+    const soyDesarrollador = await esDesarrollador(visitanteId);
 
     const conteos = await db.query(
         `
@@ -96,6 +105,10 @@ export async function obtenerPerfilVisible(
             nombre: perfil.nombre,
             descripcion: perfil.descripcion,
             color_nombre: perfil.color_nombre,
+            // El texto corto va entre el nombre y la descripción.
+            etiqueta: perfil.etiqueta,
+            es_desarrollador: perfil.es_desarrollador === true,
+            soy_desarrollador: soyDesarrollador,
             avatar_url: perfil.avatar_url,
             creado_en: perfil.creado_en,
             es_mio: esPropio,

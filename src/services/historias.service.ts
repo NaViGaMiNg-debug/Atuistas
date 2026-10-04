@@ -3,6 +3,7 @@ import path from "node:path";
 import { db } from "../db/database.js";
 import { guardarArchivoSubido } from "./archivos.service.js";
 import { validarArchivos, type UploadFile } from "./multimedia.service.js";
+import { puedeEditarComoDesarrollador } from "./desarrollador.service.js";
 
 export type TipoItem = "texto" | "imagen" | "video" | "audio";
 
@@ -48,13 +49,17 @@ const ITEMS_HISTORIA = `
     ), '[]'::json) AS items
 `;
 
-// Una historia solo se toca por quien la creó.
+// Una historia solo se toca por quien la creó. El desarrollador puede tocarlas
+// todas: por eso la pregunta ya no es solo por el autor.
 async function historiaDelAutor(usuarioId: string, historiaId: string) {
     const resultado = await db.query(
-        `SELECT id, nombre FROM historias WHERE id = $1 AND autor_id = $2`,
-        [historiaId, usuarioId]
+        `SELECT id, nombre, autor_id FROM historias WHERE id = $1`,
+        [historiaId]
     );
-    if (resultado.rowCount !== 1) throw new Error("Esa historia no es tuya");
+    if (resultado.rowCount !== 1) throw new Error("Esa historia no existe");
+    if (!(await puedeEditarComoDesarrollador(usuarioId, resultado.rows[0].autor_id))) {
+        throw new Error("Esa historia no es tuya");
+    }
     return resultado.rows[0];
 }
 

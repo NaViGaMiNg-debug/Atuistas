@@ -1,5 +1,6 @@
 import { db } from "../db/database.js";
 import { crearNotificacion } from "./notificaciones.service.js";
+import { puedeEditarComoDesarrollador } from "./desarrollador.service.js";
 
 async function puedeVerPublicacion(usuarioId: string, publicacionId: string) {
     const resultado = await db.query(
@@ -164,9 +165,13 @@ export async function alternarCorazon(usuarioId: string, publicacionId: string) 
 }
 
 export async function eliminarPublicacion(usuarioId: string, publicacionId: string) {
+    // El autor borra lo suyo; el desarrollador borra lo de cualquiera.
+    const puedeBorrar = await puedeEditarComoDesarrollador(usuarioId, null);
     const resultado = await db.query(
-        `DELETE FROM publicaciones WHERE id = $1 AND autor_id = $2 RETURNING id`,
-        [publicacionId, usuarioId]
+        `DELETE FROM publicaciones
+         WHERE id = $1 AND (autor_id = $2 OR $3::boolean)
+         RETURNING id`,
+        [publicacionId, usuarioId, puedeBorrar]
     );
     if (resultado.rowCount !== 1) throw new Error("Solo el autor puede eliminar la publicación");
     return { mensaje: "Publicación eliminada" };
@@ -231,9 +236,12 @@ export async function crearEstado(usuarioId: string, texto: string, visibilidad:
 }
 
 export async function eliminarEstado(usuarioId: string, estadoId: string) {
+    const puedeBorrar = await puedeEditarComoDesarrollador(usuarioId, null);
     const resultado = await db.query(
-        `DELETE FROM estados WHERE id = $1 AND autor_id = $2 RETURNING id`,
-        [estadoId, usuarioId]
+        `DELETE FROM estados
+         WHERE id = $1 AND (autor_id = $2 OR $3::boolean)
+         RETURNING id`,
+        [estadoId, usuarioId, puedeBorrar]
     );
     if (resultado.rowCount !== 1) throw new Error("Solo puedes eliminar tus propios estados");
     return { mensaje: "Estado eliminado" };
