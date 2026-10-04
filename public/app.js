@@ -6663,6 +6663,7 @@ document.getElementById("formulario-estado").addEventListener("submit", async (e
 
 async function abrirComentariosReel(reelId, contador) {
     const lista = document.getElementById("lista-comentarios-reel");
+    const entrada = document.getElementById("texto-comentario-reel");
     modalComentariosReel.hidden = false;
     lista.innerHTML = `<p class="estado-amigos">Cargando...</p>`;
     try {
@@ -6680,7 +6681,21 @@ async function abrirComentariosReel(reelId, contador) {
         const total = await solicitarGrupo(`/api/reels/${reelId}`);
         if (total.reel) contador.textContent = total.reel.comentarios ?? 0;
     }
+    // El visor se queda detrás: los comentarios se leen encima y el vídeo
+    // sigue sonando de fondo sin perder el hilo.
+    entrada?.focus();
 }
+
+// El botón solo se activa cuando hay algo escrito.
+const entradaComentarioReel = document.getElementById("texto-comentario-reel");
+const botonComentarReel = document.getElementById("boton-comentar-reel");
+
+function refrescarBotonComentar() {
+    if (!botonComentarReel || !entradaComentarioReel) return;
+    botonComentarReel.disabled = entradaComentarioReel.value.trim().length === 0;
+}
+
+entradaComentarioReel?.addEventListener("input", refrescarBotonComentar);
 
 document.getElementById("boton-cerrar-comentarios-reel")?.addEventListener("click", () => {
     modalComentariosReel.hidden = true;
@@ -6698,6 +6713,7 @@ document.getElementById("formulario-comentario-reel")?.addEventListener("submit"
             body: JSON.stringify({ texto })
         });
         entrada.value = "";
+        refrescarBotonComentar();
         await abrirComentariosReel(reelAbierto, pantalla.querySelector(".cuenta-comentarios"));
     } catch (fallo) {
         console.warn("No se pudo comentar:", fallo);
@@ -7101,8 +7117,28 @@ function abrirVisorReels(reels, reelId) {
                         : `<span class="avatar-autor-reel avatar-autor-reel-vacio" aria-hidden="true"></span>`}
                 </button>
             </div>
+            <div class="barra-reel">
+                <span class="barra-reel-tiempo">0:00</span>
+                <div
+                    class="barra-reel-pista"
+                    role="slider"
+                    tabindex="0"
+                    aria-label="Avanzar o retroceder en el vídeo"
+                    aria-valuemin="0"
+                    aria-valuemax="100"
+                    aria-valuenow="0"
+                >
+                    <span class="barra-reel-relleno"></span>
+                </div>
+            </div>
+            <button class="aviso-reproduccion" type="button" hidden aria-label="Reproducir">
+                <svg viewBox="0 0 24 24" width="46" height="46" aria-hidden="true" focusable="false">
+                    <path d="M8 5.5v13l11-6.5-11-6.5z" fill="currentColor"/>
+                </svg>
+            </button>
         `;
         pista.appendChild(pantalla);
+        configurarPantallaReel(pantalla);
     });
 
     visorReels.hidden = false;
@@ -7119,6 +7155,123 @@ function cerrarVisorReels() {
     document.querySelectorAll("#pista-reels-visor video").forEach((video) => video.pause());
 }
 
+/* ---------- Tocar para pausar y barra de avance ---------- */
+
+// El tiempo se ve corto y claro: 0:07.
+function tiempoReel(segundos) {
+    const total = Math.max(0, Math.floor(Number(segundos) || 0));
+    const minutos = Math.floor(total / 60);
+    const resto = total % 60;
+    return `${minutos}:${String(resto).padStart(2, "0")}`;
+}
+
+// Cada pantalla del visor trae su barra y su botón de pausa: se configuran al
+// pintarse, para no tener que buscarlos después.
+function configurarPantallaReel(pantalla) {
+    const video = pantalla.querySelector(".video-reel");
+    if (!video) return;
+
+    const pista = pantalla.querySelector(".barra-reel-pista");
+    const relleno = pantalla.querySelector(".barra-reel-relleno");
+    const tiempo = pantalla.querySelector(".barra-reel-tiempo");
+    const aviso = pantalla.querySelector(".aviso-reproduccion");
+
+    let punteroBuscando = null;
+
+    const pintar = () => {
+        const total = video.duration || 0;
+        const porcentaje = total ? Math.min(100, (video.currentTime / total) * 100) : 0;
+        if (relleno) relleno.style.width = `${porcentaje}%`;
+        if (tiempo) tiempo.textContent = `${tiempoReel(video.currentTime)} / ${tiempoReel(total)}`;
+        if (pista) pista.setAttribute("aria-valuenow", String(Math.round(porcentaje)));
+    };
+
+    const mostrarAviso = (pausado) => {
+        if (aviso) aviso.hidden = !pausado;
+    };
+
+    video.addEventListener("timeupdate", pintar);
+    video.addEventListener("loadedmetadata", pintar);
+    video.addEventListener("ended", pintar);
+
+    // Un toque en el vídeo lo pausa o lo reanuda. Los botones y la barra
+    // tienen su propia función y no cuentan como toque en el vídeo.
+    pantalla.addEventListener("click", (evento) => {
+        if (evento.target.closest(".acciones-reel, .barra-reel, .titulo-reel, .aviso-reproduccion")) {
+            return;
+        }
+        if (video.paused) {
+            video.play().catch(() => {});
+            mostrarAviso(false);
+        } else {
+            video.pause();
+            mostrarAviso(true);
+        }
+    });
+
+    aviso?.addEventListener("click", (evento) => {
+        evento.stopPropagation();
+        video.play().catch(() => {});
+        mostrarAviso(false);
+    });
+
+    // Al pasar a otro reel no se queda pausado: cada uno arranca en marcha.
+    pantalla.addEventListener("reel-en-pantalla", () => {
+        video.currentTime = 0;
+        video.play().catch(() => {});
+        mostrarAviso(false);
+        pintar();
+    });
+
+    if (!pista) return;
+
+    const saltarA = (clientX) => {
+        const total = video.duration || 0;
+        if (!total) return;
+        const caja = pista.getBoundingClientRect();
+        const proporcion = Math.min(1, Math.max(0, (clientX - caja.left) / caja.width));
+        video.currentTime = proporcion * total;
+        pintar();
+    };
+
+    pista.addEventListener("pointerdown", (evento) => {
+        if (evento.pointerType === "mouse" && evento.button !== 0) return;
+        punteroBuscando = evento.pointerId;
+        pista.setPointerCapture?.(evento.pointerId);
+        saltarA(evento.clientX);
+        evento.stopPropagation();
+    });
+
+    pista.addEventListener("pointermove", (evento) => {
+        if (punteroBuscando !== evento.pointerId) return;
+        saltarA(evento.clientX);
+    });
+
+    const soltar = (evento) => {
+        if (punteroBuscando !== evento.pointerId) return;
+        punteroBuscando = null;
+    };
+
+    pista.addEventListener("pointerup", soltar);
+    pista.addEventListener("pointercancel", soltar);
+
+    // Con teclado también se puede mover: flechas de 5 segundos, inicio y fin.
+    pista.addEventListener("keydown", (evento) => {
+        const saltos = { ArrowRight: 5, ArrowUp: 5, ArrowLeft: -5, ArrowDown: -5 };
+        if (evento.key in saltos) {
+            evento.preventDefault();
+            video.currentTime = Math.min(video.duration || 0, Math.max(0, video.currentTime + saltos[evento.key]));
+            pintar();
+            return;
+        }
+        if (evento.key === "Home" || evento.key === "End") {
+            evento.preventDefault();
+            video.currentTime = evento.key === "Home" ? 0 : video.duration || 0;
+            pintar();
+        }
+    });
+}
+
 document.getElementById("boton-cerrar-visor-reels")?.addEventListener("click", cerrarVisorReels);
 
 // Al deslizar se reproduce el reel que queda en pantalla.
@@ -7126,9 +7279,14 @@ document.getElementById("pista-reels-visor")?.addEventListener("scroll", () => {
     const pista = document.getElementById("pista-reels-visor");
     const pantalla = pista.firstElementChild?.clientHeight || 1;
     const indice = Math.round(pista.scrollTop / pantalla);
-    pista.querySelectorAll(".pantalla-reel video").forEach((video, posicion) => {
-        if (posicion === indice) video.play().catch(() => {});
-        else video.pause();
+    pista.querySelectorAll(".pantalla-reel").forEach((panel, posicion) => {
+        const video = panel.querySelector("video");
+        if (posicion === indice) {
+            // El reel nuevo empieza en marcha y desde el principio.
+            if (video && video.paused) panel.dispatchEvent(new Event("reel-en-pantalla"));
+        } else if (video) {
+            video.pause();
+        }
     });
 });
 

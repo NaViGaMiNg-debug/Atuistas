@@ -3904,7 +3904,9 @@ button.servidor-tarjeta:focus-visible {
 }
 
 .modal-contenido-social {
-    z-index: 1100;
+    /* Por encima del visor de reels (1100): si no, los comentarios del reel se
+       abren detrás del vídeo y parece que el botón no hace nada. */
+    z-index: 1400;
 }
 
 .dialogo-social {
@@ -6394,7 +6396,8 @@ button.estadistica-perfil:hover {
     z-index: 2;
     position: absolute;
     right: 10px;
-    bottom: 24px;
+    /* Por encima de la barra de avance, que ocupa la franja de abajo. */
+    bottom: 62px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -6482,16 +6485,144 @@ button.estadistica-perfil:hover {
     font-size: 14px;
 }
 
+/* -----------------------------
+   CAJA DE COMENTAR
+   Sencilla: solo una linea y el boton de texto al lado, sin recuadros
+   ni colores llamantes.
+   ----------------------------- */
+
 .formulario-comentario-reel {
     display: flex;
-    gap: 8px;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    padding: 8px 0 2px;
+    border-top: 1px solid #262626;
 }
 
 .formulario-comentario-reel input {
-    min-width: 0;
     flex: 1;
+    min-width: 0;
+    padding: 8px 2px;
+    border: 0;
+    border-bottom: 1px solid #2f2f2f;
+    border-radius: 0;
+    background: transparent;
+    color: #fff;
+    font: inherit;
+    font-size: 14px;
 }
 
+.formulario-comentario-reel input::placeholder {
+    color: #6f6f6f;
+}
+
+.formulario-comentario-reel input:focus {
+    outline: none;
+    border-bottom-color: #5a5a5a;
+}
+
+.formulario-comentario-reel button {
+    padding: 8px 4px;
+    border: 0;
+    background: transparent;
+    color: #8a8a8a;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.formulario-comentario-reel button:hover:not(:disabled) {
+    color: #fff;
+}
+
+.formulario-comentario-reel button:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+/* -----------------------------
+   BARRA DE AVANCE DEL REEL
+   Abajo del todo: el tiempo y una
+   pista que se puede arrastrar para
+   ir adelante o atras en el video.
+   ----------------------------- */
+
+.barra-reel {
+    position: absolute;
+    left: 12px;
+    right: 12px;
+    bottom: 14px;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.35);
+}
+
+.barra-reel-tiempo {
+    color: #fff;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+    white-space: nowrap;
+}
+
+.barra-reel-pista {
+    position: relative;
+    flex: 1;
+    height: 4px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.25);
+    cursor: pointer;
+    touch-action: none;
+}
+
+.barra-reel-pista::after {
+    /* Zona de pulsacion grande sin engordar la linea. */
+    content: "";
+    position: absolute;
+    inset: -12px 0;
+}
+
+.barra-reel-pista:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 4px;
+}
+
+.barra-reel-relleno {
+    display: block;
+    height: 100%;
+    width: 0;
+    border-radius: 999px;
+    background: #fff;
+}
+
+/* Icono grande en el centro mientras el video esta en pausa. */
+.aviso-reproduccion {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    z-index: 3;
+    transform: translate(-50%, -50%);
+    display: grid;
+    place-items: center;
+    width: 78px;
+    height: 78px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.45);
+    color: #fff;
+    cursor: pointer;
+}
+
+.aviso-reproduccion[hidden] {
+    display: none;
+}
 .burbujas-historias {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
