@@ -471,6 +471,28 @@ vale NULL el mensaje cuenta como sin leer y la lista de amigos pinta punto
 rojo; el índice parcial `idx_mensajes_privados_conversacion_sin_leer` acelera
 ese recuento.
 
+### Campo `datos`
+
+`datos` es un `JSONB` con valor por defecto `'{}'`. Ahora mismo solo lo usa la
+**ubicación en directo**:
+
+```json
+{ "ubicacion": { "lat": 40.4168, "lon": -3.7038, "precision": 12,
+                 "enVivo": true, "expiraEn": "2026-10-04T15:10:00.000Z",
+                 "nombre": "Mi ubicación" } }
+```
+
+El mensaje sigue siendo de `tipo = 'texto'`: no se añadió ningún tipo nuevo ni
+se tocaron las restricciones `CHECK`. Lo que decide cómo se pinta es que
+`datos` tenga la clave `ubicacion`.
+
+Ventaja: la tarjeta se actualiza **en la misma fila** mientras la persona se
+mueve, en lugar de crear un mensaje por cada movimiento.
+
+`mensajes_grupo` tiene la misma columna con el mismo fin. Los índices parciales
+`idx_mensajes_privados_ubicacion` y `idx_mensajes_grupo_ubicacion` están
+creados sobre `WHERE datos ? 'ubicacion'`.
+
 ---
 
 # 17. Respuestas de mensajes

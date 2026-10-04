@@ -2,6 +2,7 @@ import { randomBytes } from "node:crypto";
 import { db } from "../db/database.js";
 import { crearNotificacion } from "./notificaciones.service.js";
 import { emitirAUsuarios } from "../ws/tiempo-real.js";
+import { prepararDatosUbicacion } from "./mensajes.service.js";
 
 interface MiembroGrupo {
     rol: "creador" | "moderador" | "miembro";
@@ -639,7 +640,7 @@ export async function obtenerMensajesGrupo(
         `
         SELECT mg.id, mg.canal_id, mg.autor_id, (mg.autor_id = $2::uuid) AS es_mio,
                mg.tipo, mg.contenido, mg.mensaje_respondiendo_id,
-               mg.oculto, mg.editado_en, mg.creado_en,
+               mg.oculto, mg.editado_en, mg.creado_en, mg.datos,
                ar.ruta AS archivo_ruta,
                u.nombre AS autor_nombre, u.color_nombre,
                r.contenido AS respuesta_contenido,
@@ -832,6 +833,214 @@ export async function enviarMensajeGrupo(
     });
 
     return mensaje;
+}
+
+// ============================================================
+// UBICACIÓN EN DIRECTO
+// Igual que en el chat privado: un mensaje de texto con la posición en
+// datos, que se va actualizando mientras la persona se mueve. Cada cambio
+// se difunde por WebSocket para que la tarjeta se mueva al instante.
+// ============================================================
+
+async function obtenerMensajeGrupoParaDifusion(
+    mensajeId: string,
+    usuarioId: string
+) {
+    const guardado = await db.query(
+        `SELECT mg.id, mg.canal_id, mg.grupo_id, mg.autor_id, (mg.autor_id = $2::uuid) AS es_mio,
+                mg.tipo, mg.contenido, mg.archivo_id, mg.mensaje_respondiendo_id,
+                mg.oculto, mg.editado_en, mg.creado_en, mg.datos,
+                a.ruta AS archivo_ruta,
+                u.nombre AS autor_nombre, u.color_nombre
+         FROM mensajes_grupo mg
+         INNER JOIN usuarios u ON u.id = mg.autor_id
+         LEFT JOIN archivos a ON a.id = mg.archivo_id
+         WHERE mg.id = $1`,
+        [mensajeId, usuarioId]
+    );
+
+    if (guardado.rowCount !== 1) {
+        throw new Error("El mensaje de ubicación ya no existe");
+    }
+
+    return guardado.rows[0];
+}
+
+export async function enviarUbicacionGrupo(
+    usuarioId: string,
+    grupoId: string,
+    cuerpo: any
+) {
+    const miembro = await comprobarMiembro(usuarioId, grupoId);
+    if (!miembro.puede_escribir) {
+        throw new Error("Un moderador ha desactivado tu permiso para escribir en este servidor");
+    }
+
+    const canal = await resolverCanal(grupoId, cuerpo?.canalId);
+    const { ubicacion } = prepararDatosUbicacion(cuerpo);
+
+    const datos = {
+        ubicacion
+    };
+
+    const insertado = await db.query(
+        `INSERT INTO mensajes_grupo (grupo_id, canal_id, autor_id, tipo, contenido, datos)
+         VALUES ($1, $2, $3, 'texto', $4, $5::jsonb)
+         RETURNING id`,
+        [grupoId, canal.id, usuarioId, `📍 ${datos.ubicacion.nombre}`, JSON.stringify(datos)]
+    );
+
+    const fila = await obtenerMensajeGrupoParaDifusion(insertado.rows[0].id, usuarioId);
+    const mensaje = enmascararMensaje(fila, usuarioId);
+
+    const grupo = await db.query(`SELECT nombre FROM grupos WHERE id = $1`, [grupoId]);
+    const miembros = await db.query(
+        `SELECT usuario_id FROM miembros_grupo
+         WHERE grupo_id = $1 AND usuario_id <> $2 AND silenciado = FALSE`,
+        [grupoId, usuarioId]
+    );
+
+    for (const miembroAvisado of miembros.rows) {
+        await crearNotificacion(
+            miembroAvisado.usuario_id,
+            "mensajes_grupo",
+            "mensaje_grupo",
+            `Mensaje en ${grupo.rows[0].nombre}`,
+            "📍 Está compartiendo su ubicación",
+            { grupoId, mensajeId: mensaje.id },
+            usuarioId
+        );
+    }
+
+    const ids = await obtenerIdsMiembros(grupoId);
+    emitirAUsuarios(
+        ids.filter((id) => id !== usuarioId),
+        {
+            tipo: "mensaje_nuevo",
+            grupoId,
+            canalId: canal.id,
+            mensaje: enmascararMensaje(fila, "__ninguno__")
+        }
+    );
+    emitirAUsuarios([usuarioId], {
+        tipo: "mensaje_nuevo",
+        grupoId,
+        canalId: canal.id,
+        mensaje
+    });
+
+    return mensaje;
+}
+
+export async function actualizarUbicacionGrupo(
+    usuarioId: string,
+    grupoId: string,
+    mensajeId: string,
+    cuerpo: any
+) {
+    await comprobarMiembro(usuarioId, grupoId);
+
+    const lat = Number(cuerpo?.lat);
+    const lon = Number(cuerpo?.lon);
+
+    if (!Number.isFinite(lat) || lat < -90 || lat > 90) {
+        throw new Error("La latitud no es válida");
+    }
+
+    if (!Number.isFinite(lon) || lon < -180 || lon > 180) {
+        throw new Error("La longitud no es válida");
+    }
+
+    const precision = Math.min(
+        5000,
+        Math.max(0, Math.round(Number(cuerpo?.precision) || 0))
+    );
+
+    const resultado = await db.query(
+        `UPDATE mensajes_grupo SET datos = jsonb_set(
+                jsonb_set(
+                    jsonb_set(
+                        datos,
+                        '{ubicacion,lat}',
+                        to_jsonb($3::double precision)
+                    ),
+                    '{ubicacion,lon}',
+                    to_jsonb($4::double precision)
+                ),
+                '{ubicacion,precision}',
+                to_jsonb($5::double precision)
+            )
+         WHERE id = $1::uuid
+           AND grupo_id = $2::uuid
+           AND autor_id = $6::uuid
+           AND (datos->'ubicacion'->>'enVivo')::boolean IS TRUE
+           AND (datos->'ubicacion'->>'expiraEn')::timestamptz > NOW()
+         RETURNING id`,
+        [mensajeId, grupoId, lat, lon, precision, usuarioId]
+    );
+
+    if (resultado.rowCount !== 1) {
+        throw new Error("Esta ubicación ya no está en directo");
+    }
+
+    const fila = await obtenerMensajeGrupoParaDifusion(mensajeId, usuarioId);
+    const ids = await obtenerIdsMiembros(grupoId);
+
+    emitirAUsuarios(
+        ids.filter((id) => id !== usuarioId),
+        {
+            tipo: "ubicacion_actualizada",
+            grupoId,
+            canalId: fila.canal_id,
+            mensaje: enmascararMensaje(fila, "__ninguno__")
+        }
+    );
+    emitirAUsuarios([usuarioId], {
+        tipo: "ubicacion_actualizada",
+        grupoId,
+        canalId: fila.canal_id,
+        mensaje: enmascararMensaje(fila, usuarioId)
+    });
+
+    return enmascararMensaje(fila, usuarioId);
+}
+
+export async function detenerUbicacionGrupo(
+    usuarioId: string,
+    grupoId: string,
+    mensajeId: string
+) {
+    await comprobarMiembro(usuarioId, grupoId);
+
+    const resultado = await db.query(
+        `UPDATE mensajes_grupo SET datos = jsonb_set(
+                datos,
+                '{ubicacion,enVivo}',
+                'false'::jsonb
+            )
+         WHERE id = $1::uuid
+           AND grupo_id = $2::uuid
+           AND autor_id = $3::uuid
+           AND (datos->'ubicacion'->>'enVivo')::boolean IS TRUE
+         RETURNING id`,
+        [mensajeId, grupoId, usuarioId]
+    );
+
+    if (resultado.rowCount !== 1) {
+        throw new Error("Esta ubicación ya no está en directo");
+    }
+
+    const fila = await obtenerMensajeGrupoParaDifusion(mensajeId, usuarioId);
+    const ids = await obtenerIdsMiembros(grupoId);
+
+    emitirAUsuarios(ids, {
+        tipo: "ubicacion_actualizada",
+        grupoId,
+        canalId: fila.canal_id,
+        mensaje: enmascararMensaje(fila, "__ninguno__")
+    });
+
+    return enmascararMensaje(fila, usuarioId);
 }
 
 export async function listarMiembrosGrupo(usuarioId: string, grupoId: string) {

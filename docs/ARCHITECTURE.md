@@ -253,6 +253,10 @@ Entre ellas:
 - Host.
 - Configuración de PostgreSQL.
 - Clave utilizada por el sistema de códigos.
+- Clave de la API de Tenor (`ATUISTAS_TENOR_API_KEY`): la usan solo las rutas
+  del servidor para buscar GIF y stickers. El navegador nunca la ve. Si no está
+  puesta, `GET /api/tenor/buscar` responde `503` con `faltaClave` y el selector
+  avisa de que falta, en vez de romperse.
 
 Los secretos no deben escribirse directamente en el código fuente.
 
@@ -607,6 +611,72 @@ Mensaje eliminado
 ```
 
 ni crear un marcador visible equivalente.
+
+---
+
+# 26bis. Ubicación en directo
+
+Compartir la ubicación es **un mensaje normal con datos dentro**, no un tipo
+nuevo: la fila sigue siendo de `tipo = 'texto'` y en `datos` (JSONB) viaja
+
+```json
+{ "ubicacion": { "lat": 40.4168, "lon": -3.7038, "precision": 12,
+                 "enVivo": true, "expiraEn": "2026-10-04T15:10:00.000Z",
+                 "nombre": "Mi ubicación" } }
+```
+
+Motivo: la tarjeta se repinta en el sitio, sin crear un mensaje por cada
+movimiento ni llenar la conversación de ruido.
+
+Reglas:
+
+- Duración: entre 15 minutos y 8 horas (`MINUTOS_UBICACION_MINIMO` y
+  `MINUTOS_UBICACION_MAXIMO`, en `src/services/mensajes.service.ts`).
+- Solo quien comparte puede moverla o pararla; el backend lo comprueba con
+  `autor_id` y con `enVivo`/`expiraEn`.
+- Pasada la hora de caducidad, el servidor deja de aceptar movimientos aunque
+  nadie la haya parado.
+- El cliente sigue la posición con `watchPosition` y solo avisa al servidor si
+  la persona se ha movido más de 12 m (`METROS_MINIMO_MOVIMIENTO`).
+- El mapa es OpenStreetMap embebido, sin claves ni servicios de pago.
+
+Rutas:
+
+| Ruta | Qué hace |
+| --- | --- |
+| `POST /api/mensajes/conversacion/:usuarioId/ubicacion` | Crea el mensaje en directo. |
+| `PATCH /api/mensajes/:mensajeId/ubicacion` | Mueve la tarjeta. |
+| `POST /api/mensajes/:mensajeId/ubicacion/detener` | La deja de estar en directo. |
+| `POST /api/grupos/:grupoId/ubicacion` | Igual, en un canal de servidor. |
+| `PATCH /api/grupos/:grupoId/ubicacion/:mensajeId` | Mueve la del servidor. |
+| `POST /api/grupos/:grupoId/ubicacion/:mensajeId/detener` | La para. |
+
+En servidores cada movimiento se difunde por WebSocket con el evento
+`ubicacion_actualizada`; en el chat privado el polling de dos segundos ya lo
+recoge.
+
+Requisito del entorno: la ubicación solo funciona en **HTTPS o localhost**. En
+una IP de red el navegador la bloquea aunque se conceda el permiso.
+
+---
+
+# 26bis-bis. Selector de emojis, GIF y stickers
+
+Un único panel (`#selector-medio`) sirve para los cuatro sitios donde se
+escribe: chat privado, canal de servidor, comentarios de reels y comentarios de
+publicaciones. `asegurarBotonEmoji(idEntrada, destino)` inserta el botón antes
+del campo correspondiente.
+
+- Los emojis viven en `public/data/emojis.js` (lista corta, con nombre en
+  español para poder buscarlos), se cargan antes que `app.js` y van en la caché
+  del service worker.
+- El panel se abre **sin robar el foco** del campo de escritura: en el móvil no
+  debe saltar el teclado. Se cierra al pulsar fuera, al cambiar de sección o al
+  desplazarse.
+- Los GIF y stickers llegan de Tenor a través de `GET /api/tenor/buscar`, que
+  corre en el servidor para no enseñar la clave. Al elegir uno, el navegador lo
+  descarga y lo manda por el mismo camino que una foto subida desde el móvil.
+- En los comentarios, que solo admiten texto, el GIF se inserta como enlace.
 
 ---
 

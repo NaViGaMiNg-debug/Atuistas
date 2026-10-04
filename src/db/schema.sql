@@ -400,6 +400,11 @@ CREATE TABLE mensajes_privados (
         REFERENCES mensajes_privados(id)
         ON DELETE SET NULL,
 
+    -- Datos extra del mensaje. Hoy lo usa la ubicacion en directo: la fila es
+    -- un mensaje de texto normal y aqui viaja { ubicacion: { lat, lon, ... } },
+    -- de forma que se puede actualizar en sitio sin crear mensajes nuevos.
+    datos JSONB NOT NULL DEFAULT '{}'::jsonb,
+
     creado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
     editado_en TIMESTAMPTZ,
@@ -670,6 +675,10 @@ CREATE TABLE mensajes_grupo (
     mensaje_respondiendo_id UUID
         REFERENCES mensajes_grupo(id)
         ON DELETE SET NULL,
+
+    -- Igual que en el chat privado: datos extra del mensaje. La ubicacion en
+    -- directo se guarda aqui y se va actualizando mientras se comparte.
+    datos JSONB NOT NULL DEFAULT '{}'::jsonb,
 
     -- TRUE cuando el mensaje se envió como mensaje oculto: el autor nunca se expone.
     oculto BOOLEAN NOT NULL DEFAULT FALSE,

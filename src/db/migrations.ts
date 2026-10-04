@@ -518,6 +518,24 @@ export async function migrarEsquema() {
             CREATE INDEX IF NOT EXISTS idx_historias_items_historia
                 ON historias_items(historia_id, orden);
 
+            -- Ubicacion en directo: los datos viajan en la propia fila del
+            -- mensaje, asi una sola fila se va actualizando mientras la
+            -- persona se mueve. El tipo del mensaje sigue siendo texto: lo
+            -- que decide como se pinta es que haya datos.ubicacion.
+            ALTER TABLE mensajes_privados
+                ADD COLUMN IF NOT EXISTS datos JSONB NOT NULL DEFAULT '{}'::jsonb;
+
+            ALTER TABLE mensajes_grupo
+                ADD COLUMN IF NOT EXISTS datos JSONB NOT NULL DEFAULT '{}'::jsonb;
+
+            CREATE INDEX IF NOT EXISTS idx_mensajes_privados_ubicacion
+                ON mensajes_privados (conversacion_id)
+                WHERE datos ? 'ubicacion';
+
+            CREATE INDEX IF NOT EXISTS idx_mensajes_grupo_ubicacion
+                ON mensajes_grupo (grupo_id, canal_id)
+                WHERE datos ? 'ubicacion';
+
 
         `);
         await client.query("COMMIT");

@@ -404,6 +404,13 @@ function crearComposer(config) {
         const clase = opcion.dataset.adjunto;
         cerrarMenu();
         if (grabando()) detenerGrabacion(true);
+
+        // La ubicación no es un archivo: se comparte en directo, no se adjunta.
+        if (clase === "ubicacion") {
+            abrirModalUbicacion(config.compartirUbicacion);
+            return;
+        }
+
         limpiarAdjunto();
         inputArchivo.accept = ACEPTA_ADJUNTO[clase] ?? "";
         inputArchivo.click();
@@ -528,7 +535,8 @@ if (formularioMensaje) {
         tiempoGrabacion: document.getElementById("tiempo-grabacion-chat"),
         botonDescartar: document.getElementById("boton-descartar-grabacion-chat"),
         chipAdjunto: document.getElementById("estado-adjunto-chat"),
-        enviar: enviarMensajeChat
+        enviar: enviarMensajeChat,
+        compartirUbicacion: (minutos) => compartirUbicacionChat(minutos)
     });
 
     // Editar o responder se resuelve antes de mandar nada nuevo.
@@ -1077,6 +1085,690 @@ function escapeHtml(texto) {
 }
 
 /* ==============================
+   UBICACIÓN EN DIRECTO
+   Compartir es enviar un mensaje normal con la posición dentro; a partir
+   de ahí se sigue la posición con watchPosition y la misma tarjeta se va
+   moviendo, sin llenar el chat de mensajes nuevos. Solo quien comparte
+   puede pararla.
+   ============================== */
+
+const MINUTO_AUTOR_UBICACION = 60000;
+const METROS_MINIMO_MOVIMIENTO = 12;
+
+let compartiendoUbicacion = null;
+let vigilanteUbicacion = null;
+let ultimaPosicion = null;
+let temporizadorCaducidad = null;
+let enviarUbicacionPendiente = null;
+
+function textoDuracionUbicacion(minutos) {
+    if (minutos < 60) return `${minutos} min`;
+    const horas = Math.round(minutos / 60);
+    return horas === 1 ? "1 hora" : `${horas} horas`;
+}
+
+function abrirModalUbicacion(compartir) {
+    enviarUbicacionPendiente = compartir;
+
+    const modal = document.getElementById("modal-ubicacion");
+    const estado = document.getElementById("estado-modal-ubicacion");
+    const botonParar = document.getElementById("boton-parar-ubicacion");
+    const botonEnviar = document.getElementById("boton-enviar-ubicacion");
+
+    if (!modal) return;
+
+    // Si ya se está compartiendo, la ventanita ofrece parar en lugar de
+    // empezar otra vez: en un chat solo hay una ubicación propia en directo.
+    const activa = Boolean(compartiendoUbicacion);
+    botonParar.hidden = !activa;
+    botonEnviar.hidden = activa;
+    estado.textContent = activa
+        ? "Estás compartiendo ahora mismo. Se parará sola al terminar el tiempo."
+        : "";
+
+    modal.hidden = false;
+}
+
+function cerrarModalUbicacion() {
+    const modal = document.getElementById("modal-ubicacion");
+    if (modal) modal.hidden = true;
+}
+
+function distanciaEntre(a, b) {
+    if (!a || !b) return Infinity;
+    const radioTierra = 6371000;
+    const rad = (grado) => (grado * Math.PI) / 180;
+
+    const dLat = rad(b.lat - a.lat);
+    const dLon = rad(b.lon - a.lon);
+    const x = Math.sin(dLat / 2) ** 2
+        + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLon / 2) ** 2;
+
+    return 2 * radioTierra * Math.asin(Math.sqrt(x));
+}
+
+/* ==============================
+   TARJETA DE UBICACIÓN
+   Una tarjeta pequeña: un trozo de mapa de OpenStreetMap, el estado
+   (en vivo o terminada) y un botón para abrirla en el mapa del móvil.
+   No hace falta ninguna clave ni servicio de pago: los mosaicos son
+   los públicos de OpenStreetMap.
+   ============================== */
+
+function enlaceMapaUbicacion(lat, lon) {
+    const dif = 0.004;
+    const izquierda = Math.max(-180, Math.min(180, lon - dif));
+    const derecha = Math.max(-180, Math.min(180, lon + dif));
+    const abajo = Math.max(-85, Math.min(85, lat - dif * 0.6));
+    const arriba = Math.max(-85, Math.min(85, lat + dif * 0.6));
+
+    return `https://www.openstreetmap.org/export/embed.html?bbox=${izquierda}%2C${abajo}%2C${derecha}%2C${arriba}&layer=mapnik&marker=${lat}%2C${lon}`;
+}
+
+function htmlTarjetaUbicacion(mensaje) {
+    const datos = mensaje.datos?.ubicacion;
+    if (!datos) return "";
+
+    const caduca = datos.expiraEn ? new Date(datos.expiraEn).getTime() : 0;
+    const enVivo = datos.enVivo === true && (!caduca || caduca > Date.now());
+
+    const lat = Number(datos.lat);
+    const lon = Number(datos.lon);
+    const precision = Number(datos.precision) > 0
+        ? ` · ±${Math.round(Number(datos.precision))} m`
+        : "";
+
+    return `
+        <div class="tarjeta-ubicacion ${enVivo ? "en-vivo" : "detenida"}" data-lat="${lat}" data-lon="${lon}">
+            <a class="ubicacion-mapa" href="https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=17/${lat}/${lon}" target="_blank" rel="noopener noreferrer" title="Abrir en el mapa">
+                <img src="${escapeHtml(enlaceMapaUbicacion(lat, lon))}" alt="Mapa con la ubicación compartida" loading="lazy">
+            </a>
+            <div class="ubicacion-pie">
+                <span class="ubicacion-estado">${enVivo ? "● En vivo" : "■ Ubicación"}</span>
+                <span class="ubicacion-detalle">${escapeHtml(datos.nombre || "Ubicación en directo")}${escapeHtml(precision)}</span>
+            </div>
+        </div>`;
+}
+
+function pedirPosicionActual() {
+    return new Promise((resolver, rechazar) => {
+        if (!navigator.geolocation) {
+            rechazar(new Error("Este navegador no sabe decir dónde estás"));
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            (posicion) => resolver({
+                lat: posicion.coords.latitude,
+                lon: posicion.coords.longitude,
+                precision: posicion.coords.accuracy ?? 0
+            }),
+            (error) => {
+                const mensajes = {
+                    1: "Has denegado la ubicación. Actívala en los ajustes del navegador.",
+                    2: "No se pudoTu ubicacion. Intentalo de nuevo en unos segundos.",
+                    3: "No se pudo saber tu ubicacion. Intentalo otra vez."
+                };
+                rechazar(new Error(mensajes[error.code] || "No se pudo obtener la ubicacion"));
+            },
+            { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+        );
+    });
+}
+
+// El arnés recibe una función con tres acciones: crear el mensaje, moverlo y
+// pararlo. Cada sitio (chat o servidor) aporta sus propias rutas.
+async function compartirUbicacionChat(minutos) {
+    if (!amigoChatActual) return;
+
+    await iniciarCompartido(minutos, async (accion, datos) => {
+        const token = localStorage.getItem("atuistas_token");
+
+        if (accion === "parar") {
+            const respuesta = await fetch(
+                `/api/mensajes/${encodeURIComponent(datos.mensajeId)}/ubicacion/detener`,
+                { method: "POST", headers: { Authorization: `Bearer ${token}` } }
+            );
+            return respuesta.ok ? null : null;
+        }
+
+        if (accion === "mover") {
+            const respuesta = await fetch(
+                `/api/mensajes/${encodeURIComponent(datos.mensajeId)}/ubicacion`,
+                {
+                    method: "PATCH",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`
+                    },
+                    body: JSON.stringify(datos.posicion)
+                }
+            );
+            const cuerpo = await respuesta.json().catch(() => ({}));
+            if (!respuesta.ok) throw new Error(cuerpo.error || "La ubicacion ya no esta en directo");
+            return cuerpo.mensaje;
+        }
+
+        const respuesta = await fetch(
+            `/api/mensajes/conversacion/${encodeURIComponent(amigoChatActual.id)}/ubicacion`,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({ ...datos.posicion, minutos })
+            }
+        );
+
+        const cuerpo = await respuesta.json().catch(() => ({}));
+        if (!respuesta.ok) throw new Error(cuerpo.error || "No se pudo compartir la ubicacion");
+        return cuerpo.mensaje;
+    });
+}
+
+// Compartir en el canal abierto de un servidor.
+async function compartirUbicacionServidor(minutos) {
+    if (!grupoActual) return;
+
+    await iniciarCompartido(minutos, async (accion, datos) => {
+        const ruta = `/api/grupos/${encodeURIComponent(grupoActual.id)}/ubicacion`;
+
+        if (accion === "parar") {
+            const cuerpo = await solicitarGrupo(
+                `${ruta}/${encodeURIComponent(datos.mensajeId)}/detener`,
+                { method: "POST" }
+            );
+            return cuerpo.mensaje;
+        }
+
+        if (accion === "mover") {
+            const cuerpo = await solicitarGrupo(
+                `${ruta}/${encodeURIComponent(datos.mensajeId)}`,
+                {
+                    method: "PATCH",
+                    body: JSON.stringify(datos.posicion)
+                }
+            );
+            return cuerpo.mensaje;
+        }
+
+        const cuerpo = await solicitarGrupo(ruta, {
+            method: "POST",
+            body: JSON.stringify({
+                ...datos.posicion,
+                minutos,
+                canalId: canalActual ? canalActual.id : undefined
+            })
+        });
+        return cuerpo.mensaje;
+    });
+}
+
+async function iniciarCompartido(minutos, enviar) {
+    const estado = document.getElementById("estado-modal-ubicacion");
+    const boton = document.getElementById("boton-enviar-ubicacion");
+
+    try {
+        if (estado) estado.textContent = "Buscando tu posicion...";
+        boton.disabled = true;
+
+        const posicion = await pedirPosicionActual();
+        const mensaje = await enviar("crear", { posicion });
+
+        compartiendoUbicacion = {
+            mensajeId: mensaje.id,
+            expiraEn: Date.now() + minutos * MINUTO_AUTOR_UBICACION,
+            actualizar: (nueva) => enviar("mover", { posicion: nueva, mensajeId: mensaje.id }),
+            parar: () => enviar("parar", { mensajeId: mensaje.id })
+        };
+
+        ultimaPosicion = posicion;
+        seguirUbicacion();
+        programarCaducidad();
+
+        cerrarModalUbicacion();
+        if (amigoChatActual) await cargarMensajesChat();
+        else await cargarMensajesServidor();
+    } catch (error) {
+        if (estado) estado.textContent = error.message || "No se pudo compartir la ubicacion";
+    } finally {
+        boton.disabled = false;
+    }
+}
+
+// watchPosition entrega punto cada pocos segundos; aqui solo se avisa al
+// servidor cuando la persona se ha movido de verdad, para no gastar.
+function seguirUbicacion() {
+    if (!navigator.geolocation || !compartiendoUbicacion) return;
+
+    if (vigilanteUbicacion !== null) {
+        navigator.geolocation.clearWatch(vigilanteUbicacion);
+    }
+
+    vigilanteUbicacion = navigator.geolocation.watchPosition(
+        async (posicion) => {
+            if (!compartiendoUbicacion) return;
+
+            const nueva = {
+                lat: posicion.coords.latitude,
+                lon: posicion.coords.longitude,
+                precision: posicion.coords.accuracy ?? 0
+            };
+
+            const movido = distanciaEntre(ultimaPosicion, nueva) >= METROS_MINIMO_MOVIMIENTO;
+            if (!movido) return;
+
+            ultimaPosicion = nueva;
+
+            try {
+                await compartiendoUbicacion.actualizar(nueva);
+            } catch (error) {
+                // Si ya no esta en directo (caduco o se paro), se deja de vigilar.
+                await detenerCompartido();
+            }
+        },
+        () => {},
+        { enableHighAccuracy: true, maximumAge: 15000, timeout: 30000 }
+    );
+}
+
+function programarCaducidad() {
+    if (temporizadorCaducidad) clearTimeout(temporizadorCaducidad);
+    if (!compartiendoUbicacion) return;
+
+    const restante = Math.max(0, compartiendoUbicacion.expiraEn - Date.now());
+    temporizadorCaducidad = setTimeout(() => {
+        detenerCompartido();
+    }, restante);
+}
+
+async function detenerCompartido() {
+    if (!compartiendoUbicacion) return;
+
+    const enCurso = compartiendoUbicacion;
+    compartiendoUbicacion = null;
+
+    if (vigilanteUbicacion !== null) {
+        navigator.geolocation?.clearWatch(vigilanteUbicacion);
+        vigilanteUbicacion = null;
+    }
+    if (temporizadorCaducidad) {
+        clearTimeout(temporizadorCaducidad);
+        temporizadorCaducidad = null;
+    }
+    ultimaPosicion = null;
+
+    try {
+        await enCurso.parar();
+    } catch (error) {
+        // Si ya estaba parada en el servidor, no hay nada que arreglar.
+    }
+}
+
+async function pararCompartido() {
+    await detenerCompartido();
+    cerrarModalUbicacion();
+
+    if (amigoChatActual) await cargarMensajesChat();
+    else if (grupoActual) await cargarMensajesServidor();
+}
+
+/* ==============================
+   SELECTOR DE EMOJIS, GIF Y STICKERS
+   Un único panel sirve para los cuatro sitios donde se escribe: chat
+   privado, servidor, comentarios de reels y comentarios de
+   publicaciones. Se abre sobre el campo de escritura sin robarle el
+   foco, para que en el móvil no salte el teclado de golpe.
+   ============================== */
+
+const CLAVE_EMOJIS_RECIENTES = "atuistas_emoji_recientes";
+const MAXIMO_EMOJIS_RECIENTES = 32;
+
+let destinoSelector = null;
+let pestanaSelector = "emojis";
+let temporizadorBusqueda = null;
+let consultaEnCurso = 0;
+let emojisRecientes = leerEmojiRecientes();
+
+function leerEmojiRecientes() {
+    try {
+        const guardado = JSON.parse(
+            localStorage.getItem(CLAVE_EMOJIS_RECIENTES) || "[]"
+        );
+        return Array.isArray(guardado)
+            ? guardado.filter((pieza) => Array.isArray(pieza) && pieza[0])
+            : [];
+    } catch (error) {
+        return [];
+    }
+}
+
+function recordarEmoji(emoji, nombre) {
+    emojisRecientes = [[emoji, nombre], ...emojisRecientes.filter((pieza) => pieza[0] !== emoji)]
+        .slice(0, MAXIMO_EMOJIS_RECIENTES);
+
+    try {
+        localStorage.setItem(CLAVE_EMOJIS_RECIENTES, JSON.stringify(emojisRecientes));
+    } catch (error) {
+        // Si el navegador no deja guardar, los recientes duran esta sesión.
+    }
+}
+
+// El botón se inserta antes del campo de escritura en cada sitio. Se crea
+// siempre igual para no repetir el dibujo cuatro veces.
+function asegurarBotonEmoji(idEntrada, destino) {
+    if (document.getElementById(`boton-emoji-${destino}`)) return;
+
+    const entrada = document.getElementById(idEntrada);
+    if (!entrada || !entrada.parentNode) return;
+
+    const boton = document.createElement("button");
+    boton.type = "button";
+    boton.id = `boton-emoji-${destino}`;
+    boton.className = "boton-emoji";
+    boton.title = "Emojis, GIF y stickers";
+    boton.setAttribute("aria-label", "Emojis, GIF y stickers");
+    boton.innerHTML = `
+        <svg viewBox="0 0 24 24" width="21" height="21" aria-hidden="true" focusable="false">
+            <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/>
+            <circle cx="9" cy="10" r="1.3" fill="currentColor"/>
+            <circle cx="15" cy="10" r="1.3" fill="currentColor"/>
+            <path d="M8 14.2a5 5 0 0 0 8 0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>`;
+
+    // Sin preventDefault el móvil cierra el teclado al pulsar el botón.
+    boton.addEventListener("mousedown", (evento) => evento.preventDefault());
+    boton.addEventListener("click", (evento) => {
+        evento.preventDefault();
+        alternarSelector(destino, idEntrada);
+    });
+
+    entrada.parentNode.insertBefore(boton, entrada);
+}
+
+function construirSelector() {
+    if (document.getElementById("selector-medio")) return;
+
+    const panel = document.createElement("div");
+    panel.id = "selector-medio";
+    panel.className = "selector-medio";
+    panel.hidden = true;
+    panel.innerHTML = `
+        <div class="selector-medio-pestanas">
+            <button type="button" data-pestana="emojis" class="activa">EMOJIS</button>
+            <button type="button" data-pestana="gifs">GIF</button>
+            <button type="button" data-pestana="stickers">STICKERS</button>
+            <button type="button" id="selector-medio-cerrar" aria-label="Cerrar el selector">✕</button>
+        </div>
+        <input
+            id="selector-medio-buscar"
+            class="selector-medio-buscar"
+            type="search"
+            placeholder="Buscar emoji, GIF o sticker"
+            autocomplete="off"
+        >
+        <div id="selector-medio-categorias" class="selector-medio-categorias"></div>
+        <div id="selector-medio-rejilla" class="selector-medio-rejilla"></div>`;
+
+    document.body.appendChild(panel);
+
+    panel.querySelectorAll("[data-pestana]").forEach((boton) => {
+        boton.addEventListener("click", () => {
+            pestanaSelector = boton.dataset.pestana;
+            panel.querySelectorAll("[data-pestana]").forEach((otro) => {
+                otro.classList.toggle("activa", otro === boton);
+            });
+            pintarSelector();
+        });
+    });
+
+    panel.querySelector("#selector-medio-cerrar").addEventListener("click", cerrarSelector);
+
+    const buscador = panel.querySelector("#selector-medio-buscar");
+    buscador.addEventListener("input", () => {
+        clearTimeout(temporizadorBusqueda);
+        temporizadorBusqueda = setTimeout(pintarSelector, 250);
+    });
+
+    document.addEventListener("mousedown", (evento) => {
+        if (panel.hidden) return;
+        if (panel.contains(evento.target)) return;
+        if (evento.target.closest?.(".boton-emoji")) return;
+        cerrarSelector();
+    });
+
+    document.addEventListener("keydown", (evento) => {
+        if (evento.key === "Escape" && !panel.hidden) cerrarSelector();
+    });
+}
+
+function posicionarSelector(ancla) {
+    const panel = document.getElementById("selector-medio");
+    const caja = ancla.getBoundingClientRect();
+
+    panel.style.left = "8px";
+    panel.style.right = "8px";
+    panel.style.bottom = `${Math.max(8, window.innerHeight - caja.top + 6)}px`;
+    panel.style.maxHeight = `${Math.min(340, window.innerHeight * 0.5)}px`;
+}
+
+function alternarSelector(destino, idEntrada) {
+    const panel = document.getElementById("selector-medio");
+
+    if (panel && !panel.hidden && destinoSelector?.destino === destino) {
+        cerrarSelector();
+        return;
+    }
+
+    construirSelector();
+    const nuevo = document.getElementById("selector-medio");
+    destinoSelector = { destino, idEntrada };
+
+    posicionarSelector(document.getElementById(`boton-emoji-${destino}`));
+    nuevo.hidden = false;
+    pintarSelector();
+}
+
+function cerrarSelector() {
+    const panel = document.getElementById("selector-medio");
+    if (panel) panel.hidden = true;
+    destinoSelector = null;
+}
+
+// Inserta texto donde esté el cursor, no al final: se nota al escribir a
+// mitad de un mensaje ya empezado.
+function insertarEnEntrada(entrada, texto) {
+    const inicio = entrada.selectionStart ?? entrada.value.length;
+    const fin = entrada.selectionEnd ?? inicio;
+
+    entrada.value = entrada.value.slice(0, inicio) + texto + entrada.value.slice(fin);
+
+    const cursor = inicio + texto.length;
+    entrada.focus();
+    try {
+        entrada.setSelectionRange(cursor, cursor);
+    } catch (error) {
+        // Algunos navegadores de móvil no dejan colocar el cursor así.
+    }
+
+    entrada.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
+function normalizarBusqueda(texto) {
+    return String(texto ?? "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+}
+
+function pintarSelector() {
+    const panel = document.getElementById("selector-medio");
+    if (!panel || !destinoSelector) return;
+
+    const buscador = panel.querySelector("#selector-medio-buscar");
+    const categorias = panel.querySelector("#selector-medio-categorias");
+    const rejilla = panel.querySelector("#selector-medio-rejilla");
+    const texto = normalizarBusqueda(buscador.value.trim());
+
+    if (pestanaSelector !== "emojis") {
+        categorias.hidden = true;
+        buscarMedioEnTenor(texto);
+        return;
+    }
+
+    // Buscando: una sola lista de resultados, sin cabeceras de grupo.
+    if (texto) {
+        const piezas = [];
+        for (const grupo of EMOJIS_ATUISTAS) {
+            for (const pieza of grupo.items) {
+                if (normalizarBusqueda(pieza[1]).includes(texto)) piezas.push(pieza);
+            }
+        }
+
+        categorias.hidden = true;
+        rejilla.innerHTML = piezas.length
+            ? piezas.map(([emoji, nombre]) => `
+                <button type="button" class="selector-emoji" data-emoji="${emoji}" data-nombre="${escapeHtml(nombre)}" title="${escapeHtml(nombre)}">
+                    ${emoji}
+                </button>`).join("")
+            : '<p class="selector-medio-vacio">No hay ningún emoji con ese nombre.</p>';
+        return;
+    }
+
+    const grupos = [];
+    if (emojisRecientes.length) {
+        grupos.push({ etiqueta: "Recientes", items: emojisRecientes });
+    }
+    grupos.push(...EMOJIS_ATUISTAS);
+
+    categorias.hidden = false;
+    categorias.innerHTML = grupos.map((grupo) => `
+        <button type="button" data-grupo="${escapeHtml(grupo.etiqueta)}">${escapeHtml(grupo.etiqueta)}</button>`).join("");
+
+    rejilla.innerHTML = grupos.map((grupo) => `
+        <h4 class="selector-medio-titulo">${escapeHtml(grupo.etiqueta)}</h4>
+        <div class="selector-medio-fila">
+            ${grupo.items.map(([emoji, nombre]) => `
+                <button type="button" class="selector-emoji" data-emoji="${emoji}" data-nombre="${escapeHtml(nombre)}" title="${escapeHtml(nombre)}">
+                    ${emoji}
+                </button>`).join("")}
+        </div>`).join("");
+}
+
+// GIF y stickers llegan de Tenor. La clave la tiene el servidor: si no está
+// puesta, el panel lo dice claro en vez de quedarse en blanco.
+async function buscarMedioEnTenor(texto) {
+    const panel = document.getElementById("selector-medio");
+    if (!panel) return;
+
+    const rejilla = panel.querySelector("#selector-medio-rejilla");
+    const consulta = ++consultaEnCurso;
+
+    if (!texto) {
+        rejilla.innerHTML = `<p class="selector-medio-vacio">Escribe arriba qué ${pestanaSelector === "gifs" ? "GIF" : "sticker"} buscas.</p>`;
+        return;
+    }
+
+    rejilla.innerHTML = '<p class="selector-medio-vacio">Buscando…</p>';
+
+    try {
+        const token = localStorage.getItem("atuistas_token");
+        const respuesta = await fetch(
+            `/api/tenor/buscar?buscar=${encodeURIComponent(texto)}&tipo=${pestanaSelector}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
+        const cuerpo = await respuesta.json().catch(() => ({}));
+
+        if (consulta !== consultaEnCurso) return;
+
+        if (respuesta.status === 503 && cuerpo.faltaClave) {
+            rejilla.innerHTML = `
+                <p class="selector-medio-vacio">
+                    Falta la clave de Tenor en el servidor.<br>
+                    Los emojis funcionan; para GIF y stickers hay que poner
+                    ATUISTAS_TENOR_API_KEY en el .env y reiniciar.
+                </p>`;
+            return;
+        }
+
+        if (!respuesta.ok) {
+            rejilla.innerHTML = `<p class="selector-medio-vacio">${escapeHtml(cuerpo.error || "No se pudo buscar")}</p>`;
+            return;
+        }
+
+        if (!cuerpo.medio?.length) {
+            rejilla.innerHTML = '<p class="selector-medio-vacio">Sin resultados.</p>';
+            return;
+        }
+
+        rejilla.innerHTML = `
+            <div class="selector-medio-medios">
+                ${cuerpo.medio.map((item) => `
+                    <button type="button" class="selector-medio-pieza" data-url="${escapeHtml(item.url)}" title="${escapeHtml(item.titulo || "Enviar")}">
+                        <img src="${escapeHtml(item.mini || item.url)}" alt="${escapeHtml(item.titulo || "")}" loading="lazy">
+                    </button>`).join("")}
+            </div>`;
+    } catch (error) {
+        if (consulta !== consultaEnCurso) return;
+        rejilla.innerHTML = '<p class="selector-medio-vacio">Sin conexión para buscar.</p>';
+    }
+}
+
+// Pulsar un emoji lo pone en el campo; un GIF o sticker se envía tal cual,
+// como si la persona lo hubiera subido desde el móvil.
+function manejarClicSelector(evento) {
+    const botonEmoji = evento.target.closest(".selector-emoji");
+    if (botonEmoji && destinoSelector) {
+        const entrada = document.getElementById(destinoSelector.idEntrada);
+        if (entrada) {
+            insertarEnEntrada(entrada, botonEmoji.dataset.emoji);
+            recordarEmoji(botonEmoji.dataset.emoji, botonEmoji.dataset.nombre || "");
+        }
+        return;
+    }
+
+    const pieza = evento.target.closest(".selector-medio-pieza");
+    if (pieza && destinoSelector) {
+        enviarMedioSeleccionado(
+            pieza.dataset.url,
+            destinoSelector.destino,
+            destinoSelector.idEntrada
+        );
+    }
+}
+
+async function enviarMedioSeleccionado(url, destino, idEntrada) {
+    cerrarSelector();
+
+    try {
+        const respuesta = await fetch(url);
+        if (!respuesta.ok) throw new Error("No se pudo descargar el GIF");
+
+        const blob = await respuesta.blob();
+        const esImagen = (blob.type || "").startsWith("image/");
+        const extension = esImagen ? "gif" : (blob.type?.split("/")[1] || "bin");
+        const archivo = new File([blob], `tenor.${extension}`, { type: blob.type });
+
+        // En los comentarios solo hay texto: se manda el enlace del GIF.
+        if (destino === "comentario-reel" || destino === "comentario-publicacion") {
+            const entrada = document.getElementById(idEntrada);
+            if (entrada) insertarEnEntrada(entrada, url);
+            return;
+        }
+
+        if (destino === "servidor") {
+            await enviarMensajeServidor("", { archivo });
+            return;
+        }
+
+        await enviarMensajeChat("", { archivo });
+    } catch (error) {
+        alert(error.message || "No se pudo enviar el GIF");
+    }
+}
+
+/* ==============================
    MOSTRAR APLICACIÓN
    ============================== */
 
@@ -1457,9 +2149,9 @@ async function abrirChat(amigo) {
 
         await cargarMensajesChat();
 
-        if (entradaMensaje) {
-            entradaMensaje.focus();
-        }
+        // El teclado NO se abre solo: en el móvil abriría la pantalla del
+        // teclado nada más entrar en un chat. Se abre cuando la persona pulsa
+        // el campo de escritura.
 
         if (intervaloChat) {
             clearInterval(intervaloChat);
@@ -1600,6 +2292,12 @@ async function cargarMensajesChat() {
                 envoltura.appendChild(adjunto);
             }
 
+            // La ubicación en vivo es un mensaje de texto con datos dentro:
+            // se pinta la tarjeta del mapa en vez del texto pelado.
+            if (mensaje.datos?.ubicacion) {
+                envoltura.insertAdjacentHTML("beforeend", htmlTarjetaUbicacion(mensaje));
+            }
+
             const contenido = document.createElement("p");
             contenido.textContent = mensaje.contenido || "";
             if (mensaje.editado_en) {
@@ -1609,8 +2307,10 @@ async function cargarMensajesChat() {
                 contenido.appendChild(marca);
             }
 
-            // Un mensaje solo con archivo no necesita un párrafo vacío debajo.
-            if (mensaje.contenido || mensaje.editado_en) {
+            // Un mensaje solo con archivo no necesita un párrafo vacío debajo. La
+            // ubicación tampoco: el texto ("📍 ...") solo haría ruido bajo el mapa.
+            const conUbicacion = Boolean(mensaje.datos?.ubicacion);
+            if ((mensaje.contenido || mensaje.editado_en) && !conUbicacion) {
                 envoltura.appendChild(contenido);
             }
 
@@ -2122,7 +2822,9 @@ async function abrirChatPorId(usuarioId) {
    CAMBIAR SECCIÓN
    ============================== */
 
-function mostrarSeccion(seccion) {
+let seccionActual = "entrar";
+
+function mostrarSeccion(seccion, opciones = {}) {
     const panelChat = document.getElementById("panel-chat");
 
     if (panelChat) {
@@ -2203,6 +2905,138 @@ function mostrarSeccion(seccion) {
         mostrarPestanaServidor("chats");
         cargarAmigos();
     }
+
+    seccionActual = seccion;
+
+    // El historial se sincroniza con la sección, salvo que el cambio venga
+    // del propio botón atrás (entonces ya se ha descontado).
+    if (!opciones.desdeAtras) {
+        sincronizarAtrasSeccion(seccion);
+    }
+}
+
+/* ==============================================================
+   BOTÓN ATRÁS DEL MÓVIL
+   Cada cosa que se abre encima (una ventana, un reel, un chat, un
+   servidor) apila una entrada del historial. Así el botón del móvil
+   va cerrando de arriba abajo y, desde Entrar sin nada abierto, sale
+   de la aplicación porque no queda nada apilado.
+   ============================================================== */
+
+let capasApiladas = 0;
+let gestionandoAtras = false;
+let desapilandoPorInterfaz = false;
+
+function apilarCapa() {
+    window.history?.pushState?.({ capa: true }, "");
+    capasApiladas += 1;
+}
+
+// Al cerrar con el botón o la × de la propia capa, la entrada del historial
+// se gasta sola para que el botón atrás no la encuentre por detrás.
+function desapilarCapa() {
+    if (gestionandoAtras || capasApiladas === 0) return;
+    desapilandoPorInterfaz = true;
+    window.history?.back?.();
+}
+
+// El historial y las secciones se cuadran solos: si no estamos en Entrar hay
+// una entrada; al volver a Entrar se gasta.
+function sincronizarAtrasSeccion(seccion) {
+    const hayEntradaDeSeccion = window.history?.state?.capa === "seccion";
+    if (seccion !== "entrar" && !hayEntradaDeSeccion) {
+        window.history?.pushState?.({ capa: "seccion" }, "");
+        capasApiladas += 1;
+        return;
+    }
+    if (seccion === "entrar" && hayEntradaDeSeccion) {
+        desapilandoPorInterfaz = true;
+        window.history?.back?.();
+    }
+}
+
+// Cierra lo que haya abierto encima: primero las pantallas completas y
+// después la última ventana abierta, usando su propio botón de cerrar.
+function cerrarCapaSuperior() {
+    const visorReels = document.getElementById("visor-reels");
+    if (visorReels && visorReels.hidden === false) {
+        cerrarVisorReels();
+        return true;
+    }
+    if (document.getElementById("visor-historias-pantalla")?.hidden === false) {
+        cerrarVisorHistorias();
+        return true;
+    }
+    if (document.getElementById("panel-chat")?.hidden === false) {
+        cerrarChat();
+        return true;
+    }
+    if (document.getElementById("panel-servidor")?.hidden === false && vistaServidorActual !== "lista") {
+        mostrarFaseServidor("lista");
+        return true;
+    }
+
+    const ventanas = [...document.querySelectorAll(".modal")].filter((ventana) => !ventana.hidden);
+    if (ventanas.length) {
+        const ventana = ventanas[ventanas.length - 1];
+        const boton = ventana.querySelector("[id^='boton-cerrar'], .boton-cerrar-modal");
+        if (boton) boton.click();
+        else ventana.hidden = true;
+        return true;
+    }
+
+    if (document.getElementById("visor-estados")?.hidden === false) {
+        mostrarMisEstados();
+        return true;
+    }
+
+    return false;
+}
+
+window.addEventListener("popstate", () => {
+    capasApiladas = Math.max(0, capasApiladas - 1);
+
+    // Esta entrada se gastó por un cierre hecho con los botones de la propia
+    // pantalla: no hay nada que hacer.
+    if (desapilandoPorInterfaz) {
+        desapilandoPorInterfaz = false;
+        return;
+    }
+
+    gestionandoAtras = true;
+    try {
+        // Si hay algo abierto encima se cierra; si no, se vuelve a Entrar.
+        if (!cerrarCapaSuperior() && seccionActual !== "entrar") {
+            mostrarSeccion("entrar", { desdeAtras: true });
+        }
+    } finally {
+        gestionandoAtras = false;
+    }
+});
+
+// Las capas que se abren y se cierran solas (cualquier ventana) apilan y
+// desapilan solas: así no hay que tocar una por una. Solo se mira el atributo
+// `hidden`, que es lo único que cambia al abrirlas; vigilar el árbol entero
+// añadiría trabajo a cada lista de mensajes que se repinta.
+function observarCapas() {
+    if (typeof MutationObserver !== "function") return;
+    const selectores = ".modal, #visor-reels, #visor-historias-pantalla, #panel-chat, #panel-servidor";
+    const observador = new MutationObserver((cambios) => {
+        for (const cambio of cambios) {
+            if (cambio.type !== "attributes") continue;
+            const elemento = cambio.target;
+            if (!elemento.matches?.(selectores)) continue;
+            if (elemento.hidden) {
+                desapilarCapa();
+            } else {
+                apilarCapa();
+            }
+        }
+    });
+    observador.observe(document.body, {
+        attributes: true,
+        attributeFilter: ["hidden"]
+    });
 }
 
 function cambiarFeedEntrada(publico) {
@@ -2314,6 +3148,11 @@ function actualizarContextoServidor() {
 // Navega a una de las tres fases y refleja el cambio en el panel.
 function mostrarFaseServidor(fase) {
     vistaServidorActual = fase;
+
+    // La barra de contexto (nombre, canales) solo aparece con un servidor
+    // abierto. En la lista se esconde para que las pestañas no bajen.
+    const barraContexto = document.getElementById("barra-contexto-servidor");
+    if (barraContexto) barraContexto.hidden = fase === "lista";
 
     if (fase === "lista") {
         document.getElementById("panel-servidor").hidden = true;
@@ -2563,7 +3402,9 @@ const autorId = mensaje.autor_id;
            </div>`
         : "";
 
-    const cuerpo = mensaje.contenido ? `<p>${escapeHtml(mensaje.contenido)}</p>` : "";
+    const cuerpo = mensaje.contenido && !mensaje.datos?.ubicacion
+        ? `<p>${escapeHtml(mensaje.contenido)}</p>`
+        : "";
 
     return `
         <article class="mensaje-chat mensaje-chat-${mensaje.es_mio ? "enviado" : "recibido"}
@@ -2576,6 +3417,7 @@ const autorId = mensaje.autor_id;
             ${cita}
             <div class="mensaje-chat-contenido">
                 ${adjunto}
+                ${htmlTarjetaUbicacion(mensaje)}
                 ${cuerpo}
                 <span class="meta-mensaje-servidor">${insignias.join("")}
                     <time>${new Date(mensaje.creado_en).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</time>
@@ -2718,7 +3560,8 @@ if (formularioMensajeServidor) {
         tiempoGrabacion: document.getElementById("tiempo-grabacion-servidor"),
         botonDescartar: document.getElementById("boton-descartar-grabacion-servidor"),
         chipAdjunto: document.getElementById("estado-adjunto-servidor"),
-        enviar: enviarMensajeServidor
+        enviar: enviarMensajeServidor,
+        compartirUbicacion: (minutos) => compartirUbicacionServidor(minutos)
     });
 }
 
@@ -3932,6 +4775,23 @@ async function manejarEventoTiempoReal(evento) {
             const meta = mensaje.querySelector(".meta-mensaje-servidor");
             if (meta && !meta.querySelector("small")) {
                 meta.insertAdjacentHTML("afterbegin", "<small>editado</small>");
+            }
+            return;
+        }
+        case "ubicacion_actualizada": {
+            // La tarjeta se repinta entera: el mapa cambia de posición y el
+            // estado puede haber pasado de "en vivo" a "terminada".
+            if (canalActual && evento.canalId !== canalActual.id) return;
+            const mensaje = mensajesServidor.querySelector(`[data-mensaje-id="${CSS.escape(evento.mensaje.id)}"]`);
+            if (!mensaje) {
+                agregarMensajeServidor(evento.mensaje);
+                return;
+            }
+            const contenido = mensaje.querySelector(".mensaje-chat-contenido");
+            const nueva = htmlTarjetaUbicacion(evento.mensaje);
+            if (contenido && nueva) {
+                contenido.querySelector(".tarjeta-ubicacion")?.remove();
+                contenido.insertAdjacentHTML("afterbegin", nueva);
             }
             return;
         }
@@ -7468,6 +8328,7 @@ document.getElementById("visor-estados").addEventListener("click", async (evento
 
 async function cargarComentariosPublicacion(publicacionId, contenedor) {
     const datos = await solicitarGrupo(`/api/publicaciones/${encodeURIComponent(publicacionId)}/comentarios`);
+    const idEntrada = `entrada-comentario-${publicacionId}`;
     contenedor.innerHTML = `
         <div class="lista-comentarios-actuales">
             ${datos.comentarios.map((comentario) => `
@@ -7475,10 +8336,12 @@ async function cargarComentariosPublicacion(publicacionId, contenedor) {
             `).join("") || '<p class="estado-amigos">Sé la primera persona en comentar.</p>'}
         </div>
         <form class="formulario-comentario-actual" data-publicacion="${escapeHtml(publicacionId)}">
-            <input name="texto" type="text" maxlength="1000" placeholder="Escribe un comentario..." required>
+            <input id="${escapeHtml(idEntrada)}" name="texto" type="text" maxlength="1000" placeholder="Escribe un comentario..." required>
             <button type="submit">ENVIAR</button>
         </form>
     `;
+
+    asegurarBotonEmoji(idEntrada, "comentario-publicacion");
 }
 
 function conectarFeed(contenedor) {
@@ -8528,5 +9391,54 @@ async function refrescarTrasBorrar(tipo, id) {
 /* ==============================
    INICIAR
    ============================== */
+
+observarCapas();
+
+// Los botones de emojis viven en cuatro sitios distintos: dos campos fijos y
+// dos formularios que se dibujan al abrir. Se preparan una vez aqui.
+document.addEventListener("click", manejarClicSelector);
+document.addEventListener("scroll", () => {
+    if (!document.getElementById("selector-medio")?.hidden) cerrarSelector();
+}, true);
+
+asegurarBotonEmoji("entrada-mensaje", "chat");
+asegurarBotonEmoji("entrada-mensaje-servidor", "servidor");
+asegurarBotonEmoji("texto-comentario-reel", "comentario-reel");
+
+// Modal de ubicación: los chips fijan la duración y el deslizador la ajusta
+// fina entre 15 minutos y 8 horas.
+const deslizadorUbicacion = document.getElementById("deslizador-ubicacion");
+const textoDuracion = document.getElementById("texto-duracion");
+
+function reflejarDuracion() {
+    const minutos = Number(deslizadorUbicacion?.value ?? 60);
+    if (textoDuracion) textoDuracion.textContent = textoDuracionUbicacion(minutos);
+
+    document.querySelectorAll(".chips-duracion button").forEach((chip) => {
+        chip.classList.toggle("activa", Number(chip.dataset.minutos) === minutos);
+    });
+
+    return minutos;
+}
+
+deslizadorUbicacion?.addEventListener("input", reflejarDuracion);
+
+document.querySelectorAll(".chips-duracion button").forEach((chip) => {
+    chip.addEventListener("click", () => {
+        if (deslizadorUbicacion) deslizadorUbicacion.value = chip.dataset.minutos;
+        reflejarDuracion();
+    });
+});
+
+document.getElementById("boton-cerrar-modal-ubicacion")?.addEventListener("click", cerrarModalUbicacion);
+document.getElementById("boton-enviar-ubicacion")?.addEventListener("click", async () => {
+    if (!enviarUbicacionPendiente) return;
+    const compartir = enviarUbicacionPendiente;
+    await compartir(reflejarDuracion());
+});
+
+document.getElementById("boton-parar-ubicacion")?.addEventListener("click", pararCompartido);
+
+reflejarDuracion();
 
 comprobarSesion();

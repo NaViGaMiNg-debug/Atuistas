@@ -2098,6 +2098,18 @@ button.servidor-item {
     border-bottom: 1px solid var(--borde-suave);
 }
 
+/* Sin servidor abierto la barra no hace falta y empujaba las pestañas hacia
+   abajo: se esconde para que queden a la misma altura que en Entrar. */
+#barra-contexto-servidor[hidden] {
+    display: none;
+}
+
+/* Las pestañas de Servidores respiran menos que las de Entrar. */
+#contenido-servidores > .pestanas-amigos {
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+}
+
 .boton-flecha-contexto {
     display: inline-flex;
     align-items: center;
@@ -3722,6 +3734,383 @@ button.servidor-tarjeta:focus-visible {
    CÓDIGO EN CUENTA
    ============================== */
 
+/* ========================================
+   UBICACIÓN EN DIRECTO
+   La tarjeta del mapa dentro del mensaje y la ventanita para elegir
+   cuánto tiempo compartirla.
+   ======================================== */
+
+.tarjeta-ubicacion {
+    display: flex;
+    flex-direction: column;
+
+    margin: 6px 0;
+
+    overflow: hidden;
+
+    background: var(--fondo-panel);
+    border: 1px solid var(--borde-suave);
+    border-radius: 12px;
+}
+
+.tarjeta-ubicacion.en-vivo {
+    border-color: #2f7d4f;
+}
+
+.ubicacion-mapa {
+    display: block;
+    height: 132px;
+    background: var(--fondo-base);
+}
+
+.ubicacion-mapa img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.ubicacion-pie {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    padding: 8px 10px;
+}
+
+.ubicacion-estado {
+    flex: 0 0 auto;
+    padding: 2px 8px;
+
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+
+    color: #8fe0ab;
+    background: rgba(47, 125, 79, 0.22);
+    border-radius: 999px;
+}
+
+.tarjeta-ubicacion.detenida .ubicacion-estado {
+    color: var(--texto-secundario);
+    background: var(--fondo-hover);
+}
+
+.ubicacion-detalle {
+    overflow: hidden;
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--texto-secundario);
+}
+
+.dialogo-ubicacion {
+    max-width: 420px;
+}
+
+.cuerpo-modal-ubicacion {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+
+    padding: 16px 18px 18px;
+}
+
+.texto-modal-ubicacion {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--texto-secundario);
+}
+
+.chips-duracion {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.chips-duracion button {
+    padding: 7px 12px;
+
+    font-size: 12px;
+
+    color: var(--texto-secundario);
+    background: var(--fondo-panel);
+    border: 1px solid var(--borde-suave);
+    border-radius: 999px;
+    cursor: pointer;
+}
+
+.chips-duracion button.activa {
+    color: #fff;
+    background: var(--fondo-activo);
+    border-color: var(--texto-secundario);
+}
+
+.etiqueta-duracion {
+    display: flex;
+    justify-content: space-between;
+
+    font-size: 13px;
+    color: var(--texto-secundario);
+}
+
+.etiqueta-duracion strong {
+    color: var(--texto);
+}
+
+#deslizador-ubicacion {
+    width: 100%;
+}
+
+.estado-modal-ubicacion {
+    min-height: 18px;
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.4;
+    color: var(--texto-secundario);
+}
+
+.acciones-modal-ubicacion {
+    display: flex;
+    gap: 8px;
+}
+
+.acciones-modal-ubicacion button {
+    flex: 1;
+}
+
+.boton-parar-ubicacion {
+    padding: 12px 16px;
+
+    font-size: 13px;
+    font-weight: 700;
+
+    color: #fff;
+    background: #8a2f2f;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+}
+
+.boton-parar-ubicacion[hidden] {
+    display: none;
+}
+
+/* ========================================
+   SELECTOR DE EMOJIS, GIF Y STICKERS
+   Panel flotante que se abre justo encima del campo de escritura.
+   ======================================== */
+
+.boton-emoji {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    flex: 0 0 auto;
+
+    width: 38px;
+    height: 38px;
+
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--texto-secundario);
+    cursor: pointer;
+    transition: background var(--transicion-rapida), color var(--transicion-rapida);
+}
+
+.boton-emoji:hover {
+    background: var(--fondo-hover);
+    color: var(--texto);
+}
+
+.selector-medio {
+    position: fixed;
+    z-index: 900;
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 8px;
+
+    padding: 10px;
+    overflow: hidden;
+
+    background: var(--fondo-elevado);
+    border: 1px solid var(--borde-suave);
+    border-radius: 16px;
+    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.55);
+}
+
+.selector-medio[hidden] {
+    display: none;
+}
+
+.selector-medio-pestanas {
+    display: flex;
+    gap: 6px;
+}
+
+.selector-medio-pestanas button {
+    flex: 1;
+
+    padding: 7px 6px;
+
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+
+    color: var(--texto-secundario);
+    background: var(--fondo-panel);
+    border: 1px solid transparent;
+    border-radius: 9px;
+    cursor: pointer;
+}
+
+.selector-medio-pestanas button.activa {
+    color: #fff;
+    background: var(--fondo-activo);
+    border-color: var(--borde);
+}
+
+#selector-medio-cerrar {
+    flex: 0 0 34px;
+    color: var(--texto-secundario);
+    font-size: 14px;
+}
+
+.selector-medio-buscar {
+    width: 100%;
+    padding: 9px 11px;
+
+    font-size: 14px;
+
+    color: var(--texto);
+    background: var(--fondo-base);
+    border: 1px solid var(--borde-suave);
+    border-radius: 10px;
+}
+
+.selector-medio-buscar:focus {
+    outline: none;
+    border-color: var(--texto-secundario);
+}
+
+.selector-medio-categorias {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.selector-medio-categorias::-webkit-scrollbar {
+    display: none;
+}
+
+.selector-medio-categorias button {
+    flex: 0 0 auto;
+    padding: 5px 10px;
+
+    font-size: 11px;
+
+    color: var(--texto-secundario);
+    background: var(--fondo-panel);
+    border: none;
+    border-radius: 999px;
+    cursor: pointer;
+}
+
+.selector-medio-rejilla {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.selector-medio-titulo {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+
+    margin: 6px 0 2px;
+    padding: 3px 4px;
+
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+
+    color: var(--texto-secundario);
+    background: var(--fondo-elevado);
+}
+
+.selector-medio-fila {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(38px, 1fr));
+    gap: 2px;
+}
+
+.selector-medio-rejilla:not(:has(.selector-medio-titulo)) {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(38px, 1fr));
+}
+
+.selector-emoji {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 38px;
+    height: 38px;
+
+    font-size: 22px;
+    line-height: 1;
+
+    background: transparent;
+    border: none;
+    border-radius: 9px;
+    cursor: pointer;
+}
+
+.selector-emoji:hover {
+    background: var(--fondo-hover);
+}
+
+.selector-medio-medios {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+}
+
+.selector-medio-pieza {
+    padding: 0;
+    overflow: hidden;
+
+    aspect-ratio: 1;
+
+    background: var(--fondo-panel);
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+.selector-medio-pieza img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.selector-medio-vacio {
+    margin: 10px 4px;
+    font-size: 13px;
+    line-height: 1.5;
+    text-align: center;
+    color: var(--texto-secundario);
+}
+
 .codigo-cuenta {
     width: 100%;
 
@@ -3730,9 +4119,9 @@ button.servidor-tarjeta:focus-visible {
 
     align-items: center;
 
-    margin-bottom: 30px;
+    margin-top: 12px;
+    margin-bottom: 18px;
 }
-
 
 .codigo-cuenta h3 {
     margin: 0 0 15px;
@@ -5124,8 +5513,8 @@ button.servidor-tarjeta:focus-visible {
     justify-content: center;
     gap: 10px;
 
-    margin-bottom: 12px;
-    padding: 14px 20px;
+    margin-bottom: 10px;
+    padding: 12px 20px;
 
     border: none;
     border-radius: 12px;
@@ -6094,12 +6483,12 @@ button.servidor-tarjeta:focus-visible {
    ----------------------------- */
 
 .fondo-cuenta {
-    margin: 16px 0;
+    margin: 10px 0 0;
 }
 
 .fondo-cuenta img {
     width: 100%;
-    max-height: 140px;
+    max-height: 108px;
     object-fit: cover;
     border-radius: 10px;
     border: 1px solid #2b2b2b;

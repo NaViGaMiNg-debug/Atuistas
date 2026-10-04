@@ -1,10 +1,12 @@
 import { FastifyInstance } from "fastify";
 import { autenticar } from "../middleware/auth.middleware.js";
+
 import {
     guardarApodo,
     listarApodos,
     quitarApodo
 } from "../services/apodos.service.js";
+
 
 export async function apodosRoutes(app: FastifyInstance) {
     // Todos los apodos que he puesto: el cliente los guarda en memoria y los

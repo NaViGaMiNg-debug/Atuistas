@@ -16,6 +16,10 @@ export const env = {
     vapidPrivateKey: process.env.ATUISTAS_VAPID_PRIVATE_KEY ?? "",
     vapidSubject: process.env.ATUISTAS_VAPID_SUBJECT ?? "mailto:admin@atuistas.local",
 
+    // Clave de la API de Tenor para GIF y stickers. Va solo en el servidor:
+    // el navegador nunca la ve, solo llama a /api/tenor/buscar.
+    tenorApiKey: process.env.ATUISTAS_TENOR_API_KEY ?? "",
+
     database: {
         host: process.env.DB_HOST ?? "127.0.0.1",
         port: dbPort,

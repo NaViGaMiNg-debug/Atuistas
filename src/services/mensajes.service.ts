@@ -154,7 +154,8 @@ export async function obtenerMensajesConversacion(
             mp.mensaje_respondiendo_id,
             respuesta.contenido AS mensaje_respuesta_contenido,
             mp.creado_en,
-            mp.editado_en
+            mp.editado_en,
+            mp.datos
         FROM mensajes_privados mp
         INNER JOIN conversaciones_privadas cp
             ON cp.id = mp.conversacion_id
@@ -404,6 +405,193 @@ export async function enviarMensajeAdjunto(
         { usuarioId, mensajeId: resultado.rows[0].id },
         usuarioId
     );
+
+    return resultado.rows[0];
+}
+
+// ============================================================
+// UBICACIÓN EN DIRECTO
+// Un mensaje de texto normal cuyo campo datos trae la posición. Mientras la
+// persona comparte, la misma fila se va actualizando: no se crea un mensaje
+// nuevo por cada movimiento ni se ensucia el chat.
+// ============================================================
+
+export const MINUTOS_UBICACION_MINIMO = 15;
+export const MINUTOS_UBICACION_MAXIMO = 480;
+
+export function prepararDatosUbicacion(cuerpo: any) {
+    const lat = Number(cuerpo?.lat);
+    const lon = Number(cuerpo?.lon);
+
+    if (!Number.isFinite(lat) || lat < -90 || lat > 90) {
+        throw new Error("La latitud no es válida");
+    }
+
+    if (!Number.isFinite(lon) || lon < -180 || lon > 180) {
+        throw new Error("La longitud no es válida");
+    }
+
+    const precision = Math.min(
+        5000,
+        Math.max(0, Math.round(Number(cuerpo?.precision) || 0))
+    );
+
+    const minutos = Math.min(
+        MINUTOS_UBICACION_MAXIMO,
+        Math.max(
+            MINUTOS_UBICACION_MINIMO,
+            Math.round(Number(cuerpo?.minutos) || MINUTOS_UBICACION_MAXIMO)
+        )
+    );
+
+    const nombre = String(cuerpo?.nombre ?? "").trim().slice(0, 80);
+
+    return {
+        ubicacion: {
+            lat,
+            lon,
+            precision,
+            enVivo: true,
+            expiraEn: new Date(Date.now() + minutos * 60 * 1000).toISOString(),
+            nombre: nombre || "Ubicación en directo"
+        }
+    };
+}
+
+// Compartir por primera vez: crea el mensaje que luego se va actualizando.
+export async function enviarUbicacion(
+    usuarioId: string,
+    otroUsuarioId: string,
+    cuerpo: any
+) {
+    await comprobarConversacionPermitida(usuarioId, otroUsuarioId);
+
+    const datos = prepararDatosUbicacion(cuerpo);
+    const conversacionId = await obtenerOCrearConversacion(usuarioId, otroUsuarioId);
+
+    const resultado = await db.query(
+        `
+        INSERT INTO mensajes_privados (
+            conversacion_id,
+            autor_id,
+            tipo,
+            contenido,
+            datos
+        )
+        VALUES ($1, $2, 'texto', $3, $4::jsonb)
+        RETURNING
+            id,
+            autor_id,
+            tipo,
+            contenido,
+            archivo_id,
+            mensaje_respondiendo_id,
+            creado_en,
+            editado_en,
+            datos
+        `,
+        [
+            conversacionId,
+            usuarioId,
+            `📍 ${datos.ubicacion.nombre}`,
+            JSON.stringify(datos)
+        ]
+    );
+
+    await crearNotificacion(
+        otroUsuarioId,
+        "mensajes_privados",
+        "mensaje_privado",
+        "Nuevo mensaje",
+        "📍 Está compartiendo su ubicación",
+        { usuarioId, mensajeId: resultado.rows[0].id },
+        usuarioId
+    );
+
+    return resultado.rows[0];
+}
+
+// Movimiento: solo la persona que lo comparten puede moverlo, y solo si sigue
+// en vivo y sin caducar.
+export async function actualizarUbicacion(
+    usuarioId: string,
+    mensajeId: string,
+    cuerpo: any
+) {
+    const lat = Number(cuerpo?.lat);
+    const lon = Number(cuerpo?.lon);
+
+    if (!Number.isFinite(lat) || lat < -90 || lat > 90) {
+        throw new Error("La latitud no es válida");
+    }
+
+    if (!Number.isFinite(lon) || lon < -180 || lon > 180) {
+        throw new Error("La longitud no es válida");
+    }
+
+    const precision = Math.min(
+        5000,
+        Math.max(0, Math.round(Number(cuerpo?.precision) || 0))
+    );
+
+    const resultado = await db.query(
+        `
+        UPDATE mensajes_privados mp
+        SET datos = jsonb_set(
+            jsonb_set(
+                jsonb_set(
+                    mp.datos,
+                    '{ubicacion,lat}',
+                    to_jsonb($2::double precision)
+                ),
+                '{ubicacion,lon}',
+                to_jsonb($3::double precision)
+            ),
+            '{ubicacion,precision}',
+            to_jsonb($4::double precision)
+        )
+        WHERE
+            mp.id = $1::uuid
+            AND mp.autor_id = $5::uuid
+            AND (mp.datos->'ubicacion'->>'enVivo')::boolean IS TRUE
+            AND (mp.datos->'ubicacion'->>'expiraEn')::timestamptz > NOW()
+        RETURNING mp.id, mp.autor_id, mp.datos, mp.creado_en
+        `,
+        [mensajeId, lat, lon, precision, usuarioId]
+    );
+
+    if (resultado.rowCount !== 1) {
+        throw new Error("Esta ubicación ya no está en directo");
+    }
+
+    return resultado.rows[0];
+}
+
+// Parar: solo quien la comparte puede hacerlo, y el resto lo ve al instante.
+export async function detenerUbicacion(
+    usuarioId: string,
+    mensajeId: string
+) {
+    const resultado = await db.query(
+        `
+        UPDATE mensajes_privados mp
+        SET datos = jsonb_set(
+                mp.datos,
+                '{ubicacion,enVivo}',
+                'false'::jsonb
+            )
+        WHERE
+            mp.id = $1::uuid
+            AND mp.autor_id = $2::uuid
+            AND (mp.datos->'ubicacion'->>'enVivo')::boolean IS TRUE
+        RETURNING mp.id, mp.autor_id, mp.datos, mp.creado_en
+        `,
+        [mensajeId, usuarioId]
+    );
+
+    if (resultado.rowCount !== 1) {
+        throw new Error("Esta ubicación ya no está en directo");
+    }
 
     return resultado.rows[0];
 }

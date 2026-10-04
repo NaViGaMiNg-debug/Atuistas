@@ -8,7 +8,10 @@ import {
     enviarMensajeTexto,
     enviarMensajeAdjunto,
     editarMensajeTexto,
-    eliminarMensajesTexto
+    eliminarMensajesTexto,
+    enviarUbicacion,
+    actualizarUbicacion,
+    detenerUbicacion
 } from "../services/mensajes.service.js";
 
 export async function mensajesRoutes(app: FastifyInstance) {
@@ -219,6 +222,72 @@ export async function mensajesRoutes(app: FastifyInstance) {
             return reply.status(400).send({
                 error: mensaje
             });
+        }
+    });
+
+    // ============================================================
+    // UBICACIÓN EN DIRECTO
+    // ============================================================
+
+    // Empezar a compartir: crea el mensaje que después se va actualizando.
+    app.post<{
+        Params: { usuarioId: string };
+        Body: { lat?: number; lon?: number; precision?: number; minutos?: number; nombre?: string }
+    }>("/api/mensajes/conversacion/:usuarioId/ubicacion", {
+        preHandler: autenticar
+    }, async (request, reply) => {
+        try {
+            const mensaje = await enviarUbicacion(
+                request.usuario!.id,
+                request.params.usuarioId,
+                request.body
+            );
+            return reply.code(201).send({ mensaje });
+        } catch (error) {
+            const message = error instanceof Error
+                ? error.message
+                : "No se pudo compartir la ubicación";
+            return reply.code(400).send({ error: message });
+        }
+    });
+
+    // Movimiento: la misma tarjeta cambia de sitio sin crear mensajes nuevos.
+    app.patch<{
+        Params: { mensajeId: string };
+        Body: { lat?: number; lon?: number; precision?: number }
+    }>("/api/mensajes/:mensajeId/ubicacion", {
+        preHandler: autenticar
+    }, async (request, reply) => {
+        try {
+            const mensaje = await actualizarUbicacion(
+                request.usuario!.id,
+                request.params.mensajeId,
+                request.body
+            );
+            return { mensaje };
+        } catch (error) {
+            const message = error instanceof Error
+                ? error.message
+                : "No se pudo actualizar la ubicación";
+            return reply.code(400).send({ error: message });
+        }
+    });
+
+    // Dejar de compartir. Solo quien la comparte puede pararla.
+    app.post<{ Params: { mensajeId: string } }>("/api/mensajes/:mensajeId/ubicacion/detener", {
+        preHandler: autenticar
+    }, async (request, reply) => {
+        try {
+            const mensaje = await detenerUbicacion(
+                request.usuario!.id,
+                request.params.mensajeId
+            );
+            return { mensaje };
+        } catch (error) {
+            const message = error instanceof Error
+                ? error.message
+                : "No se pudo detener la ubicación";
+            return reply.code(400).send({ error: message });
         }
     });
 

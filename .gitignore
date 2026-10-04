@@ -24,3 +24,6 @@ cap-*.png
 # Secretos de produccion: nunca al repositorio.
 clave-produccion.txt
 env-produccion.txt
+
+# Salida del servidor de desarrollo (tsx)
+deploy/servidor-dev.err

@@ -527,6 +527,7 @@
                                     <button type="button" role="menuitem" data-adjunto="imagen">FOTOS</button>
                                     <button type="button" role="menuitem" data-adjunto="video">VÍDEOS</button>
                                     <button type="button" role="menuitem" data-adjunto="audio">AUDIOS</button>
+                                    <button type="button" role="menuitem" data-adjunto="ubicacion">UBICACIÓN</button>
                                 </div>
 
                                 <input id="archivo-chat" type="file" hidden>
@@ -1047,6 +1048,7 @@
                                     <button type="button" role="menuitem" data-adjunto="imagen">FOTOS</button>
                                     <button type="button" role="menuitem" data-adjunto="video">VÍDEOS</button>
                                     <button type="button" role="menuitem" data-adjunto="audio">AUDIOS</button>
+                                    <button type="button" role="menuitem" data-adunto="ubicacion">UBICACIÓN</button>
                                 </div>
                                 <input id="archivo-servidor" type="file" hidden>
                             </div>
@@ -1465,10 +1467,57 @@
             </div>
 
             <!-- ==============================
-                 MODAL NOTIFICACIONES
-                 Ventanita desde Cuenta: avisos recientes, activación del
-                 dispositivo y casillas de preferencias (auto-guardado).
-                 ============================== -->
+     MODAL UBICACIÓN
+     Cuánto tiempo se comparte y qué hacer con lo ya compartido. La
+     tarjeta que sale en el chat es la misma para chats y servidores.
+     ============================== -->
+
+    <div id="modal-ubicacion" class="modal modal-contenido-social" hidden>
+        <section class="dialogo-social dialogo-ubicacion" role="dialog" aria-modal="true" aria-labelledby="titulo-modal-ubicacion">
+            <header class="cabecera-dialogo-social">
+                <h2 id="titulo-modal-ubicacion">Compartir ubicación</h2>
+                <button id="boton-cerrar-modal-ubicacion" type="button">✕</button>
+            </header>
+
+            <div class="cuerpo-modal-ubicacion">
+                <p class="texto-modal-ubicacion">
+                    Se mostrará un punto en el mapa mientras compartes. Elige cuánto tiempo:
+                </p>
+
+                <div class="chips-duracion">
+                    <button type="button" data-minutos="15">15 min</button>
+                    <button type="button" data-minutos="60">1 hora</button>
+                    <button type="button" data-minutos="240">4 horas</button>
+                    <button type="button" data-minutos="480">8 horas</button>
+                </div>
+
+                <label class="etiqueta-duracion" for="deslizador-ubicacion">
+                    Duración: <strong id="texto-duracion">1 hora</strong>
+                </label>
+                <input
+                    id="deslizador-ubicacion"
+                    type="range"
+                    min="15"
+                    max="480"
+                    step="15"
+                    value="60"
+                >
+
+                <p id="estado-modal-ubicacion" class="estado-modal-ubicacion" aria-live="polite"></p>
+
+                <div class="acciones-modal-ubicacion">
+                    <button id="boton-parar-ubicacion" type="button" class="boton-parar-ubicacion" hidden>DEJAR DE COMPARTIR</button>
+                    <button id="boton-enviar-ubicacion" type="button" class="boton-confirmar-social">COMPARTIR</button>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- ==============================
+         MODAL NOTIFICACIONES
+         Ventanita desde Cuenta: avisos recientes, activación del
+         dispositivo y casillas de preferencias (auto-guardado).
+         ============================== -->
 
             <div
                 id="modal-notificaciones"
@@ -2247,6 +2296,7 @@
 
             </div>
 
+    <script src="/data/emojis.js"></script>
     <script src="/app.js"></script>
 
 </body>

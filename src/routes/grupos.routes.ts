@@ -22,6 +22,9 @@ import {
     eliminarGrupo,
     eliminarMensajesGrupo,
     enviarMensajeGrupo,
+    enviarUbicacionGrupo,
+    actualizarUbicacionGrupo,
+    detenerUbicacionGrupo,
     expulsarMiembro,
     generarCodigoInvitacion,
     listarBloqueadosGrupo,
@@ -252,6 +255,61 @@ export async function gruposRoutes(app: FastifyInstance) {
             return reply.code(201).send({ mensaje });
         } catch (error) {
             const message = error instanceof Error ? error.message : "No se pudo enviar el mensaje";
+            return reply.code(400).send({ error: message });
+        }
+    });
+
+    // ============================================================
+    // UBICACIÓN EN DIRECTO
+    // ============================================================
+
+    app.post<{
+        Params: { grupoId: string };
+        Body: { lat?: number; lon?: number; precision?: number; minutos?: number; nombre?: string; canalId?: string }
+    }>("/api/grupos/:grupoId/ubicacion", { preHandler: autenticar }, async (request, reply) => {
+        try {
+            const mensaje = await enviarUbicacionGrupo(
+                request.usuario!.id,
+                request.params.grupoId,
+                request.body
+            );
+            return reply.code(201).send({ mensaje });
+        } catch (error) {
+            const message = error instanceof Error ? error.message : "No se pudo compartir la ubicación";
+            return reply.code(400).send({ error: message });
+        }
+    });
+
+    app.patch<{
+        Params: { grupoId: string; mensajeId: string };
+        Body: { lat?: number; lon?: number; precision?: number }
+    }>("/api/grupos/:grupoId/ubicacion/:mensajeId", { preHandler: autenticar }, async (request, reply) => {
+        try {
+            const mensaje = await actualizarUbicacionGrupo(
+                request.usuario!.id,
+                request.params.grupoId,
+                request.params.mensajeId,
+                request.body
+            );
+            return { mensaje };
+        } catch (error) {
+            const message = error instanceof Error ? error.message : "No se pudo actualizar la ubicación";
+            return reply.code(400).send({ error: message });
+        }
+    });
+
+    app.post<{
+        Params: { grupoId: string; mensajeId: string };
+    }>("/api/grupos/:grupoId/ubicacion/:mensajeId/detener", { preHandler: autenticar }, async (request, reply) => {
+        try {
+            const mensaje = await detenerUbicacionGrupo(
+                request.usuario!.id,
+                request.params.grupoId,
+                request.params.mensajeId
+            );
+            return { mensaje };
+        } catch (error) {
+            const message = error instanceof Error ? error.message : "No se pudo detener la ubicación";
             return reply.code(400).send({ error: message });
         }
     });
