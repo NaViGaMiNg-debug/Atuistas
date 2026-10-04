@@ -5338,12 +5338,10 @@ async function guardarCuenta() {
         );
 
 
-        // El nombre es único: si lo rechazan se recupera el último válido, en
-        // vez de dejar escrito uno que no existe.
-        nombreCuentaEditar.value = cuentaGuardada.nombre;
-        descripcionCuenta.value = cuentaGuardada.descripcion;
-        colorNombreCuenta.value = cuentaGuardada.color_nombre;
-        pintarNombreCuenta(cuentaGuardada.nombre, cuentaGuardada.color_nombre);
+        // Lo escrito se queda tal cual: si se borrase, escribir acentos,
+        // simbolos o emoji pareceria que estan prohibidos. El motivo del
+        // rechazo se muestra arriba y el siguiente cambio vuelve a intentarlo.
+        pintarNombreCuenta(nombreCuentaEditar.value.trim(), colorNombreCuenta.value);
 
 
     } finally {

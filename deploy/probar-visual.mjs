@@ -159,6 +159,42 @@ const arranque = `
     window.addEventListener("load", function () {
         setTimeout(function () {
             // Modo cuenta: abrir la pestana de Cuenta y no hacer nada mas.
+            // Modo "especiales": escribe en Cuenta un nombre y una descripcion
+            // con caracteres especiales para ver si se guardan o se pierden.
+            if (${process.argv.includes("especiales")}) {
+                setTimeout(function () {
+                    var cuenta = document.getElementById("boton-cuenta");
+                    if (cuenta) cuenta.click();
+                }, 500);
+                setTimeout(function () {
+                    var nombre = document.getElementById("nombre-cuenta-editar");
+                    var descripcion = document.getElementById("descripcion-cuenta");
+                    var raro = "N" + String.fromCharCode(241) + "o" + String.fromCharCode(241) + "o & Dj's #1 " + String.fromCodePoint(0x1F3B8);
+                    var texto = "Musica " + String.fromCharCode(9834) + " uxiux " + String.fromCharCode(9830) + " -> lista " + String.fromCharCode(10003) + " rock " + String.fromCharCode(9829) + " #1 " + String.fromCodePoint(0x1F3B8) + " " + String.fromCodePoint(0x2728) + " " + String.fromCharCode(171) + "citas" + String.fromCharCode(187);
+                    nombre.value = raro;
+                    nombre.dispatchEvent(new Event("input", { bubbles: true }));
+                    descripcion.value = texto;
+                    descripcion.dispatchEvent(new Event("input", { bubbles: true }));
+                    descripcion.dispatchEvent(new Event("blur"));
+                }, 1500);
+                // Se codifica en ASCII (%XX) porque la consola de Windows
+                //-traduciria los acentos y los emoji.
+                setTimeout(function () {
+                    var aviso = document.getElementById("guardado-cuenta");
+                    fetch("/api/auth/me", {
+                        headers: { Authorization: "Bearer " + localStorage.getItem("atuistas_token") }
+                    })
+                        .then(function (r) { return r.json(); })
+                        .then(function (datos) {
+                            document.body.setAttribute("data-especiales",
+                                "nombre=" + encodeURIComponent(document.getElementById("nombre-cuenta-editar").value) +
+                                " descripcion=" + encodeURIComponent(document.getElementById("descripcion-cuenta").value) +
+                                " delServidor=" + encodeURIComponent(datos.usuario.descripcion || "") +
+                                " aviso=" + encodeURIComponent(aviso ? aviso.textContent : ""));
+                        });
+                }, 4000);
+                return;
+            }
             // Con "entrar" se queda en la pantalla de Entrar (tira de reels).
             if (${process.argv.includes("entrar")}) {
                 setTimeout(function () {

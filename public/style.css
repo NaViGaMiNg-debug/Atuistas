@@ -40,6 +40,8 @@
     --texto-tenue: #929292;
     --texto-apagado: #777;
 
+    --fuente-app: system-ui, -apple-system, "Segoe UI", "Segoe UI Variable", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Segoe UI Symbol", "Noto Sans Symbols2", "Apple Symbols", "Segoe UI Emoji", "Noto Color Emoji", "Apple Color Emoji", sans-serif;
+
     /* Acento: único color de la interfaz */
     --acento: #5865f2;
     --acento-claro: #4752c4;
@@ -109,7 +111,7 @@ body {
     margin: 0;
     padding: 0;
     min-height: 100%;
-    font-family: Arial, sans-serif;
+    font-family: var(--fuente-app);
     background: #111;
     color: #fff;
 }
@@ -1009,7 +1011,7 @@ h2 {
     background: #181818;
     color: #fff;
 
-    font-family: Arial, sans-serif;
+    font-family: var(--fuente-app);
     font-size: 15px;
 
     outline: none;
@@ -3458,7 +3460,7 @@ button.servidor-tarjeta:focus-visible {
     border: 1px dashed #3a3a3a;
     border-radius: 8px;
     background: #111;
-    font-family: "Courier New", monospace;
+    font-family: "Cascadia Mono", Consolas, "Courier New", monospace;
     font-size: 13px;
     color: #ffd78f;
     overflow-wrap: anywhere;
@@ -3601,7 +3603,7 @@ button.servidor-tarjeta:focus-visible {
 
     color: white;
 
-    font-family: Arial, sans-serif;
+    font-family: var(--fuente-app);
     font-size: 16px;
 
     outline: none;
