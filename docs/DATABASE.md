@@ -244,14 +244,22 @@ Representa una notificación interna.
 Campos principales:
 
 - usuario destinatario
+- autor del aviso (`autor_id`)
 - tipo
 - título
 - contenido
 - datos JSON
+- cantidad de avisos agrupados (`cantidad`)
 - estado de lectura
 - fecha
 
 Las notificaciones están vinculadas al usuario mediante `usuario_id`.
+
+Los avisos seguidos de la misma persona y del mismo tipo, dentro de diez
+minutos, no crean filas nuevas: suman su `cantidad` al aviso sin leer que ya
+había. Así la lista muestra uno solo con su contador, y el Push usa el
+`autor_id` como etiqueta para sustituir el aviso anterior en lugar de apilar
+varios. El índice `notificaciones_usuario_autor` sirve para esa búsqueda.
 
 ---
 

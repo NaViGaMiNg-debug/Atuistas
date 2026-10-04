@@ -8,7 +8,7 @@
    lo nuevo. Asi la app instalada se actualiza sola, sin reinstalarla.
    ======================================== */
 
-const VERSION = "v5";
+const VERSION = "v6";
 const CACHE = `atuistas-${VERSION}`;
 
 // Solo se cachean estos ficheros. Todo lo demas (API, subidas) va directo a
@@ -121,7 +121,10 @@ self.addEventListener("push", (event) => {
 
     event.waitUntil(self.registration.showNotification(data.title || "Atuistas", {
         body: data.body || "Tienes una notificación nueva.",
+        // El tag viene por persona: al llegar otro aviso del mismo chat se
+        // sustituye este en vez de apilar una notificación nueva.
         tag: data.tag || undefined,
+        renotify: false,
         data: data.data || {},
         icon: "/icon-192.png",
         badge: "/icon-192.png"

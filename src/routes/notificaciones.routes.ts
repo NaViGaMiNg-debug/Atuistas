@@ -12,6 +12,7 @@ import {
     guardarSuscripcionPush,
     obtenerClavePublicaPush
 } from "../services/push.service.js";
+import { marcarVista } from "../services/presencia.service.js";
 
 export async function notificacionesRoutes(app: FastifyInstance) {
     app.get("/api/push/clave-publica", async (_request, reply) => {
@@ -58,6 +59,15 @@ export async function notificacionesRoutes(app: FastifyInstance) {
             return reply.code(400).send({ error: message });
         }
     });
+
+    // El cliente dice qué tiene delante (un chat o un servidor). Con eso no se
+    // mandan avisos de lo que la persona ya está viendo, y caduca solo en
+    // tres minutos por si cierra el navegador sin avisar.
+    app.post<{ Body: { chatId?: string | null; servidorId?: string | null } }>(
+        "/api/presencia",
+        { preHandler: autenticar },
+        async (request) => ({ vista: marcarVista(request.usuario!.id, request.body ?? {}) })
+    );
 
     app.get("/api/notificaciones", { preHandler: autenticar }, async (request) =>
         listarNotificaciones(request.usuario!.id)

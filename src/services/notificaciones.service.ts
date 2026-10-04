@@ -1,5 +1,9 @@
 import { db } from "../db/database.js";
 import { enviarPush } from "./push.service.js";
+import { estaViendoA, estaViendoServidor } from "./presencia.service.js";
+
+// Ventana en la que se agrupan los avisos seguidos de la misma persona.
+const VENTANA_GRUPO_MINUTOS = 10;
 
 const preferencias = {
     solicitudes_amistad: "solicitudes_amistad",
@@ -78,6 +82,13 @@ export async function crearNotificacion(
 ) {
     if (titulo.length > 150 || contenido.length > 500) return;
     const columna = preferencias[preferencia];
+    const deAlguien = Boolean(autorId) && autorId !== usuarioId;
+
+    // Si el destinatario tiene delante justo lo que le va a llegar, no se le
+    // molesta: ya lo está viendo en el chat o en el servidor.
+    if (autorId && estaViendoA(usuarioId, autorId)) return;
+    const grupoId = datos?.grupoId;
+    if (grupoId && estaViendoServidor(usuarioId, grupoId)) return;
 
     let tituloFinal = titulo;
     if (autorId && autorId !== usuarioId) {
@@ -89,17 +100,52 @@ export async function crearNotificacion(
         if (nombre) tituloFinal = `${nombre} — ${titulo}`.slice(0, 150);
     }
 
+    // Agrupación: varios avisos seguidos de la misma persona y del mismo tipo
+    // se suman al aviso sin leer que ya había, en vez de crear una fila (y un
+    // aviso del móvil) por cada mensaje.
+    if (deAlguien && autorId) {
+        const agrupado = await db.query(
+            `
+            UPDATE notificaciones
+            SET cantidad = cantidad + 1,
+                contenido = $4,
+                leida = FALSE,
+                creada_en = NOW()
+            WHERE id = (
+                SELECT id FROM notificaciones
+                WHERE usuario_id = $1
+                  AND autor_id = $2
+                  AND tipo = $3
+                  AND leida = FALSE
+                  AND creada_en > NOW() - ($5 || ' minutes')::interval
+                ORDER BY creada_en DESC
+                LIMIT 1
+            )
+            AND NOT EXISTS (
+                SELECT 1 FROM configuracion_notificaciones
+                WHERE usuario_id = $1 AND ${columna} = FALSE
+            )
+            RETURNING id, tipo, titulo, contenido, datos, cantidad, autor_id
+            `,
+            [usuarioId, autorId, tipo, contenido, String(VENTANA_GRUPO_MINUTOS)]
+        );
+        if (agrupado.rowCount === 1) {
+            void enviarPush(usuarioId, agrupado.rows[0]);
+            return;
+        }
+    }
+
     const creada = await db.query(
         `
-        INSERT INTO notificaciones (usuario_id, tipo, titulo, contenido, datos)
-        SELECT $1, $2, $3, $4, $5::jsonb
+        INSERT INTO notificaciones (usuario_id, autor_id, tipo, titulo, contenido, datos)
+        SELECT $1, $6, $2, $3, $4, $5::jsonb
         WHERE NOT EXISTS (
             SELECT 1 FROM configuracion_notificaciones
             WHERE usuario_id = $1 AND ${columna} = FALSE
         )
-        RETURNING id, tipo, titulo, contenido, datos
-        `,
-        [usuarioId, tipo, tituloFinal, contenido, JSON.stringify(datos)]
+        RETURNING id, tipo, titulo, contenido, datos, cantidad, autor_id
+    `,
+        [usuarioId, tipo, tituloFinal, contenido, JSON.stringify(datos), autorId ?? null]
     );
     if (creada.rowCount === 1) {
         void enviarPush(usuarioId, creada.rows[0]);
@@ -109,7 +155,7 @@ export async function crearNotificacion(
 export async function listarNotificaciones(usuarioId: string) {
     const resultado = await db.query(
         `
-        SELECT id, tipo, titulo, contenido, datos, leida, creada_en
+        SELECT id, tipo, titulo, contenido, datos, leida, creada_en, cantidad, autor_id
         FROM notificaciones
         WHERE usuario_id = $1
         ORDER BY creada_en DESC

@@ -96,6 +96,16 @@ export async function migrarEsquema() {
                     'reel_video', 'historia_imagen', 'historia_video', 'historia_audio'
                 ));
 
+            -- Avisos agrupados: los mensajes seguidos de la misma persona
+            -- se suman al aviso sin leer que ya exista en lugar de crear otro.
+            ALTER TABLE notificaciones
+                ADD COLUMN IF NOT EXISTS autor_id UUID
+                    REFERENCES usuarios(id) ON DELETE SET NULL,
+                ADD COLUMN IF NOT EXISTS cantidad INTEGER NOT NULL DEFAULT 1;
+
+            CREATE INDEX IF NOT EXISTS notificaciones_usuario_autor
+                ON notificaciones (usuario_id, autor_id, leida);
+
             UPDATE sesiones
             SET identificador = 'migrado-' || id::text
             WHERE identificador IS NULL;

@@ -171,6 +171,13 @@ CREATE TABLE notificaciones (
         REFERENCES usuarios(id)
         ON DELETE CASCADE,
 
+    -- Quien provoca el aviso. Con esto los avisos seguidos de la misma
+    -- persona se agrupan en uno solo con su contador, y el Push usa esta
+    -- referencia como etiqueta para no apilar notificaciones en el movil.
+    autor_id UUID
+        REFERENCES usuarios(id)
+        ON DELETE SET NULL,
+
     tipo VARCHAR(50) NOT NULL,
 
     titulo VARCHAR(150) NOT NULL,
@@ -179,10 +186,16 @@ CREATE TABLE notificaciones (
 
     datos JSONB,
 
+    -- Avisos agrupados: 2 significa que el segundo se sumo al primero.
+    cantidad INTEGER NOT NULL DEFAULT 1,
+
     leida BOOLEAN NOT NULL DEFAULT FALSE,
 
     creada_en TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE INDEX notificaciones_usuario_autor
+    ON notificaciones (usuario_id, autor_id, leida);
 
 
 -- ============================================================

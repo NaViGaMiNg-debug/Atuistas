@@ -953,6 +953,9 @@ function mostrarAcceso() {
 
     desconectarTiempoReal();
 
+    // Al salir de la cuenta se olvida qué estaba viendo: los avisos vuelven.
+    avisarSinVista();
+
 
     /*
      * RESTABLECER PANTALLA INICIAL
@@ -1179,6 +1182,52 @@ function actualizarBotonActivarDispositivo() {
     }
 }
 
+/* ==============================
+   PRESENCIA: QUÉ ESTÁ VIENDO
+   Se le dice al servidor qué chat o servidor está abierto para que no
+   mande avisos de lo que la persona ya tiene delante. Caduca solo a los
+   tres minutos, así que si cierra el navegador no se queda callado.
+   ============================== */
+
+let vistaAvisada = null;
+
+function avisarVista(vista) {
+    const clave = JSON.stringify(vista);
+    if (clave === vistaAvisada) return;
+    vistaAvisada = clave;
+    solicitarGrupo("/api/presencia", {
+        method: "POST",
+        body: JSON.stringify(vista)
+    }).catch(() => {
+        // Sin presencia no pasa nada grave: solo puede llegar un aviso de más.
+    });
+}
+
+function avisarChatVisto(usuarioId) {
+    avisarVista({ chatId: usuarioId || null, servidorId: null });
+}
+
+function avisarServidorVisto(grupoId) {
+    avisarVista({ chatId: null, servidorId: grupoId || null });
+}
+
+function avisarSinVista() {
+    avisarVista({ chatId: null, servidorId: null });
+}
+
+// Mientras haya un chat o un servidor abierto se refresca la presencia antes de
+// que caduque, por si la conversación dura más de tres minutos.
+setInterval(() => {
+    if (vistaAvisada && vistaAvisada !== JSON.stringify({ chatId: null, servidorId: null })) {
+        solicitarGrupo("/api/presencia", {
+            method: "POST",
+            body: vistaAvisada
+        }).catch(() => {});
+    }
+}, 60 * 1000);
+
+window.addEventListener("pagehide", avisarSinVista);
+
 async function cargarListaNotificaciones() {
     const lista = document.getElementById("lista-notificaciones-app");
     const botonLeerTodas = document.getElementById("boton-leer-todas-notificaciones");
@@ -1198,8 +1247,12 @@ async function cargarListaNotificaciones() {
             const elemento = document.createElement("button");
             elemento.type = "button";
             elemento.className = aviso.leida ? "aviso-notificacion" : "aviso-notificacion sin-leer";
+            // Los avisos repetidos de la misma persona llegan agrupados: aquí
+            // se ve cuántos son en vez de una fila por cada uno.
+            const veces = Number(aviso.cantidad) || 1;
+            const contador = veces > 1 ? `<em class="contador-aviso">${veces}</em>` : "";
             elemento.innerHTML = `
-                <strong>${escapeHtml(aviso.titulo || "")}</strong>
+                <strong>${escapeHtml(aviso.titulo || "")}${contador}</strong>
                 <span>${escapeHtml(aviso.contenido || "")}</span>
                 <small>${fechaAviso(aviso.creada_en)}</small>
             `;
@@ -1309,6 +1362,9 @@ async function abrirChat(amigo) {
         : "";
 
     panelChat.hidden = false;
+
+    // Con el chat delante, los mensajes de esta persona no generan aviso.
+    avisarChatVisto(amigo.id);
 
     listaMensajes.innerHTML = `
         <div class="mensajes-vacios">
@@ -1539,6 +1595,9 @@ function cerrarChat() {
 
     amigoChatActual = null;
     limpiarEstadoGestosChat();
+
+    // Al salir, los mensajes de este chat vuelven a avisar.
+    avisarSinVista();
 
     // Se vacía el composer para que un audio grabado no acabe en otra persona.
     composerChat?.limpiar();
@@ -2021,6 +2080,9 @@ function mostrarSeccion(seccion) {
 
     amigoChatActual = null;
 
+    // Fuera del chat los mensajes vuelven a generar aviso.
+    avisarSinVista();
+
     if (intervaloChat) {
         clearInterval(intervaloChat);
         intervaloChat = null;
@@ -2218,6 +2280,8 @@ function mostrarFaseServidor(fase) {
             clearInterval(intervaloGrupo);
             intervaloGrupo = null;
         }
+        // Al salir del servidor, sus mensajes vuelven a avisar.
+        avisarSinVista();
     } else {
         for (const id of ["seccion-mis-servidores", "seccion-buscar-servidores"]) {
             document.getElementById(id).hidden = true;
@@ -2356,6 +2420,9 @@ async function buscarServidores(texto) {
 async function abrirServidor(grupo) {
     if (intervaloGrupo) clearInterval(intervaloGrupo);
     grupoActual = grupo;
+
+    // Con el servidor delante, sus mensajes no generan aviso.
+    avisarServidorVisto(grupo.id);
     detalleGrupo = null;
     canalesGrupo = [];
     canalActual = null;

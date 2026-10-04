@@ -108,6 +108,82 @@ if (abierto) {
     );
 }
 
+/* ---------- Sin avisos con el chat delante y agrupados fuera ---------- */
+
+// Con el chat de B abierto, sus mensajes no generan aviso: ya se están viendo.
+await api("/api/notificaciones/leer-todas", { metodo: "POST", token: tokenA });
+await api("/api/presencia", { metodo: "POST", token: tokenA, cuerpo: { chatId: idB } });
+await api(`/api/mensajes/conversacion/${idA}`, {
+    metodo: "POST",
+    token: tokenB,
+    cuerpo: { contenido: "Mensaje con el chat ya abierto" }
+});
+
+const dentroDelChat = await api("/api/notificaciones", { token: tokenA });
+const avisosChat = dentroDelChat.notificaciones.filter(
+    (aviso) => aviso.tipo === "mensaje_privado" && !aviso.leida
+);
+comprobar(
+    avisosChat.length === 0,
+    `Con el chat delante no llega aviso de esa persona (${avisosChat.length})`
+);
+
+// Al salir del chat, los avisos vuelven a llegar y se agrupan.
+await api("/api/presencia", { metodo: "POST", token: tokenA, cuerpo: {} });
+for (const contenido of ["Primero fuera del chat", "Segundo fuera del chat", "Tercero fuera del chat"]) {
+    await api(`/api/mensajes/conversacion/${idA}`, {
+        metodo: "POST",
+        token: tokenB,
+        cuerpo: { contenido }
+    });
+}
+
+const agrupados = await api("/api/notificaciones", { token: tokenA });
+const privados = agrupados.notificaciones.filter(
+    (aviso) => aviso.tipo === "mensaje_privado" && !aviso.leida
+);
+comprobar(
+    privados.length === 1,
+    `Tres mensajes seguidos dejan un solo aviso (${privados.length})`
+);
+comprobar(
+    Number(privados[0]?.cantidad) === 3,
+    `El aviso agrupado lleva la cuenta (${privados[0]?.cantidad})`
+);
+comprobar(
+    agrupados.no_leidas === 1,
+    `El punto rojo cuenta el aviso agrupado como uno (${agrupados.no_leidas})`
+);
+
+// Con el servidor delante pasa igual: sus mensajes no avisan.
+await api("/api/notificaciones/leer-todas", { metodo: "POST", token: tokenA });
+const servidor = await api("/api/grupos", {
+    metodo: "POST",
+    token: tokenA,
+    cuerpo: { nombre: `Servidor ${sufijo}`, modelo: "chat_unico" }
+});
+await api(`/api/grupos/${servidor.grupo.id}/unirse`, { metodo: "POST", token: tokenB });
+await api("/api/presencia", {
+    metodo: "POST",
+    token: tokenA,
+    cuerpo: { servidorId: servidor.grupo.id }
+});
+await api(`/api/grupos/${servidor.grupo.id}/mensajes`, {
+    metodo: "POST",
+    token: tokenB,
+    cuerpo: { contenido: "Mensaje con el servidor abierto" }
+});
+
+const dentroDelServidor = await api("/api/notificaciones", { token: tokenA });
+const avisosServidor = dentroDelServidor.notificaciones.filter(
+    (aviso) => aviso.tipo === "mensaje_grupo" && !aviso.leida
+);
+comprobar(
+    avisosServidor.length === 0,
+    `Con el servidor delante no llega aviso de ese servidor (${avisosServidor.length})`
+);
+await api("/api/presencia", { metodo: "POST", token: tokenA, cuerpo: {} });
+
 /* ---------- Preferencias y marcar todo leído ---------- */
 
 const configuracion = await api("/api/notificaciones/configuracion", { token: tokenA });

@@ -977,6 +977,8 @@ Actualmente existe código para:
 - Publicaciones de texto, hasta 10 fotos o un vídeo de hasta 4 minutos, para amistades o públicas.
 - Comentarios y corazones de publicaciones.
 - Notificaciones Push del dispositivo con vista previa del contenido, el nombre de quien avisa y un enlace directo al chat o a la pantalla principal.
+- Sin avisos de lo que ya se está viendo: al abrir un chat o un servidor el cliente avisa por `POST /api/presencia` y, mientras siga ahí, los mensajes de esa persona o de ese servidor no generan notificación ni Push. La vista se refresca cada minuto y caduca sola a los tres minutos, así que si el navegador se cierra sin avisar los avisos vuelven a llegar.
+- Avisos agrupados por persona: los seguidos de la misma persona y del mismo tipo, dentro de diez minutos, se suman al aviso sin leer que ya existía (columna `cantidad`) y el Push se etiqueta con el autor para sustituir el anterior en lugar de apilar varios. La ventanita muestra el contador en rojo.
 - Ventanita de notificaciones dentro de Cuenta: avisos recientes, marcar como leídos, activación del dispositivo y preferencias por categoría (se guardan solas al cerrar, sin botón).
 - Reels: vídeos cortos (máximo 90 s) con título obligatorio y visibilidad de amigos o público. Se ven en una tira horizontal en Entrar y en un visor a pantalla completa que se desliza en vertical, con corazón, comentarios y acceso al perfil del autor.
 - Historias: carpetas permanentes con nombre, editable y vaciable cuando se quiera, que guardan elementos de texto, fotos, vídeo o audio. Se ven como burbujas con el nombre de la carpeta en Cuenta y en el perfil.

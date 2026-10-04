@@ -108,7 +108,7 @@ export async function borrarSuscripcionPush(usuarioId: string, dispositivoId: st
 
 export async function enviarPush(
     usuarioId: string,
-    notification: { id: string; titulo: string; contenido: string; tipo: string; datos?: Record<string, string> }
+    notification: { id: string; titulo: string; contenido: string; tipo: string; cantidad?: number; autor_id?: string | null; datos?: Record<string, string> }
 ) {
     try {
         await prepararPush();
@@ -117,13 +117,25 @@ export async function enviarPush(
              WHERE usuario_id = $1 AND push_token IS NOT NULL`,
             [usuarioId]
         );
+        const cantidad = Number(notification.cantidad) || 1;
+        // El tag es por persona (no por aviso): así el móvil sustituye el aviso
+        // anterior por el nuevo en vez de apilar muchos de la misma persona.
+        const tag = `atuistas-${notification.autor_id ?? notification.id}`;
+        const cuerpo = cantidad > 1 ? `${notification.contenido} · ${cantidad} avisos` : notification.contenido;
         const payload = JSON.stringify({
             title: notification.titulo,
-            body: notification.contenido,
-            tag: notification.id,
+            body: cuerpo,
+            tag,
+            // Con renotify false no vuelve a sonar: solo se actualiza.
+            renotify: false,
             // datos lleva el remitente y el destinatario del aviso: con él el
             // service worker sabe a qué chat o perfil abrir al pulsar.
-            data: { notificationId: notification.id, type: notification.tipo, ...(notification.datos ?? {}) }
+            data: {
+                notificationId: notification.id,
+                type: notification.tipo,
+                cantidad: String(cantidad),
+                ...(notification.datos ?? {})
+            }
         });
 
         await Promise.all(subscriptions.rows.map(async (row) => {

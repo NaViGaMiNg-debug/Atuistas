@@ -127,7 +127,8 @@ comprobar(html.includes('id="acciones-contexto-servidor"'), "La fila antigua sig
 /* ---------- El service worker cambia de version ---------- */
 
 const sw = fs.readFileSync(path.join(raiz, "public", "sw.js"), "utf8");
-comprobar(/const VERSION = "v5"/.test(sw), "El service worker subio a la version v5");
+const versionSw = sw.match(/const VERSION = "(v\d+)"/)?.[1] || "?";
+comprobar(versionSw === "v6", `El service worker subio a la version v6 (${versionSw})`);
 
 console.log("");
 if (fallos.length) {
