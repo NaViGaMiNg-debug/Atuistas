@@ -109,21 +109,22 @@ try {
 
 // Se ejecuta el render del perfil dentro del mismo sandbox y se mira el HTML
 // que genera: con poderes los tres datos son pulsables, sin poderes son texto.
-const perfilFalso = (conPoderes) => `({
+const perfilFalso = (conPoderes, esMio = false) => JSON.stringify({
     perfil: {
         id: "00000000-0000-0000-0000-000000000001",
         nombre: "Persona",
         color_nombre: "#FFFFFF",
         descripcion: "Una descripcion",
         etiqueta: "Creador",
-        es_mio: false,
+        fondo_url: "uploads/fondos/ejemplo.png",
+        es_mio: esMio,
         es_amigo: true,
         avatar_url: null,
         creado_en: new Date().toISOString(),
-        soy_desarrollador: ${conPoderes}
+        soy_desarrollador: conPoderes
     },
     conteos: { amigos: 0, solicitudes_recibidas: 0, solicitudes_enviadas: 0, publicaciones: 0 }
-})`;
+});
 
 const htmlConPoderes = vm.runInContext(
     `renderizarPerfil(${perfilFalso(true)}); contenidoPerfil.innerHTML`,
@@ -131,6 +132,11 @@ const htmlConPoderes = vm.runInContext(
 );
 const htmlSinPoderes = vm.runInContext(
     `renderizarPerfil(${perfilFalso(false)}); contenidoPerfil.innerHTML`,
+    sandbox
+);
+
+const htmlPropio = vm.runInContext(
+    `renderizarPerfil(${perfilFalso(true, true)}); contenidoPerfil.innerHTML`,
     sandbox
 );
 
@@ -145,6 +151,22 @@ comprobar(
     htmlConPoderes.indexOf("nombre-perfil") < htmlConPoderes.indexOf("etiqueta-perfil")
         && htmlConPoderes.indexOf("etiqueta-perfil") < htmlConPoderes.indexOf("descripcion-perfil"),
     "La etiqueta sale entre el nombre y la descripcion"
+);
+comprobar(
+    htmlConPoderes.includes("cabecera-perfil ajeno con-fondo"),
+    "Mirar el perfil de otra persona lo marca como ajeno y con fondo"
+);
+comprobar(
+    htmlPropio.includes("cabecera-perfil propio"),
+    "Tu propio perfil sale centrado"
+);
+comprobar(
+    htmlConPoderes.includes("fila-cabecera") && htmlConPoderes.includes("datos-cabecera"),
+    "El avatar y el nombre van en la misma fila"
+);
+comprobar(
+    htmlConPoderes.indexOf("avatar-perfil") < htmlConPoderes.indexOf("datos-cabecera"),
+    "En el perfil de otra persona la foto va antes que el nombre"
 );
 
 /* ---------- Los identificadores nuevos existen en el HTML ---------- */
@@ -216,6 +238,26 @@ comprobar(
     app.includes("portada-perfil") && css.includes(".portada-perfil"),
     "El perfil pinta la imagen de fondo"
 );
+
+// La portada va detras del avatar y del nombre, y se difumina por abajo.
+const reglaPortada = css.match(/\.cabecera-perfil\.con-fondo \.portada-perfil \{[^}]*\}/)?.[0] ?? "";
+comprobar(/z-index:\s*0/.test(reglaPortada), "La portada va por debajo del contenido");
+comprobar(
+    /mask-image:\s*linear-gradient/.test(reglaPortada),
+    "La portada se difumina al llegar abajo"
+);
+comprobar(
+    /height:\s*var\(--alto-portada\)/.test(reglaPortada),
+    "La portada usa una altura propia, mas baja que antes"
+);
+comprobar(
+    css.includes(".cabecera-perfil > *:not(.portada-perfil)"),
+    "Todo lo demas de la cabecera va por encima de la portada"
+);
+comprobar(
+    css.includes("--alto-portada: 104px"),
+    "La portada no llega a la descripcion"
+);
 comprobar(
     app.includes("/api/auth/fondo"),
     "app.js sube y quita el fondo del perfil"
@@ -225,7 +267,7 @@ comprobar(
 
 const sw = fs.readFileSync(path.join(raiz, "public", "sw.js"), "utf8");
 const versionSw = sw.match(/const VERSION = "(v\d+)"/)?.[1] || "?";
-comprobar(versionSw === "v10", `El service worker subio a la version v10 (${versionSw})`);
+comprobar(versionSw === "v11", `El service worker subio a la version v11 (${versionSw})`);
 
 console.log("");
 if (fallos.length) {

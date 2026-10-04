@@ -5881,8 +5881,24 @@ button.servidor-tarjeta:focus-visible {
    demás.
    ----------------------------- */
 
+/* -----------------------------
+   FONDO DEL PERFIL
+   La imagen va detras de todo: el
+   avatar y el nombre la pisan. Ocupa
+   solo la franja de arriba y se
+   difumina al llegar al nombre.
+   ----------------------------- */
+
 .cabecera-perfil {
     position: relative;
+    --alto-portada: 104px;
+    --subida-avatar: 44px;
+}
+
+/* Todo lo de la cabecera por encima de la portada, sin excepciones. */
+.cabecera-perfil > *:not(.portada-perfil) {
+    position: relative;
+    z-index: 1;
 }
 
 .portada-perfil {
@@ -5890,20 +5906,87 @@ button.servidor-tarjeta:focus-visible {
 }
 
 .cabecera-perfil.con-fondo {
-    padding-top: 132px;
+    padding-top: var(--alto-portada);
 }
 
 .cabecera-perfil.con-fondo .portada-perfil {
     display: block;
     position: absolute;
+    z-index: 0;
     inset: 0 0 auto 0;
-    height: 132px;
+    height: var(--alto-portada);
     background-image:
-        linear-gradient(180deg, rgba(17, 17, 17, 0.35) 0%, rgba(17, 17, 17, 0.9) 100%),
+        linear-gradient(
+            180deg,
+            rgba(17, 17, 17, 0.35) 0%,
+            rgba(17, 17, 17, 0.5) 45%,
+            rgba(17, 17, 17, 0.88) 76%,
+            #111 100%
+        ),
         var(--fondo-perfil);
+    /* El difuminado final: la imagen se deshace en el fondo de la pagina. */
+    -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 55%, transparent 100%);
+    mask-image: linear-gradient(180deg, #000 0%, #000 55%, transparent 100%);
     background-size: cover;
     background-position: center;
     border-radius: 10px 10px 0 0;
+}
+
+/* El avatar sube y pisa el borde de abajo de la portada. */
+.cabecera-perfil.con-fondo .fila-cabecera {
+    margin-top: calc(var(--subida-avatar) * -1);
+}
+
+/* -----------------------------
+   AVATAR Y NOMBRE JUNTOS
+   En tu perfil centrados; en el de
+   otra persona a la izquierda.
+   ----------------------------- */
+
+.fila-cabecera {
+    display: flex;
+    width: 100%;
+    gap: 12px;
+}
+
+.cabecera-perfil.propio .fila-cabecera {
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.cabecera-perfil.ajeno {
+    align-items: stretch;
+    text-align: left;
+}
+
+.cabecera-perfil.ajeno .fila-cabecera {
+    flex-direction: row;
+    align-items: center;
+}
+
+.datos-cabecera {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+.cabecera-perfil.propio .datos-cabecera {
+    align-items: center;
+}
+
+.cabecera-perfil.ajeno .datos-cabecera {
+    align-items: flex-start;
+}
+
+.cabecera-perfil.ajeno .campo-perfil.editable {
+    width: auto;
+    align-self: flex-start;
+}
+
+.cabecera-perfil.ajeno .campo-etiqueta-perfil.editable {
+    width: auto;
 }
 
 /* -----------------------------

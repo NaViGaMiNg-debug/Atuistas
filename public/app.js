@@ -7627,20 +7627,30 @@ function renderizarPerfil(datos) {
         ? `<p class="descripcion-perfil">${escapeHtml(perfil.descripcion)}</p>`
         : '<p class="descripcion-perfil descripcion-perfil-vacia">Sin descripción.</p>';
 
-    contenidoPerfil.innerHTML = `
-        <div class="cabecera-perfil${perfil.fondo_url ? " con-fondo" : ""}"${
+    // El avatar y el nombre van juntos: centrado en tu propio perfil y a la
+// izquierda en el de otra persona, como en las redes de siempre.
+const clasesCabecera = ["cabecera-perfil", perfil.es_mio ? "propio" : "ajeno"]
+    .concat(perfil.fondo_url ? "con-fondo" : "")
+    .join(" ");
+
+contenidoPerfil.innerHTML = `
+        <div class="${clasesCabecera}"${
             perfil.fondo_url
                 ? ` style="--fondo-perfil:url('/${escapeHtml(perfil.fondo_url)}')"`
                 : ""
         }>
             <div class="portada-perfil" aria-hidden="true"></div>
-            <button class="avatar-perfil con-anillo-nombre" type="button" style="--anillo-avatar:${colorDeAnillo(perfil.color_nombre)}" data-acciones-perfil aria-label="Opciones de la foto de perfil">
-                ${perfil.avatar_url
-                    ? `<img src="/${escapeHtml(perfil.avatar_url)}" alt="">`
-                    : '<span class="avatar-perfil-vacio"></span>'}
-            </button>
-            ${campo("nombre", "campo-nombre-perfil", nombreMarkup, "Cambiar el nombre")}
-            ${campo("etiqueta", "campo-etiqueta-perfil", etiquetaMarkup, "Cambiar la etiqueta")}
+            <div class="fila-cabecera">
+                <button class="avatar-perfil con-anillo-nombre" type="button" style="--anillo-avatar:${colorDeAnillo(perfil.color_nombre)}" data-acciones-perfil aria-label="Opciones de la foto de perfil">
+                    ${perfil.avatar_url
+                        ? `<img src="/${escapeHtml(perfil.avatar_url)}" alt="">`
+                        : '<span class="avatar-perfil-vacio"></span>'}
+                </button>
+                <div class="datos-cabecera">
+                    ${campo("nombre", "campo-nombre-perfil", nombreMarkup, "Cambiar el nombre")}
+                    ${campo("etiqueta", "campo-etiqueta-perfil", etiquetaMarkup, "Cambiar la etiqueta")}
+                </div>
+            </div>
             ${campo("descripcion", "campo-descripcion-perfil", descripcionMarkup, "Cambiar la descripción")}
             <p id="estado-edicion-perfil" class="estado-edicion-perfil" aria-live="polite"></p>
             ${perfil.es_mio
