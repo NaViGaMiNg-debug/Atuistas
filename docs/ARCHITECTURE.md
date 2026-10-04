@@ -253,10 +253,13 @@ Entre ellas:
 - Host.
 - Configuración de PostgreSQL.
 - Clave utilizada por el sistema de códigos.
-- Clave de la API de Tenor (`ATUISTAS_TENOR_API_KEY`): la usan solo las rutas
+- Clave de la API de Giphy (`ATUISTAS_GIPHY_API_KEY`): la usan solo las rutas
   del servidor para buscar GIF y stickers. El navegador nunca la ve. Si no está
-  puesta, `GET /api/tenor/buscar` responde `503` con `faltaClave` y el selector
+  puesta, `GET /api/medios/buscar` responde `503` con `faltaClave` y el selector
   avisa de que falta, en vez de romperse.
+  Giphy sustituye a Tenor aquí porque Tenor apagó su API el 30 de junio de 2026
+  y ya no admite clientes nuevos. Las claves beta gratuitas dan 100 búsquedas
+  por hora.
 
 Los secretos no deben escribirse directamente en el código fuente.
 
@@ -673,9 +676,11 @@ del campo correspondiente.
 - El panel se abre **sin robar el foco** del campo de escritura: en el móvil no
   debe saltar el teclado. Se cierra al pulsar fuera, al cambiar de sección o al
   desplazarse.
-- Los GIF y stickers llegan de Tenor a través de `GET /api/tenor/buscar`, que
-  corre en el servidor para no enseñar la clave. Al elegir uno, el navegador lo
-  descarga y lo manda por el mismo camino que una foto subida desde el móvil.
+- Los GIF y stickers llegan de Giphy a través de `GET /api/medios/buscar`, que
+  corre en el servidor para no enseñar la clave. Se usa la capa de Giphy
+  compatible con Tenor (`api.giphy.com/v2/search`), de modo que la forma de la
+  respuesta es la misma que daba Tenor. Al elegir uno, el navegador lo descarga
+  y lo manda por el mismo camino que una foto subida desde el móvil.
 - En los comentarios, que solo admiten texto, el GIF se inserta como enlace.
 
 ---

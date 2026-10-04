@@ -1613,7 +1613,7 @@ function pintarSelector() {
 
     if (pestanaSelector !== "emojis") {
         categorias.hidden = true;
-        buscarMedioEnTenor(texto);
+        buscarMedioEnProveedor(texto);
         return;
     }
 
@@ -1656,9 +1656,9 @@ function pintarSelector() {
         </div>`).join("");
 }
 
-// GIF y stickers llegan de Tenor. La clave la tiene el servidor: si no está
+// GIF y stickers llegan de Giphy. La clave la tiene el servidor: si no está
 // puesta, el panel lo dice claro en vez de quedarse en blanco.
-async function buscarMedioEnTenor(texto) {
+async function buscarMedioEnProveedor(texto) {
     const panel = document.getElementById("selector-medio");
     if (!panel) return;
 
@@ -1675,7 +1675,7 @@ async function buscarMedioEnTenor(texto) {
     try {
         const token = localStorage.getItem("atuistas_token");
         const respuesta = await fetch(
-            `/api/tenor/buscar?buscar=${encodeURIComponent(texto)}&tipo=${pestanaSelector}`,
+            `/api/medios/buscar?buscar=${encodeURIComponent(texto)}&tipo=${pestanaSelector}`,
             { headers: { Authorization: `Bearer ${token}` } }
         );
         const cuerpo = await respuesta.json().catch(() => ({}));
@@ -1685,9 +1685,9 @@ async function buscarMedioEnTenor(texto) {
         if (respuesta.status === 503 && cuerpo.faltaClave) {
             rejilla.innerHTML = `
                 <p class="selector-medio-vacio">
-                    Falta la clave de Tenor en el servidor.<br>
+                    Falta la clave de Giphy en el servidor.<br>
                     Los emojis funcionan; para GIF y stickers hay que poner
-                    ATUISTAS_TENOR_API_KEY en el .env y reiniciar.
+                    ATUISTAS_GIPHY_API_KEY en el .env y reiniciar.
                 </p>`;
             return;
         }
@@ -1748,7 +1748,7 @@ async function enviarMedioSeleccionado(url, destino, idEntrada) {
         const blob = await respuesta.blob();
         const esImagen = (blob.type || "").startsWith("image/");
         const extension = esImagen ? "gif" : (blob.type?.split("/")[1] || "bin");
-        const archivo = new File([blob], `tenor.${extension}`, { type: blob.type });
+        const archivo = new File([blob], `medio.${extension}`, { type: blob.type });
 
         // En los comentarios solo hay texto: se manda el enlace del GIF.
         if (destino === "comentario-reel" || destino === "comentario-publicacion") {
