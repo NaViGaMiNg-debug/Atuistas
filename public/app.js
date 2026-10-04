@@ -410,7 +410,11 @@ function crearComposer(config) {
     });
 
     inputArchivo.addEventListener("change", () => {
-        prepararAdjunto(inputArchivo.files?.[0]);
+        const elegido = inputArchivo.files?.[0];
+        // Se vacia el input para que elegir otra vez la misma foto siga
+        // funcionando: si no, el navegador no da cambio y no se adjunta nada.
+        inputArchivo.value = "";
+        prepararAdjunto(elegido);
     });
 
     botonDescartar.addEventListener("click", () => {

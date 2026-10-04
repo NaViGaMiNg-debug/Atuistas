@@ -961,6 +961,7 @@ Actualmente existe código para:
 - Bloqueos en las reglas de amistad/chat.
 - Conversaciones privadas.
 - Mensajes privados de texto.
+- Adjuntos en el chat privado: fotos (pasan por el editor universal de recorte, pincel y texto), vídeo y audio grabado. El editor de foto se abre por encima del panel del chat (`#modal-editor-foto`, peldaño más alto de la escalera de capas) y lo que sale de él se adjunta al mensaje.
 - Lectura de mensajes.
 - Polling del chat.
 - Edición, respuesta y eliminación de mensajes privados de texto por API e interfaz.

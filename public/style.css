@@ -5710,6 +5710,14 @@ button.servidor-tarjeta:focus-visible {
     z-index: 3300;
 }
 
+/* El editor de foto se abre desde el compositor del chat, y el panel del chat
+   ocupa toda la pantalla con z-index 3000. Con el peldaño de los modales
+   normales (1400) el editor se quedaba detrás del chat: no se veía hasta
+   cerrarlo y la foto no llegaba a adjuntarse. Aquí va el peldaño más alto. */
+#modal-editor-foto {
+    z-index: 3400;
+}
+
 .dialogo-perfil {
     width: min(560px, calc(100vw - 28px));
 }
