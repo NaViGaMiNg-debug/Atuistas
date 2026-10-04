@@ -677,10 +677,13 @@ del campo correspondiente.
   debe saltar el teclado. Se cierra al pulsar fuera, al cambiar de sección o al
   desplazarse.
 - Los GIF y stickers llegan de Giphy a través de `GET /api/medios/buscar`, que
-  corre en el servidor para no enseñar la clave. Se usa la capa de Giphy
-  compatible con Tenor (`api.giphy.com/v2/search`), de modo que la forma de la
-  respuesta es la misma que daba Tenor. Al elegir uno, el navegador lo descarga
-  y lo manda por el mismo camino que una foto subida desde el móvil.
+  corre en el servidor para no enseñar la clave. Se usan sus endpoints nativos
+  `/v1/gifs/search` y `/v1/stickers/search`: la capa compatible con Tenor
+  (`/v2`) responde `401` a las claves beta, que es justo la que da una cuenta
+  gratuita. Se piden con `rating=pg`, porque Atuistas no comprueba la edad de
+  nadie. Los stickers llegan en WebP con transparencia y los GIF en su versión
+  reducida. Al elegir uno, el navegador lo descarga y lo manda por el mismo
+  camino que una foto subida desde el móvil.
 - En los comentarios, que solo admiten texto, el GIF se inserta como enlace.
 
 ---

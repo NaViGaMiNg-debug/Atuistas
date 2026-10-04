@@ -6,11 +6,10 @@ import { env } from "../config/env.js";
 // aquí y el servidor llama a Giphy por ella. Sin clave puesta en el .env la ruta
 // responde 503 con faltaClave y el selector avisa en vez de romperse.
 //
-// Se usa la capa de Giphy compatible con Tenor (api.giphy.com/v2/search): misma
-// forma de respuesta (`results[].media_formats`), lo que deja el cliente tal cual
-// y deja abierta la puerta a una clave antigua de Tenor si algum día hiciera falta.
+// Se usan los endpoints nativos (/v1/gifs/search y /v1/stickers/search) y no la
+// capa compatible con Tenor (/v2): esa capa responde 401 a las claves beta,
+// que es justo lo que da una cuenta gratuita.
 const ORIGEN_GIPHY = "https://api.giphy.com";
-const CLAVE_CLIENTE = "atuistas-web";
 
 export async function mediosRoutes(app: FastifyInstance) {
     app.get<{ Querystring: { buscar?: string; tipo?: string } }>(
@@ -33,26 +32,17 @@ export async function mediosRoutes(app: FastifyInstance) {
 
             const parametros = new URLSearchParams({
                 api_key: env.giphyApiKey,
-                client_key: CLAVE_CLIENTE,
                 q: busqueda,
                 limit: "24",
-                contentfilter: "medium",
-                // Los stickers son WebP con transparencia; para los GIF, un gif
-                // pequeño para previsualizar y el completo para enviar.
-                media_filter: stickers
-                    ? "tinywebp_transparent,webp_transparent"
-                    : "tinygif,gif"
+                // PG: hay GIF de internet con escenas duras puntual, y Atuistas
+                // no comprueba la edad de nadie.
+                rating: "pg",
+                lang: "es"
             });
-
-            if (stickers) {
-                // searchfilter=sticker es la única forma admitida por la capa
-                // compatible; las variantes con "static" ya no existen.
-                parametros.set("searchfilter", "sticker");
-            }
 
             try {
                 const respuesta = await fetch(
-                    `${ORIGEN_GIPHY}/v2/search?${parametros.toString()}`
+                    `${ORIGEN_GIPHY}/v1/${stickers ? "stickers" : "gifs"}/search?${parametros.toString()}`
                 );
 
                 if (!respuesta.ok) {
@@ -70,31 +60,37 @@ export async function mediosRoutes(app: FastifyInstance) {
                 // Giphy devuelve a veces una respuesta vacía con estado 200 cuando
                 // algo falla por su lado: se trata como error, no como cero
                 // resultados.
-                if (!json?.results) {
+                if (!Array.isArray(json?.data)) {
                     return reply.code(502).send({
                         error: "El proveedor de GIF no devolvió resultados"
                     });
                 }
 
-                const medio = json.results
-                    .map((resultado: any) => {
-                        const formatos = resultado.media_formats ?? {};
-                        const url =
-                            formatos.gif_transparent?.url
-                            ?? formatos.webp_transparent?.url
-                            ?? formatos.gif?.url
-                            ?? "";
+                const medio = json.data
+                    .map((item: any) => {
+                        const imagenes = item.images ?? {};
 
-                        const mini =
-                            formatos.tinygif?.url
-                            ?? formatos.tinywebp_transparent?.url
-                            ?? url;
+                        // Los stickers llegan en WebP con transparencia; los GIF
+                        // en su versión reducida, que pesa bastante menos y sigue
+                        // siendo un gif animado.
+                        const url = stickers
+                            ? (imagenes.original?.webp
+                                ?? imagenes.downsized?.webp
+                                ?? imagenes.fixed_width?.webp
+                                ?? imagenes.downsized?.url)
+                            : (imagenes.downsized?.url ?? imagenes.original?.url);
+
+                        const mini = stickers
+                            ? (imagenes.fixed_width?.webp ?? url)
+                            : (imagenes.fixed_width_small?.url
+                                ?? imagenes.downsized_small?.url
+                                ?? url);
 
                         return {
-                            id: resultado.id,
-                            titulo: String(resultado.title ?? "").slice(0, 80),
-                            url,
-                            mini
+                            id: item.id,
+                            titulo: String(item.title ?? "").slice(0, 80),
+                            url: url ?? "",
+                            mini: mini ?? ""
                         };
                     })
                     .filter((item: { url: string }) => item.url);
