@@ -578,13 +578,13 @@
                                 <input id="archivo-chat" type="file" hidden>
                             </div>
 
-                            <input
+                            <textarea
                                 id="entrada-mensaje"
-                                type="text"
+                                rows="1"
                                 placeholder="Escribe un mensaje..."
                                 autocomplete="off"
                                 maxlength="5000"
-                            >
+                            ></textarea>
 
                             <p id="estado-adjunto-chat" class="chip-adjunto" hidden></p>
 
@@ -1085,7 +1085,7 @@
                                 <input id="archivo-servidor" type="file" hidden>
                             </div>
 
-                            <input id="entrada-mensaje-servidor" type="text" maxlength="5000" placeholder="Escribe un mensaje..." autocomplete="off">
+                            <textarea id="entrada-mensaje-servidor" rows="1" maxlength="5000" placeholder="Escribe un mensaje..." autocomplete="off"></textarea>
 
                             <button id="boton-oculto-servidor" class="pastilla-oculto" type="button" hidden aria-pressed="false" title="Enviar el mensaje de forma oculta">
                                 <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
@@ -1461,6 +1461,7 @@
                         <img id="avatar-autor-historia" alt="" hidden>
                         <strong id="nombre-autor-historia"></strong>
                     </button>
+                    <button id="boton-comentarios-estado" type="button" aria-label="Comentarios del estado">💬<span id="cantidad-comentarios-estado" class="cantidad-comentarios-estado" hidden></span></button>
                     <button id="cerrar-visor-historias" type="button" aria-label="Cerrar estados">×</button>
                 </header>
                 <button id="historia-anterior" class="zona-historia zona-historia-anterior" type="button" aria-label="Estado anterior"></button>
@@ -1912,6 +1913,54 @@
             </div>
 
             <!-- ==============================
+                 COMENTARIOS DEL ESTADO
+                 Mismo aspecto que los del reel;
+                 se borran junto con el estado.
+                 ============================== -->
+
+            <div id="modal-comentarios-estado" class="modal modal-contenido-social" hidden>
+
+                <section
+                    class="dialogo-social dialogo-comentarios"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="titulo-comentarios-estado"
+                >
+
+                    <header class="cabecera-dialogo-social">
+
+                        <h2 id="titulo-comentarios-estado">Comentarios</h2>
+
+                        <button
+                            id="boton-cerrar-comentarios-estado"
+                            class="boton-cerrar-modal"
+                            type="button"
+                            aria-label="Cerrar"
+                        >
+                            ×
+                        </button>
+
+                    </header>
+
+                    <div id="lista-comentarios-estado" class="lista-comentarios-reel"></div>
+
+                    <form id="formulario-comentario-estado" class="formulario-comentario-reel">
+                        <input
+                            id="texto-comentario-estado"
+                            type="text"
+                            maxlength="1000"
+                            placeholder="Añade un comentario..."
+                            autocomplete="off"
+                            required
+                        >
+                        <button id="boton-comentar-estado" type="submit" disabled>COMENTAR</button>
+                    </form>
+
+                </section>
+
+            </div>
+
+            <!-- ==============================
                  CUENTA: HISTORIAS Y PUBLICACIONES
                  Historias en burbujas con su nombre;
                  publicaciones con la tira de reels
@@ -2047,6 +2096,68 @@
                         src=""
                         alt="Foto de perfil ampliada"
                     >
+
+                </div>
+
+            </div>
+
+
+            <!-- ==============================
+                 VISOR DE FOTOS DEL CHAT
+                 La foto de un mensaje se abre en
+                 grande, se puede ampliar y se
+                 cambia de foto deslizando.
+                 ============================== -->
+
+            <div
+                id="modal-fotos-chat"
+                class="modal"
+                hidden
+            >
+
+                <div
+                    class="dialogo-fotos-chat"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label="Foto del chat"
+                >
+
+                    <button
+                        id="cerrar-fotos-chat"
+                        class="boton-cerrar-modal"
+                        type="button"
+                        aria-label="Cerrar"
+                    >
+                        ×
+                    </button>
+
+                    <button
+                        id="foto-chat-anterior"
+                        class="flecha-fotos-chat flecha-fotos-chat-izq"
+                        type="button"
+                        aria-label="Foto anterior"
+                    >
+                        ‹
+                    </button>
+
+                    <div class="fotos-chat-pista">
+                        <img
+                            id="foto-chat-grande"
+                            src=""
+                            alt="Foto ampliada"
+                        >
+                    </div>
+
+                    <button
+                        id="foto-chat-siguiente"
+                        class="flecha-fotos-chat flecha-fotos-chat-der"
+                        type="button"
+                        aria-label="Foto siguiente"
+                    >
+                        ›
+                    </button>
+
+                    <span id="foto-chat-indice" class="foto-chat-indice" aria-hidden="true"></span>
 
                 </div>
 

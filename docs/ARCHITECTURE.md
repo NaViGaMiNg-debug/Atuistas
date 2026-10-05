@@ -569,6 +569,7 @@ Actualmente la base de datos contempla:
 - vídeo
 - fecha de expiración
 - visibilidad
+- comentarios (igual que en los reels; se borran con el estado, en cascada)
 
 La visibilidad inicial es para amigos.
 
@@ -685,6 +686,11 @@ del campo correspondiente.
   reducida. Al elegir uno, el navegador lo descarga y lo manda por el mismo
   camino que una foto subida desde el móvil.
 - En los comentarios, que solo admiten texto, el GIF se inserta como enlace.
+- Los resultados de GIF y stickers van en `.selector-medio-medios`, que abarca
+  todas las columnas de la rejilla (`grid-column: 1 / -1`) y usa columnas que
+  llenan el ancho del panel: la rejilla pasa a columnas de 38 px al buscar
+  (no hay títulos de grupo) y, sin abarcarlas todas, el contenedor quedaba en
+  una sola columna, apilado y diminuto a la izquierda del buscador.
 
 ---
 
@@ -1039,7 +1045,9 @@ Actualmente existe código para:
 - Bloqueos en las reglas de amistad/chat.
 - Conversaciones privadas.
 - Mensajes privados de texto.
-- Adjuntos en el chat privado: fotos (pasan por el editor universal de recorte, pincel y texto), vídeo y audio grabado. El editor de foto se abre por encima del panel del chat (`#modal-editor-foto`, peldaño más alto de la escalera de capas) y lo que sale de él se adjunta al mensaje.
+- Adjuntos en el chat privado: fotos (pasan por el editor universal de recorte, pincel y texto), vídeo y audio grabado. El editor de foto se abre por encima del panel del chat (`#modal-editor-foto`, peldaño más alto de la escalera de capas) y lo que sale de él se adjunta al mensaje. Se pueden elegir todas las fotos de una vez: cada una sube su propio mensaje (el texto y la respuesta se quedan en la primera) y las que pesen más de 12 MB se comprimen antes de subirlas.
+- Campo de escritura multilínea: crece con el texto hasta tres líneas y a partir de ahí solo hace scroll vertical dentro del propio cuadro (nunca hacia los lados). Enter envía y Shift+Enter salta de línea, igual que antes en el `input`.
+- Visor de fotos del chat (`#modal-fotos-chat`, peldaño 3700): la foto de un mensaje se abre en grande desde cualquier conversación, se amplía con rueda, doble pulsación o pellizco, y se cambia de foto deslizando con el dedo o con las flechas.
 - Lectura de mensajes.
 - Polling del chat.
 - Edición, respuesta y eliminación de mensajes privados de texto por API e interfaz.

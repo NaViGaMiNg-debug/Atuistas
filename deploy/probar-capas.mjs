@@ -51,6 +51,9 @@ const peldanos = [
     [".modal", 1000],
     [".visor-reels", 1100],
     [".modal-contenido-social", 1400],
+    // Los comentarios del estado salen del visor de estados (2000): tienen que
+    // ir justo por encima para que se lean y se pueda escribir.
+    ["#modal-comentarios-estado", 2100],
     [".panel-chat", 3000],
     ["#modal-perfil", 3100],
     ["#modal-acciones-perfil", 3200],
@@ -60,7 +63,9 @@ const peldanos = [
     ["#modal-editor-foto", 3400],
     ["#modal-ubicacion", 3400],
     [".selector-medio", 3500],
-    [".modal-codigo", 3600]
+    [".modal-codigo", 3600],
+    // Las fotos del chat se abren desde el chat y por encima de todo lo demas.
+    ["#modal-fotos-chat", 3700]
 ];
 
 let anterior = 0;
@@ -121,6 +126,37 @@ comprobar(
 comprobar(
     /inputArchivo\.addEventListener\("change"[\s\S]{0,240}inputArchivo\.value = ""/.test(app),
     "Eligiendo dos veces la misma foto, la segunda tambien se manda"
+);
+
+// Las fotos del chat se abren en grande desde el propio chat: encima del
+// panel (3000) y congelando el resto de capas.
+comprobar(
+    html.includes('id="modal-fotos-chat"') && html.includes('id="foto-chat-grande"'),
+    "El visor de fotos del chat esta en el HTML"
+);
+comprobar(
+    zDe("#modal-fotos-chat") > zDe(".panel-chat"),
+    "Las fotos del chat se abren encima del chat"
+);
+comprobar(
+    zDe("#modal-comentarios-estado") > zDe(".visor-historias-pantalla"),
+    "Los comentarios del estado se abren encima del visor de estados"
+);
+comprobar(
+    app.includes("function abrirFotosChat(") && app.includes("function cambiarFotoChat("),
+    "El visor de fotos tiene sus funciones"
+);
+comprobar(
+    app.includes('["lista-mensajes", "mensajes-servidor"]'),
+    "Se puede abrir una foto desde cualquier conversacion"
+);
+comprobar(
+    app.includes("punterosFotoChat"),
+    "La foto se amplia con el pellizco del dedo"
+);
+comprobar(
+    /Math\.abs\(deltaX\) > 60/.test(app),
+    "Deslizando se pasa a la foto siguiente o anterior"
 );
 
 console.log("");

@@ -418,6 +418,27 @@ comprobar(
 comprobar(css.includes(".selector-medio {"), "El panel del selector tiene estilos");
 comprobar(css.includes(".boton-emoji {"), "El boton de emojis tiene estilos");
 
+/* ---------- Los GIF y stickers llenan el ancho del buscador ---------- */
+
+// Buscando GIF o stickers la rejilla pasa a columnas de 38px (no hay titulos
+// de grupo): si el contenedor de los resultados no abarca todas las columnas,
+// queda en una sola, diminuto y apilado a la izquierda del buscador.
+const reglaMedios = css.match(/\.selector-medio-medios\s*\{([^}]*)\}/)?.[1] ?? "";
+comprobar(reglaMedios.length > 0, "Los resultados de GIF tienen su regla propia");
+comprobar(
+    /grid-column:\s*1 \/ -1/.test(reglaMedios),
+    "Los GIF y stickers abarcan todas las columnas de la rejilla"
+);
+comprobar(
+    /display:\s*grid/.test(reglaMedios) &&
+        /repeat\(auto-fill,\s*minmax\(\d+px,\s*1fr\)\)/.test(reglaMedios),
+    "Los resultados se reparten en columnas que llenan el buscador"
+);
+comprobar(
+    !/repeat\(3, 1fr\)/.test(reglaMedios),
+    "Ya no estan apilados en tres columnas fijas a la izquierda"
+);
+
 /* ---------- Las capas: nada puede esconderse detras del chat ---------- */
 
 // El boton de emojis y el de ubicacion viven dentro del chat, que es un panel

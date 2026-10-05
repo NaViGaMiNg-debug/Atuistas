@@ -267,7 +267,7 @@ comprobar(
 
 const sw = fs.readFileSync(path.join(raiz, "public", "sw.js"), "utf8");
 const versionSw = sw.match(/const VERSION = "(v\d+)"/)?.[1] || "?";
-comprobar(versionSw === "v16", `El service worker subio a la version v16 (${versionSw})`);
+comprobar(versionSw === "v17", `El service worker subio a la version v17 (${versionSw})`);
 
 console.log("");
 if (fallos.length) {

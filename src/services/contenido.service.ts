@@ -184,6 +184,7 @@ export async function obtenerEstados(usuarioId: string, seccion: "amigos" | "pub
              s.texto, s.visibilidad, s.creado_en, s.expira_en,
                u.nombre AS autor_nombre, u.color_nombre,
                CASE WHEN ar.ruta IS NULL THEN NULL ELSE REPLACE(ar.ruta, '\\', '/') END AS avatar_url,
+               (SELECT COUNT(*)::int FROM estados_comentarios c WHERE c.estado_id = s.id) AS comentarios,
                COALESCE((
                    SELECT json_agg(json_build_object(
                        'tipo', me.tipo,
@@ -245,4 +246,75 @@ export async function eliminarEstado(usuarioId: string, estadoId: string) {
     );
     if (resultado.rowCount !== 1) throw new Error("Solo puedes eliminar tus propios estados");
     return { mensaje: "Estado eliminado" };
+}
+
+// Quien ve el estado puede comentarlo: mismas reglas que para leerlo.
+async function puedeVerEstado(usuarioId: string, estadoId: string) {
+    const resultado = await db.query(
+        `
+        SELECT s.id
+        FROM estados s
+        WHERE s.id = $2
+          AND s.expira_en > NOW()
+          AND (
+              s.visibilidad = 'publica'
+              OR s.autor_id = $1
+              OR (
+                  s.visibilidad = 'amigos'
+                  AND EXISTS (
+                      SELECT 1 FROM amistades a
+                      WHERE a.usuario_a_id = LEAST(s.autor_id, $1::uuid)
+                        AND a.usuario_b_id = GREATEST(s.autor_id, $1::uuid)
+                  )
+              )
+          )
+        `,
+        [usuarioId, estadoId]
+    );
+    if (resultado.rowCount !== 1) throw new Error("Estado no disponible");
+}
+
+export async function obtenerComentariosEstado(usuarioId: string, estadoId: string) {
+    await puedeVerEstado(usuarioId, estadoId);
+    const resultado = await db.query(
+        `
+        SELECT c.id, c.autor_id, c.texto, c.creado_en,
+               u.nombre AS autor_nombre, u.color_nombre
+        FROM estados_comentarios c
+        INNER JOIN usuarios u ON u.id = c.autor_id AND u.activo = TRUE
+        WHERE c.estado_id = $1
+        ORDER BY c.creado_en ASC
+        LIMIT 100
+        `,
+        [estadoId]
+    );
+    return resultado.rows;
+}
+
+export async function comentarEstado(usuarioId: string, estadoId: string, texto: string) {
+    await puedeVerEstado(usuarioId, estadoId);
+    const contenido = texto.trim();
+    if (!contenido || contenido.length > 1000) {
+        throw new Error("El comentario debe tener entre 1 y 1000 caracteres");
+    }
+    const resultado = await db.query(
+        `INSERT INTO estados_comentarios (estado_id, autor_id, texto)
+         VALUES ($1, $2, $3)
+         RETURNING id, autor_id, texto, creado_en`,
+        [estadoId, usuarioId, contenido]
+    );
+    const autor = await db.query(`SELECT autor_id FROM estados WHERE id = $1`, [estadoId]);
+    const autorId = autor.rows[0]?.autor_id as string | undefined;
+    if (autorId && autorId !== usuarioId) {
+        await crearNotificacion(
+            autorId,
+            "comentarios",
+            "comentario_estado",
+            "Nuevo comentario",
+            contenido.length > 120 ? `${contenido.slice(0, 117)}...` : contenido,
+            { estadoId, comentarioId: resultado.rows[0].id },
+            usuarioId
+        );
+    }
+    return resultado.rows[0];
 }

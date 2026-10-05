@@ -937,6 +937,33 @@ CREATE TABLE multimedia_estado (
 
 
 -- ============================================================
+-- COMENTARIOS DE ESTADOS
+-- La clave foranea es en cascada: si el estado se borra
+-- (o caduca y la limpieza lo elimina), sus comentarios se
+-- borran con el.
+-- ============================================================
+
+CREATE TABLE estados_comentarios (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    estado_id UUID NOT NULL
+        REFERENCES estados(id)
+        ON DELETE CASCADE,
+
+    autor_id UUID NOT NULL
+        REFERENCES usuarios(id)
+        ON DELETE CASCADE,
+
+    texto VARCHAR(1000) NOT NULL,
+
+    creado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT estados_comentarios_texto_no_vacio
+        CHECK (length(trim(texto)) > 0)
+);
+
+
+-- ============================================================
 -- REELS
 -- Vídeo corto con título obligatorio: un único archivo de vídeo
 -- y visibilidad de amigos o público.
@@ -1168,6 +1195,9 @@ CREATE INDEX idx_estados_expira_en
 
 CREATE INDEX idx_multimedia_estado_estado
     ON multimedia_estado(estado_id, orden);
+
+CREATE INDEX idx_estados_comentarios_estado
+    ON estados_comentarios(estado_id, creado_en);
 
 CREATE INDEX idx_reels_autor
     ON reels(autor_id, creado_en DESC);

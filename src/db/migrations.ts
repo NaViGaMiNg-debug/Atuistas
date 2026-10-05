@@ -474,6 +474,23 @@ export async function migrarEsquema() {
             CREATE INDEX IF NOT EXISTS idx_reels_comentarios_reel
                 ON reels_comentarios(reel_id, creado_en);
 
+            -- Los comentarios de un estado se borran con el: la clave
+            -- foranea es en cascada, igual que en reels_comentarios.
+            CREATE TABLE IF NOT EXISTS estados_comentarios (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                estado_id UUID NOT NULL
+                    REFERENCES estados(id) ON DELETE CASCADE,
+                autor_id UUID NOT NULL
+                    REFERENCES usuarios(id) ON DELETE CASCADE,
+                texto VARCHAR(1000) NOT NULL,
+                creado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                CONSTRAINT estados_comentarios_texto_no_vacio
+                    CHECK (length(trim(texto)) > 0)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_estados_comentarios_estado
+                ON estados_comentarios(estado_id, creado_en);
+
             -- ==========================================
             -- HISTORIAS
             -- Carpetas permanentes con muchos elementos

@@ -7,12 +7,14 @@ import {
 } from "../services/multimedia.service.js";
 import {
     alternarCorazon,
+    comentarEstado,
     comentarPublicacion,
     crearEstado,
     crearPublicacion,
     eliminarEstado,
     eliminarPublicacion,
     obtenerComentarios,
+    obtenerComentariosEstado,
     obtenerEstados,
     obtenerPublicaciones
 } from "../services/contenido.service.js";
@@ -169,4 +171,31 @@ export async function contenidoRoutes(app: FastifyInstance) {
             return reply.code(400).send({ error: message });
         }
     });
+
+    app.get<{ Params: { estadoId: string } }>("/api/estados/:estadoId/comentarios", { preHandler: autenticar }, async (request, reply) => {
+        try {
+            return { comentarios: await obtenerComentariosEstado(request.usuario!.id, request.params.estadoId) };
+        } catch (error) {
+            const message = error instanceof Error ? error.message : "No se pudieron cargar los comentarios";
+            return reply.code(400).send({ error: message });
+        }
+    });
+
+    app.post<{ Params: { estadoId: string }; Body: { texto?: string } }>(
+        "/api/estados/:estadoId/comentarios",
+        { preHandler: autenticar },
+        async (request, reply) => {
+            try {
+                const comentario = await comentarEstado(
+                    request.usuario!.id,
+                    request.params.estadoId,
+                    request.body.texto ?? ""
+                );
+                return reply.code(201).send({ comentario });
+            } catch (error) {
+                const message = error instanceof Error ? error.message : "No se pudo comentar";
+                return reply.code(400).send({ error: message });
+            }
+        }
+    );
 }

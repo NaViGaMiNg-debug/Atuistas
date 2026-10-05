@@ -2040,7 +2040,8 @@ button.servidor-item {
 .formulario-servidor input,
 .formulario-servidor textarea,
 .formulario-servidor select,
-.formulario-mensaje-servidor input {
+.formulario-mensaje-servidor input,
+.formulario-mensaje-servidor textarea {
     width: 100%;
     min-height: 44px;
     margin: 6px 0 14px;
@@ -2168,7 +2169,8 @@ button.servidor-item {
     background: #111;
 }
 
-.formulario-mensaje-servidor input {
+.formulario-mensaje-servidor input,
+.formulario-mensaje-servidor textarea {
     flex: 1;
     min-width: 0;
     margin: 0;
@@ -3096,7 +3098,8 @@ button.servidor-tarjeta:focus-visible {
     gap: 8px;
 }
 
-.formulario-mensaje-servidor input {
+.formulario-mensaje-servidor input,
+.formulario-mensaje-servidor textarea {
     flex: 1;
     min-width: 0;
 }
@@ -4262,8 +4265,12 @@ button.servidor-tarjeta:focus-visible {
 }
 
 .selector-medio-medios {
+    /* La rejilla pasa a columnas de 38px cuando busca GIF o stickers (no hay
+       titulos de grupo): sin abarcar todas las columnas, el contenedor quedaba
+       en una sola columna, apilado y diminuto a la izquierda. */
+    grid-column: 1 / -1;
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
     gap: 4px;
 }
 
@@ -5245,14 +5252,24 @@ button.servidor-tarjeta:focus-visible {
 
     min-width: 0;
 
-    height: 44px;
+    /* Crece con el texto hasta tres lineas; a partir de ahi hace scroll
+       vertical dentro del propio campo (nunca hacia los lados). */
+    height: auto;
+    min-height: 44px;
+    max-height: 92px;
 
-    padding: 0 14px;
+    padding: 11px 14px;
 
     border: 1px solid #333333;
     border-radius: 22px;
 
     outline: none;
+    resize: none;
+    overflow-y: auto;
+    overflow-x: hidden;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    line-height: 20px;
 
     background: #242424;
     color: #ffffff;
@@ -5267,6 +5284,21 @@ button.servidor-tarjeta:focus-visible {
 
 #entrada-mensaje:focus {
     border-color: #555555;
+}
+
+/* El campo del servidor crece igual que el del chat privado: hasta tres
+   lineas y despues solo scroll hacia abajo dentro del propio cuadro. */
+#entrada-mensaje-servidor {
+    height: auto;
+    min-height: 44px;
+    max-height: 92px;
+
+    resize: none;
+    overflow-y: auto;
+    overflow-x: hidden;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    line-height: 20px;
 }
 
 .boton-enviar-mensaje {
@@ -6115,7 +6147,8 @@ button.servidor-tarjeta:focus-visible {
     align-items: center;
     gap: 10px;
     min-height: 44px;
-    padding-right: 48px;
+    /* Hueco para los dos botones de la derecha: comentarios y cerrar. */
+    padding-right: 96px;
     text-shadow: 0 1px 5px #000;
 }
 
@@ -6139,6 +6172,25 @@ button.servidor-tarjeta:focus-visible {
     color: #fff;
     font-size: 28px;
     cursor: pointer;
+}
+
+/* El boton de comentarios va justo a la izquierda del de cerrar. */
+.cabecera-historia-pantalla #boton-comentarios-estado {
+    right: 48px;
+    font-size: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+}
+
+.cantidad-comentarios-estado {
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.cantidad-comentarios-estado[hidden] {
+    display: none;
 }
 
 .contenido-historia-pantalla {
@@ -6257,6 +6309,98 @@ button.servidor-tarjeta:focus-visible {
 
 #modal-foto-grande {
     z-index: 3300;
+}
+
+/* Los comentarios del estado se abren desde el visor de estados (2000):
+   tienen que ir por encima para que se lean y se pueda escribir. */
+#modal-comentarios-estado {
+    z-index: 2100;
+}
+
+/* Las fotos del chat se abren desde el propio chat y encima de todo lo
+   demas, incluido el codigo QR (3600) por si se dejan ambos abiertos. */
+#modal-fotos-chat {
+    z-index: 3700;
+}
+
+.dialogo-fotos-chat {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: #000;
+}
+
+.dialogo-fotos-chat .boton-cerrar-modal {
+    position: absolute;
+    top: max(12px, env(safe-area-inset-top));
+    right: max(12px, env(safe-area-inset-right));
+    z-index: 2;
+}
+
+.fotos-chat-pista {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    /* El dedo mueve la foto (arrastre y pellizco), no hace scroll de pagina. */
+    touch-action: none;
+    cursor: grab;
+}
+
+#foto-chat-grande {
+    max-width: 100%;
+    max-height: 100%;
+    user-select: none;
+    -webkit-user-drag: none;
+    transform-origin: center center;
+    will-change: transform;
+}
+
+.flecha-fotos-chat {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 2;
+
+    width: 44px;
+    height: 44px;
+    border: 0;
+    border-radius: 50%;
+
+    background: rgba(0, 0, 0, 0.5);
+    color: #fff;
+    font-size: 28px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.flecha-fotos-chat-izq {
+    left: max(10px, env(safe-area-inset-left));
+}
+
+.flecha-fotos-chat-der {
+    right: max(10px, env(safe-area-inset-right));
+}
+
+.foto-chat-indice {
+    position: absolute;
+    bottom: max(14px, env(safe-area-inset-bottom));
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+
+    padding: 4px 12px;
+    border-radius: 999px;
+
+    background: rgba(0, 0, 0, 0.55);
+    color: #fff;
+    font-size: 13px;
 }
 
 /* El editor de foto se abre desde el compositor del chat, y el panel del chat

@@ -194,7 +194,12 @@ function crearComposer(config) {
             return;
         }
         chipAdjunto.hidden = false;
-        chipAdjunto.textContent = `${ETIQUETA_ADJUNTO[adjunto.tipo] ?? "ARCHIVO"}: ${adjunto.archivo.name}`;
+        if (adjunto.archivos?.length > 1) {
+            const etiqueta = ETIQUETA_ADJUNTO[adjunto.tipo] ?? "ARCHIVOS";
+            chipAdjunto.textContent = `${etiqueta} (${adjunto.archivos.length}): ${adjunto.archivos.map((archivo) => archivo.name).join(", ")}`;
+            return;
+        }
+        chipAdjunto.textContent = `${ETIQUETA_ADJUNTO[adjunto.tipo] ?? "ARCHIVO"}: ${(adjunto.archivos?.[0] ?? adjunto.archivo).name}`;
     }
 
     // Los errores se enseñan donde el chip del adjunto, sin sacar alertas.
@@ -267,6 +272,7 @@ function crearComposer(config) {
         limpiarAdjunto();
         cerrarMenu();
         actualizarBoton();
+        ajustarAlturaEntrada();
         entrada.focus();
     }
 
@@ -298,6 +304,25 @@ function crearComposer(config) {
             return;
         }
         adjunto = { archivo, tipo };
+        pintarChip();
+        actualizarBoton();
+    }
+
+    // Varias fotos a la vez: se quedan juntas en un unico adjunto y cada una
+    // subira su propio mensaje al enviar. La compresion de las que pasen del
+    // limite se hace al subirlas, en subirAdjuntoPrivado.
+    function prepararAdjuntos(elegidos) {
+        if (!elegidos.length) return;
+        if (elegidos.length === 1 || !config.multiplesFotos) {
+            prepararAdjunto(elegidos[0]);
+            return;
+        }
+        const fotos = elegidos.filter((archivo) => tipoDeMime(archivo.type) === "imagen");
+        if (fotos.length !== elegidos.length) {
+            avisar("Entre varias fotos solo se pueden adjuntar imágenes");
+            return;
+        }
+        adjunto = { archivos: fotos, tipo: "imagen" };
         pintarChip();
         actualizarBoton();
     }
@@ -391,7 +416,37 @@ function crearComposer(config) {
         actualizarBoton();
     }
 
-    entrada.addEventListener("input", actualizarBoton);
+    // El cuadro de escritura crece con el texto hasta tres lineas; a partir de
+    // ahi el CSS lo limita con max-height y solo hace scroll vertical dentro
+    // de el (overflow-x: hidden impide cualquier scroll hacia los lados).
+    function ajustarAlturaEntrada() {
+        if (!entrada || !entrada.style) return;
+        entrada.style.height = "auto";
+        let maximo = 92;
+        if (typeof getComputedStyle === "function") {
+            const leido = Number.parseFloat(getComputedStyle(entrada).maxHeight);
+            if (Number.isFinite(leido) && leido > 0) maximo = leido;
+        }
+        const medida = Number(entrada.scrollHeight) || 0;
+        entrada.style.height = `${Math.min(medida, maximo)}px`;
+    }
+
+    entrada.addEventListener("input", () => {
+        actualizarBoton();
+        ajustarAlturaEntrada();
+    });
+
+    // En un textarea Enter salta linea en vez de enviar: aqui se recupera el
+    // comportamiento de antes (Enter envia, Shift+Enter hace salto de linea).
+    entrada.addEventListener("keydown", (evento) => {
+        if (evento.key !== "Enter" || evento.shiftKey) return;
+        evento.preventDefault();
+        if (typeof formulario.requestSubmit === "function") {
+            formulario.requestSubmit(botonAccion);
+        }
+    });
+
+    ajustarAlturaEntrada();
 
     botonMas.addEventListener("click", (evento) => {
         evento.stopPropagation();
@@ -413,15 +468,18 @@ function crearComposer(config) {
 
         limpiarAdjunto();
         inputArchivo.accept = ACEPTA_ADJUNTO[clase] ?? "";
+        // En el chat privado se pueden elegir todas las fotos de una vez;
+        // videos y audios (y todo en el servidor) siguen siendo de uno en uno.
+        inputArchivo.multiple = Boolean(config.multiplesFotos) && clase === "imagen";
         inputArchivo.click();
     });
 
     inputArchivo.addEventListener("change", () => {
-        const elegido = inputArchivo.files?.[0];
+        const elegidos = [...(inputArchivo.files ?? [])];
         // Se vacia el input para que elegir otra vez la misma foto siga
         // funcionando: si no, el navegador no da cambio y no se adjunta nada.
         inputArchivo.value = "";
-        prepararAdjunto(elegido);
+        prepararAdjuntos(elegidos);
     });
 
     botonDescartar.addEventListener("click", () => {
@@ -478,7 +536,12 @@ function crearComposer(config) {
     actualizarBoton();
 
     return {
-        refrescar: actualizarBoton,
+        // Ademas de refrescar el boton, recoloca la altura del cuadro: lo usa
+        // el chat al poner el texto de un mensaje para editar.
+        refrescar: () => {
+            actualizarBoton();
+            ajustarAlturaEntrada();
+        },
         // Lo usa el resto de la app para vaciar el composer al cambiar de chat.
         limpiar: limpiarTodo,
         // El chat de servidor cambia el placeholder según el canal.
@@ -536,7 +599,9 @@ if (formularioMensaje) {
         botonDescartar: document.getElementById("boton-descartar-grabacion-chat"),
         chipAdjunto: document.getElementById("estado-adjunto-chat"),
         enviar: enviarMensajeChat,
-        compartirUbicacion: (minutos) => compartirUbicacionChat(minutos)
+        compartirUbicacion: (minutos) => compartirUbicacionChat(minutos),
+        // Solo el chat privado admite subir todas las fotos de una vez.
+        multiplesFotos: true
     });
 
     // Editar o responder se resuelve antes de mandar nada nuevo.
@@ -556,34 +621,40 @@ if (formularioMensaje) {
         }
 
         // Con adjunto el texto es opcional: el archivo ya sube su propio mensaje.
-        let archivoEnviado = null;
-        if (adjunto) {
-            archivoEnviado = await subirAdjuntoPrivado(adjunto.archivo);
+        // Con varias fotos a la vez, cada una sube la suya y el texto (y la cita
+        // de respuesta) se quedan en la primera.
+        const porSubir = adjunto ? (adjunto.archivos ?? [adjunto.archivo]) : [];
+        const subidos = [];
+        for (const archivo of porSubir) {
+            subidos.push(await subirAdjuntoPrivado(archivo));
         }
 
-        if (!contenido && !archivoEnviado) return;
+        if (!contenido && !subidos.length) return;
 
-        const respuesta = await fetch(
-            `/api/mensajes/conversacion/${amigoChatActual.id}`,
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    contenido,
-                    respuestaId: mensajeRespuestaChat,
-                    tipo: archivoEnviado ? archivoEnviado.tipo : undefined,
-                    archivoId: archivoEnviado ? archivoEnviado.archivo_id : undefined
-                })
+        for (let indice = 0; indice < Math.max(subidos.length, 1); indice += 1) {
+            const enviado = subidos[indice];
+            const respuesta = await fetch(
+                `/api/mensajes/conversacion/${amigoChatActual.id}`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        contenido: indice === 0 ? contenido : "",
+                        respuestaId: indice === 0 ? mensajeRespuestaChat : undefined,
+                        tipo: enviado ? enviado.tipo : undefined,
+                        archivoId: enviado ? enviado.archivo_id : undefined
+                    })
+                }
+            );
+
+            const datos = await respuesta.json().catch(() => ({}));
+
+            if (!respuesta.ok) {
+                throw new Error(datos.error || "No se pudo enviar el mensaje");
             }
-        );
-
-        const datos = await respuesta.json().catch(() => ({}));
-
-        if (!respuesta.ok) {
-            throw new Error(datos.error || "No se pudo enviar el mensaje");
         }
 
         mensajeRespuestaChat = null;
@@ -600,6 +671,12 @@ if (formularioMensaje) {
         const token = localStorage.getItem("atuistas_token");
         if (!token || !amigoChatActual) {
             throw new Error("No se pudo subir el archivo");
+        }
+
+        // El límite de siempre por foto: si pesa más de 12 MB se comprime
+        // aquí, antes de subirla (también cubre lo que sale del editor).
+        if (archivo.type?.startsWith("image/") && archivo.size > LIMITE_FOTO_BYTES) {
+            archivo = await comprimirFoto(archivo);
         }
 
         const datos = new FormData();
@@ -1935,6 +2012,211 @@ async function enviarMedioSeleccionado(url, destino, idEntrada) {
     } catch (error) {
         alert(error.message || "No se pudo enviar el GIF");
     }
+}
+
+/* ==============================
+   VISOR DE FOTOS DEL CHAT
+   Pulsar la foto de un mensaje la abre
+   en grande: se amplia con la rueda,
+   doble pulsación o pellizco, y se
+   cambia de foto deslizando con el
+   dedo (o con las flechas, en ratón).
+   ============================== */
+
+let fotosChatAbiertas = [];
+let indiceFotoChat = 0;
+let escalaFotoChat = 1;
+let desplazFotoChat = { x: 0, y: 0 };
+const punterosFotoChat = new Map();
+let arrastreFotoChat = null;
+
+function aplicarTransformFotoChat() {
+    const imagen = document.getElementById("foto-chat-grande");
+    if (!imagen || !imagen.style) return;
+    imagen.style.transform =
+        `translate(${desplazFotoChat.x}px, ${desplazFotoChat.y}px) scale(${escalaFotoChat})`;
+}
+
+function pintarFotoChat(indice) {
+    const modal = document.getElementById("modal-fotos-chat");
+    if (!fotosChatAbiertas.length) {
+        if (modal) modal.hidden = true;
+        return;
+    }
+    indiceFotoChat = Math.max(0, Math.min(fotosChatAbiertas.length - 1, indice));
+    escalaFotoChat = 1;
+    desplazFotoChat = { x: 0, y: 0 };
+    aplicarTransformFotoChat();
+
+    document.getElementById("foto-chat-grande").src = fotosChatAbiertas[indiceFotoChat];
+    document.getElementById("foto-chat-indice").textContent =
+        fotosChatAbiertas.length > 1 ? `${indiceFotoChat + 1} / ${fotosChatAbiertas.length}` : "";
+    document.getElementById("foto-chat-anterior").hidden = indiceFotoChat === 0;
+    document.getElementById("foto-chat-siguiente").hidden =
+        indiceFotoChat === fotosChatAbiertas.length - 1;
+}
+
+function abrirFotosChat(contenedorId, imagen) {
+    const contenedor = document.getElementById(contenedorId);
+    if (!contenedor || !contenedor.querySelectorAll) return;
+    // Las fotos de la conversación entera, en el orden en que se ven.
+    fotosChatAbiertas = [...contenedor.querySelectorAll(".adjunto-mensaje img")]
+        .map((foto) => foto.getAttribute?.("src") || foto.src || "")
+        .filter(Boolean);
+    const actual = imagen?.getAttribute?.("src") || imagen?.src || "";
+    pintarFotoChat(Math.max(0, fotosChatAbiertas.indexOf(actual)));
+    document.getElementById("modal-fotos-chat").hidden = false;
+}
+
+function cerrarFotosChat() {
+    punterosFotoChat.clear();
+    arrastreFotoChat = null;
+    fotosChatAbiertas = [];
+    document.getElementById("modal-fotos-chat").hidden = true;
+}
+
+function cambiarFotoChat(paso) {
+    pintarFotoChat(indiceFotoChat + paso);
+}
+
+function acercarFotoChat(factor) {
+    escalaFotoChat = Math.max(1, Math.min(6, escalaFotoChat * factor));
+    if (escalaFotoChat === 1) desplazFotoChat = { x: 0, y: 0 };
+    aplicarTransformFotoChat();
+}
+
+document.getElementById("cerrar-fotos-chat")?.addEventListener("click", cerrarFotosChat);
+document.getElementById("foto-chat-anterior")?.addEventListener("click", () => cambiarFotoChat(-1));
+document.getElementById("foto-chat-siguiente")?.addEventListener("click", () => cambiarFotoChat(1));
+
+document.getElementById("modal-fotos-chat")?.addEventListener("click", (evento) => {
+    if (evento.target === document.getElementById("modal-fotos-chat")) cerrarFotosChat();
+});
+
+document.addEventListener("keydown", (evento) => {
+    const modal = document.getElementById("modal-fotos-chat");
+    if (!modal || modal.hidden) return;
+    if (evento.key === "Escape") cerrarFotosChat();
+    else if (evento.key === "ArrowRight") cambiarFotoChat(1);
+    else if (evento.key === "ArrowLeft") cambiarFotoChat(-1);
+});
+
+// Pulsar una foto de cualquier conversación (privada o de servidor) la abre.
+for (const contenedorId of ["lista-mensajes", "mensajes-servidor"]) {
+    document.getElementById(contenedorId)?.addEventListener("click", (evento) => {
+        // Con la selección de mensajes activa, el toque selecciona: no se abre.
+        if (typeof mensajesSeleccionadosChat !== "undefined" && mensajesSeleccionadosChat.size > 0) return;
+        const imagen = evento.target.closest?.(".adjunto-mensaje img");
+        if (imagen) abrirFotosChat(contenedorId, imagen);
+    });
+}
+
+const pistaFotosChat = document.querySelector(".fotos-chat-pista");
+
+if (pistaFotosChat) {
+    // Doble pulsación: ampliar y volver al tamaño normal.
+    pistaFotosChat.addEventListener("dblclick", (evento) => {
+        evento.preventDefault();
+        if (escalaFotoChat > 1) {
+            escalaFotoChat = 1;
+            desplazFotoChat = { x: 0, y: 0 };
+            aplicarTransformFotoChat();
+        } else {
+            escalaFotoChat = 2.5;
+            aplicarTransformFotoChat();
+        }
+    });
+
+    // Rueda del ratón: acercar y alejar.
+    pistaFotosChat.addEventListener("wheel", (evento) => {
+        if (!fotosChatAbiertas.length) return;
+        evento.preventDefault();
+        acercarFotoChat(evento.deltaY < 0 ? 1.15 : 1 / 1.15);
+    }, { passive: false });
+
+    pistaFotosChat.addEventListener("pointerdown", (evento) => {
+        pistaFotosChat.setPointerCapture?.(evento.pointerId);
+        punterosFotoChat.set(evento.pointerId, { x: evento.clientX, y: evento.clientY });
+        if (punterosFotoChat.size === 2) {
+            const [a, b] = [...punterosFotoChat.values()];
+            arrastreFotoChat = {
+                pinch: true,
+                distancia: Math.hypot(a.x - b.x, a.y - b.y),
+                escalaBase: escalaFotoChat
+            };
+        } else if (punterosFotoChat.size === 1) {
+            arrastreFotoChat = {
+                pinch: false,
+                inicioX: evento.clientX,
+                inicioY: evento.clientY,
+                origenX: desplazFotoChat.x,
+                origenY: desplazFotoChat.y,
+                movido: false
+            };
+        }
+    });
+
+    pistaFotosChat.addEventListener("pointermove", (evento) => {
+        if (!punterosFotoChat.has(evento.pointerId) || !arrastreFotoChat) return;
+        punterosFotoChat.set(evento.pointerId, { x: evento.clientX, y: evento.clientY });
+
+        if (arrastreFotoChat.pinch && punterosFotoChat.size >= 2) {
+            const [a, b] = [...punterosFotoChat.values()];
+            const distancia = Math.hypot(a.x - b.x, a.y - b.y);
+            const base = arrastreFotoChat.distancia || 1;
+            escalaFotoChat = Math.max(1, Math.min(6, arrastreFotoChat.escalaBase * (distancia / base)));
+            if (escalaFotoChat === 1) desplazFotoChat = { x: 0, y: 0 };
+            aplicarTransformFotoChat();
+            return;
+        }
+
+        const deltaX = evento.clientX - arrastreFotoChat.inicioX;
+        const deltaY = evento.clientY - arrastreFotoChat.inicioY;
+        if (Math.abs(deltaX) > 8 || Math.abs(deltaY) > 8) arrastreFotoChat.movido = true;
+
+        // Ampliada, el dedo arrastra la foto; al tamaño normal se guarda el
+        // movimiento para decidir al soltar si se cambia de foto.
+        if (escalaFotoChat > 1) {
+            desplazFotoChat = {
+                x: arrastreFotoChat.origenX + deltaX,
+                y: arrastreFotoChat.origenY + deltaY
+            };
+            aplicarTransformFotoChat();
+        }
+    });
+
+    const soltarPunteroFotoChat = (evento) => {
+        if (!punterosFotoChat.has(evento.pointerId)) return;
+        punterosFotoChat.delete(evento.pointerId);
+
+        const eraDesliz = Boolean(
+            arrastreFotoChat && !arrastreFotoChat.pinch && escalaFotoChat === 1 && arrastreFotoChat.movido
+        );
+        const deltaX = arrastreFotoChat ? evento.clientX - arrastreFotoChat.inicioX : 0;
+
+        if (punterosFotoChat.size === 0) {
+            arrastreFotoChat = null;
+            // Deslizar a un lado y a otro pasa de foto, como en los estados.
+            if (eraDesliz && Math.abs(deltaX) > 60) cambiarFotoChat(deltaX < 0 ? 1 : -1);
+            if (escalaFotoChat < 1) {
+                escalaFotoChat = 1;
+                aplicarTransformFotoChat();
+            }
+        } else if (punterosFotoChat.size === 1) {
+            // Queda un dedo: el arrastre sigue desde donde está.
+            const [restante] = [...punterosFotoChat.values()];
+            arrastreFotoChat = {
+                pinch: false,
+                inicioX: restante.x,
+                inicioY: restante.y,
+                origenX: desplazFotoChat.x,
+                origenY: desplazFotoChat.y,
+                movido: true
+            };
+        }
+    };
+    pistaFotosChat.addEventListener("pointerup", soltarPunteroFotoChat);
+    pistaFotosChat.addEventListener("pointercancel", soltarPunteroFotoChat);
 }
 
 /* ==============================
@@ -7064,6 +7346,9 @@ function cerrarVisorHistorias() {
     document.getElementById("visor-historias-pantalla").hidden = true;
     document.getElementById("contenido-historia-pantalla").replaceChildren();
     secuenciaHistoriaActual = [];
+    // Si los comentarios estaban abiertos, se cierran con el estado.
+    const comentariosEstado = document.getElementById("modal-comentarios-estado");
+    if (comentariosEstado) comentariosEstado.hidden = true;
 }
 
 function mostrarHistoriaActual() {
@@ -7084,6 +7369,9 @@ function mostrarHistoriaActual() {
     const nombreAutorHistoria = document.getElementById("nombre-autor-historia");
     nombreAutorHistoria.textContent = nombreVisible(estado.autor_id, estado.autor_nombre);
     nombreAutorHistoria.setAttribute("style", estiloNombre(estado.color_nombre));
+
+    // El botón de comentarios enseña cuántos tiene este estado.
+    pintarCantidadComentariosEstado(estado.comentarios || 0);
 
     const progreso = document.getElementById("progreso-historias");
     progreso.innerHTML = secuenciaHistoriaActual.map((_, indice) => `
@@ -7814,6 +8102,79 @@ document.getElementById("formulario-comentario-reel")?.addEventListener("submit"
         entrada.value = "";
         refrescarBotonComentar();
         await abrirComentariosReel(reelAbierto, pantalla.querySelector(".cuenta-comentarios"));
+    } catch (fallo) {
+        console.warn("No se pudo comentar:", fallo);
+    }
+});
+
+/* ---------- Comentarios del estado ---------- */
+
+// Mismo funcionamiento que los del reel: se abren desde el visor de estados y
+// se borran en el servidor en cuanto se borra el estado (borrado en cascada).
+let estadoComentariosAbierto = null;
+
+function pintarCantidadComentariosEstado(total) {
+    const marca = document.getElementById("cantidad-comentarios-estado");
+    if (!marca) return;
+    marca.hidden = !total;
+    marca.textContent = total ? String(total) : "";
+}
+
+async function abrirComentariosEstado(estadoId) {
+    if (!estadoId) return;
+    estadoComentariosAbierto = estadoId;
+    const modal = document.getElementById("modal-comentarios-estado");
+    const lista = document.getElementById("lista-comentarios-estado");
+    const entrada = document.getElementById("texto-comentario-estado");
+    const boton = document.getElementById("boton-comentar-estado");
+    modal.hidden = false;
+    lista.innerHTML = `<p class="estado-amigos">Cargando...</p>`;
+    try {
+        const datos = await solicitarGrupo(`/api/estados/${encodeURIComponent(estadoId)}/comentarios`);
+        lista.innerHTML = datos.comentarios.map((comentario) => `
+            <p class="comentario-reel">
+                <strong style="${estiloNombre(comentario.color_nombre)}">${escapeHtml(nombreVisible(comentario.autor_id, comentario.autor_nombre))}</strong>
+                ${escapeHtml(comentario.texto)}
+            </p>
+        `).join("") || `<p class="estado-amigos">Todavía no hay comentarios.</p>`;
+        pintarCantidadComentariosEstado(datos.comentarios.length);
+    } catch (fallo) {
+        lista.innerHTML = `<p class="estado-amigos">${escapeHtml(fallo.message)}</p>`;
+    }
+    if (entrada) entrada.value = "";
+    if (boton) boton.disabled = true;
+    entrada?.focus();
+}
+
+document.getElementById("boton-comentarios-estado")?.addEventListener("click", () => {
+    const estado = secuenciaHistoriaActual[indiceHistoriaActual];
+    abrirComentariosEstado(estado?.id);
+});
+
+document.getElementById("boton-cerrar-comentarios-estado")?.addEventListener("click", () => {
+    document.getElementById("modal-comentarios-estado").hidden = true;
+});
+
+const entradaComentarioEstado = document.getElementById("texto-comentario-estado");
+const botonComentarEstado = document.getElementById("boton-comentar-estado");
+
+entradaComentarioEstado?.addEventListener("input", () => {
+    botonComentarEstado.disabled = entradaComentarioEstado.value.trim().length === 0;
+});
+
+document.getElementById("formulario-comentario-estado")?.addEventListener("submit", async (evento) => {
+    evento.preventDefault();
+    const entrada = document.getElementById("texto-comentario-estado");
+    const texto = entrada.value.trim();
+    if (!texto || !estadoComentariosAbierto) return;
+    try {
+        await solicitarGrupo(`/api/estados/${encodeURIComponent(estadoComentariosAbierto)}/comentarios`, {
+            method: "POST",
+            body: JSON.stringify({ texto })
+        });
+        entrada.value = "";
+        botonComentarEstado.disabled = true;
+        await abrirComentariosEstado(estadoComentariosAbierto);
     } catch (fallo) {
         console.warn("No se pudo comentar:", fallo);
     }

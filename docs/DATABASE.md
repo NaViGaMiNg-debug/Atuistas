@@ -56,6 +56,7 @@ comentarios
 corazones_publicacion
 estados
 multimedia_estado
+estados_comentarios
 ```
 
 ---
@@ -941,6 +942,20 @@ La primera versión utiliza principalmente amigos.
 Los estados admiten contenido de texto o multimedia ordenada. La decisión de producto actual limita cada estado a un vídeo de hasta 4 minutos, hasta 10 fotos o un audio de hasta 3 minutos y 30 segundos. Los archivos se almacenan fuera de PostgreSQL y se enlazan mediante `multimedia_estado`.
 
 El estado siempre debe tener una fecha de expiración posterior a su creación.
+
+## Tabla `estados_comentarios`
+
+Comentarios de un estado, con el mismo formato que los de las publicaciones y los reels:
+
+- `id`
+- `estado_id` (referencia a `estados` con `ON DELETE CASCADE`)
+- `autor_id`
+- `texto` (1 a 1000 caracteres)
+- `creado_en`
+
+La clave foránea es en cascada: cuando un estado se borra (o caduca y la
+limpieza periódica lo elimina), sus comentarios se borran con él. El feed de
+estados incluye el contador en el campo `comentarios`.
 
 ---
 
