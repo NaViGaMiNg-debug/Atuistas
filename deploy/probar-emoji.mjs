@@ -72,6 +72,7 @@ function crearElemento(id = "") {
 
 const codigo = fs.readFileSync(path.join(raiz, "public", "app.js"), "utf8");
 const emojis = fs.readFileSync(path.join(raiz, "public", "data", "emojis.js"), "utf8");
+const css = fs.readFileSync(path.join(raiz, "public", "style.css"), "utf8");
 
 /* Los ids devuelven siempre el mismo elemento: asi una prueba puede poner
    hidden = false en dos capas a la vez y comprobar cual se cierra. */
@@ -133,6 +134,16 @@ try {
     vm.createContext(sandbox);
     vm.runInContext(emojis, sandbox, { timeout: 20000 });
     vm.runInContext(codigo, sandbox, { timeout: 20000 });
+
+    // En el DOM de mentira innerHTML siempre devolvia cadena vacia, asi que
+    // escapeHtml se comia los valores (los atributos quedaban vacios). Se
+    // sustituye por una version fiel: si no, las pruebas mienten.
+    vm.runInContext(
+        "escapeHtml = (t) => String(t ?? '')" +
+            ".replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')",
+        sandbox
+    );
+
     comprobar(true, "emojis.js y app.js se ejecutan enteros sin ReferenceError");
 } catch (error) {
     comprobar(false, `app.js lanzo ${error.message}`);
@@ -241,6 +252,62 @@ comprobar(
     "El menu de adjuntos no tiene atributos mutados"
 );
 
+/* ---------- La campanita de avisos ---------- */
+
+comprobar(
+    html.includes('id="boton-campana-notificaciones"'),
+    "Hay una campanita en la cabecera"
+);
+comprobar(
+    /<header class="barra-superior">[\s\S]*?boton-campana-notificaciones/.test(html),
+    "La campanita esta dentro de la cabecera, junto al titulo"
+);
+comprobar(
+    !html.includes('id="boton-abrir-notificaciones"'),
+    "El boton de NOTIFICACIONES de Cuenta ya no esta"
+);
+comprobar(
+    !html.includes('id="punto-notificaciones-cuenta"'),
+    "El icono de Cuenta ya no lleva punto rojo de avisos"
+);
+comprobar(
+    !html.includes("boton-leer-todas-notificaciones"),
+    "No queda el boton de marcar como leidas"
+);
+comprobar(
+    codigo.includes("boton-campana-notificaciones") &&
+        codigo.includes('solicitarGrupo("/api/notificaciones/leer-todas", { method: "POST" })'),
+    "Al abrir los avisos se marcan leidos solos"
+);
+comprobar(
+    !codigo.includes("punto-notificaciones-cuenta"),
+    "El punto rojo se pinta solo en la campanita"
+);
+comprobar(css.includes(".boton-campana {"), "La campanita tiene estilos");
+
+/* ---------- El selector no se cierra al deslizar ---------- */
+
+comprobar(
+    codigo.includes("panel.contains(evento.target)"),
+    "Deslizar dentro del panel no lo cierra"
+);
+comprobar(
+    codigo.includes("destinoSelector?.ancla"),
+    "El panel recuerda el boton que lo abrio"
+);
+comprobar(
+    !/addEventListener\("scroll", \(\) => \{[\s\S]{0,80}cerrerSelector\(\)/.test(codigo) &&
+        !/addEventListener\("scroll", \(\) => \{[\s\S]{0,80}cerrarSelector\(\)/.test(codigo),
+    "Ningun scroll cierra el panel a pelo"
+);
+
+/* ---------- El texto vacio ocupa el ancho ---------- */
+
+comprobar(
+    /\.selector-medio-vacio\s*\{[^}]*grid-column:\s*1 \/ -1/.test(css),
+    "El texto de buscar GIF o sticker ocupa todo el ancho"
+);
+
 /* ---------- El teclado del movil no se abre solo ---------- */
 
 comprobar(
@@ -256,9 +323,98 @@ comprobar(
     "Entrar en un chat ya no enfoca el campo ni abre el teclado"
 );
 
+/* ---------- La tarjeta del mapa y el boton de parar ---------- */
+
+// El mapa se monta con teselas de OpenStreetMap, no con el "embed" del mapa:
+// aquel devuelve una pagina HTML y dentro de un <img> nunca se veía.
+const mapa = vm.runInContext(
+    "pintarMapaUbicacion(40.4168, -3.7038)",
+    sandbox
+);
+comprobar(mapa.teselas.length === 4, "La tarjeta monta cuatro teselas de mapa");
+comprobar(
+    mapa.teselas.every((tesela) =>
+        tesela.url.startsWith("https://tile.openstreetmap.org/")
+    ),
+    "Las teselas salen del servidor público de OpenStreetMap"
+);
+comprobar(
+    mapa.estilo.includes("background") || mapa.estilo.includes("url("),
+    "La tarjeta pinta las teselas como fondo"
+);
+comprobar(
+    !codigo.includes("export/embed.html"),
+    "No queda ningun embed de mapa puesto como si fuera una imagen"
+);
+
+const tarjeta = vm.runInContext(
+    `htmlTarjetaUbicacion({
+        id: "m1",
+        es_mio: true,
+        datos: { ubicacion: { lat: 40.4168, lon: -3.7038, enVivo: true,
+            expiraEn: new Date(Date.now() + 600000).toISOString(), nombre: "Prueba" } }
+    })`,
+    sandbox
+);
+
+comprobar(tarjeta.includes("ubicacion-chincheta"), "La tarjeta lleva su chincheta");
+comprobar(tarjeta.includes("© OpenStreetMap"), "La tarjeta cita a OpenStreetMap");
+comprobar(tarjeta.includes("ABRIR EN EL MAPA"), "Se puede abrir el mapa aparte");
+comprobar(
+    tarjeta.includes('data-parar-ubicacion="m1"'),
+    "Quien comparte ve el boton de dejar de compartir"
+);
+comprobar(tarjeta.includes("● En vivo"), "La tarjeta avisa de que sigue en vivo");
+
+const tarjetaAjena = vm.runInContext(
+    `htmlTarjetaUbicacion({
+        id: "m2",
+        es_mio: false,
+        datos: { ubicacion: { lat: 40.4168, lon: -3.7038, enVivo: true,
+            expiraEn: new Date(Date.now() + 600000).toISOString(), nombre: "Prueba" } }
+    })`,
+    sandbox
+);
+
+comprobar(
+    !tarjetaAjena.includes("data-parar-ubicacion"),
+    "Quien no comparte no puede parar la ubicacion ajena"
+);
+
+const tarjetaParada = vm.runInContext(
+    `htmlTarjetaUbicacion({
+        id: "m3",
+        es_mio: true,
+        datos: { ubicacion: { lat: 40.4168, lon: -3.7038, enVivo: false, nombre: "Prueba" } }
+    })`,
+    sandbox
+);
+
+comprobar(
+    !tarjetaParada.includes("data-parar-ubicacion"),
+    "Una ubicacion ya parada no ofrece volver a pararla"
+);
+comprobar(tarjetaParada.includes("■ Ubicación"), "Una ubicacion parada lo dice");
+
+/* ---------- El chat no se repinta entero ---------- */
+
+// El nodo se reutiliza si el mensaje no ha cambiado: es lo que evita que las
+// fotos y el mapa parpadeen con cada refresco.
+comprobar(
+    codigo.includes("function pintarMensajesChat("),
+    "El chat tiene su propio pintor de mensajes"
+);
+comprobar(
+    codigo.includes("previo.dataset.firma === firmaMensaje(mensaje)"),
+    "Un mensaje que no ha cambiado conserva su nodo"
+);
+comprobar(
+    !codigo.includes('listaMensajes.innerHTML = "";\n\n        datos.mensajes.forEach'),
+    "El chat ya no borra la lista entera en cada refresco"
+);
+
 /* ---------- Estilos ---------- */
 
-const css = fs.readFileSync(path.join(raiz, "public", "style.css"), "utf8");
 comprobar(css.includes(".selector-medio {"), "El panel del selector tiene estilos");
 comprobar(css.includes(".boton-emoji {"), "El boton de emojis tiene estilos");
 

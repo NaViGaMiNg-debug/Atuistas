@@ -134,6 +134,41 @@ body {
     border-bottom: 1px solid #2b2b2b;
 }
 
+/* La campanita va pegada a la esquina sin mover el titulo: el titulo sigue
+   centrado porque el boton se saca del flujo. */
+.boton-campana {
+    position: absolute;
+    top: 50%;
+    right: 10px;
+
+    transform: translateY(-50%);
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 44px;
+    height: 44px;
+
+    color: #d0d0d0;
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background var(--transicion-rapida), color var(--transicion-rapida);
+}
+
+.boton-campana:hover {
+    color: #fff;
+    background: var(--fondo-hover);
+}
+
+.boton-campana .punto-notificaciones {
+    position: absolute;
+    top: 7px;
+    right: 7px;
+}
+
 
 .barra-superior h1 {
     margin: 0;
@@ -3758,15 +3793,85 @@ button.servidor-tarjeta:focus-visible {
 }
 
 .ubicacion-mapa {
-    display: block;
-    height: 132px;
-    background: var(--fondo-base);
+    position: relative;
+
+    height: 148px;
+
+    background-color: #d9d5cd;
+    background-repeat: no-repeat;
+    border-bottom: 1px solid var(--borde-suave);
 }
 
-.ubicacion-mapa img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+/* La chincheta va centrada: la tesela de arriba a la izquierda se coloca por
+   su desfase, así que el punto exacto cae justo en el medio de la caja. */
+.ubicacion-chincheta {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+
+    width: 16px;
+    height: 16px;
+
+    margin: -8px 0 0 -8px;
+
+    background: #d92b2b;
+    border: 2px solid #fff;
+    border-radius: 50% 50% 50% 0;
+
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+
+    transform: rotate(-45deg);
+    pointer-events: none;
+}
+
+.ubicacion-acciones {
+    display: flex;
+    gap: 6px;
+
+    padding: 0 10px 8px;
+}
+
+.ubicacion-abrir-mapa,
+.ubicacion-parar {
+    flex: 1;
+
+    padding: 8px 6px;
+
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+
+    text-align: center;
+    text-decoration: none;
+
+    border-radius: 9px;
+    cursor: pointer;
+}
+
+.ubicacion-abrir-mapa {
+    color: var(--texto);
+    background: var(--fondo-hover);
+}
+
+.ubicacion-parar {
+    color: #fff;
+    background: #8a2f2f;
+    border: none;
+}
+
+.ubicacion-parar:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.ubicacion-credito {
+    display: block;
+
+    padding: 0 10px 7px;
+
+    font-size: 9px;
+    color: var(--texto-secundario);
+    text-decoration: none;
 }
 
 .ubicacion-pie {
@@ -4108,6 +4213,11 @@ button.servidor-tarjeta:focus-visible {
 }
 
 .selector-medio-vacio {
+    /* La rejilla pasa a grid cuando no hay títulos, así que este texto tenía que
+       ocupar todas las columnas: si no, salía partido en una columna estrecha,
+       una palabra por línea. */
+    grid-column: 1 / -1;
+
     margin: 10px 4px;
     font-size: 13px;
     line-height: 1.5;
@@ -5505,40 +5615,13 @@ button.servidor-tarjeta:focus-visible {
 
 
 /* =============================
-   NOTIFICACIONES (ventanita desde Cuenta)
+   NOTIFICACIONES
+   La ventanita se abre desde la campanita de la cabecera (ver
+   .boton-campana). El botón que había dentro de Cuenta ya no existe.
    ============================== */
 
-#boton-abrir-notificaciones {
-    position: relative;
 
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-
-    margin-bottom: 10px;
-    padding: 12px 20px;
-
-    border: none;
-    border-radius: 12px;
-
-    background: #242424;
-    color: #fff;
-
-    font-size: 16px;
-    font-weight: bold;
-
-    cursor: pointer;
-}
-
-
-#boton-abrir-notificaciones:hover {
-    background: #333;
-}
-
-
-/* Punto rojo compartido: avisos sin leer en Cuenta/menú y mensajes sin
+/* Punto rojo compartido: avisos sin leer en la campanita y mensajes sin
    leer en la lista de amigos. */
 .punto-notificaciones,
 .chat-amigo-punto {

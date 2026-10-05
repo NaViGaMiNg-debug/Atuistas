@@ -196,6 +196,31 @@
 
                 <h1>Atuistas</h1>
 
+                <!-- ==============================
+                     CAMPANITA DE AVISOS
+                     Va en la cabecera para no tener que entrar en Cuenta
+                     a verlos. Al abrir el panel se marcan leídos solos.
+                     ============================== -->
+
+                <button
+                    id="boton-campana-notificaciones"
+                    class="boton-campana"
+                    type="button"
+                    aria-label="Notificaciones"
+                    title="Notificaciones"
+                >
+                    <svg viewBox="0 0 24 24" width="23" height="23" aria-hidden="true" focusable="false">
+                        <path d="M12 3a5.4 5.4 0 0 0-5.4 5.4v3.2L5 15.2h14l-1.6-3.6V8.4A5.4 5.4 0 0 0 12 3Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"></path>
+                        <path d="M10 18a2 2 0 0 0 4 0" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"></path>
+                    </svg>
+
+                    <span
+                        id="punto-notificaciones"
+                        class="punto-notificaciones"
+                        hidden
+                    ></span>
+                </button>
+
             </header>
 
 
@@ -698,22 +723,9 @@
 
                     <!-- ==============================
                          NOTIFICACIONES (ventanita)
-                         Un botón aquí dentro abre una ventanita con los
-                         avisos recientes y las casillas de preferencias.
+                         Ya no hay botón aquí: los avisos se abren con la
+                         campanita de la cabecera, arriba a la derecha.
                          ============================== -->
-
-                    <button
-                        id="boton-abrir-notificaciones"
-                        type="button"
-                    >
-                        NOTIFICACIONES
-                        <span
-                            id="punto-notificaciones"
-                            class="punto-notificaciones"
-                            hidden
-                        ></span>
-                    </button>
-
 
                     <!-- ==============================
                          CÓDIGO DE VINCULACIÓN
@@ -1553,13 +1565,6 @@
 
                         <div class="cabecera-lista-notificaciones">
                             <h3>Avisos recientes</h3>
-                            <button
-                                id="boton-leer-todas-notificaciones"
-                                type="button"
-                                hidden
-                            >
-                                MARCAR COMO LEÍDAS
-                            </button>
                         </div>
 
                         <div id="lista-notificaciones-app" aria-live="polite"></div>
@@ -2260,12 +2265,6 @@
                         <circle cx="12" cy="8.5" r="3.8" fill="none" stroke="currentColor" stroke-width="1.8"></circle>
                         <path d="M4.5 20.5c.9-3.9 3.9-6 7.5-6s6.6 2.1 7.5 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
                     </svg>
-
-                    <span
-                        id="punto-notificaciones-cuenta"
-                        class="punto-notificaciones"
-                        hidden
-                    ></span>
                 </button>
 
             </nav>

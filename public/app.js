@@ -1155,14 +1155,69 @@ function distanciaEntre(a, b) {
    los públicos de OpenStreetMap.
    ============================== */
 
-function enlaceMapaUbicacion(lat, lon) {
-    const dif = 0.004;
-    const izquierda = Math.max(-180, Math.min(180, lon - dif));
-    const derecha = Math.max(-180, Math.min(180, lon + dif));
-    const abajo = Math.max(-85, Math.min(85, lat - dif * 0.6));
-    const arriba = Math.max(-85, Math.min(85, lat + dif * 0.6));
+/* El mapa se monta con las teselas públicas de OpenStreetMap, que son
+   imágenes de verdad. Antes se usaba el "embed" del mapa, que devuelve una
+   página HTML: eso dentro de un <img> no se ve nunca y solo salía su texto
+   alternativo, parpadeando con cada refresco.
 
-    return `https://www.openstreetmap.org/export/embed.html?bbox=${izquierda}%2C${abajo}%2C${derecha}%2C${arriba}&layer=mapnik&marker=${lat}%2C${lon}`;
+   Se hacen cuatro teselas (2x2) reducidas a la mitad y se colocan como fondos
+   CSS, con la chincheta encima. El resultado se guarda en memoria: el chat se
+   repinta cada dos segundos y sin esta caché se volverían a pedir las mismas
+   teselas una y otra vez. */
+const ZOOM_UBICACION = 16;
+const LADO_TESELA_PANTALLA = 128;
+
+function teselaDe(lat, lon, zoom, desfaseX, desfaseY) {
+    const total = 2 ** zoom;
+    const rad = (grado) => (grado * Math.PI) / 180;
+
+    const xExacto = ((lon + 180) / 360) * total;
+    const yExacto = (
+        (1 - Math.log(Math.tan(rad(lat)) + 1 / Math.cos(rad(lat))) / Math.PI) / 2
+    ) * total;
+
+    const x = Math.floor(xExacto) + desfaseX;
+    const y = Math.floor(yExacto) + desfaseY;
+
+    // Posición de la tesela dentro de la caja de 256x256 de la tarjeta.
+    const izquierda = Math.round((x - xExacto) * LADO_TESELA_PANTALLA);
+    const arriba = Math.round((y - yExacto) * LADO_TESELA_PANTALLA);
+
+    return {
+        url: `https://tile.openstreetmap.org/${zoom}/${x}/${y}.png`,
+        izquierda,
+        arriba
+    };
+}
+
+const mapasEnMemoria = new Map();
+
+function pintarMapaUbicacion(lat, lon) {
+    // Se redondea la posición: si la tarjeta se repinta con el mismo punto
+    // aproximado, se reutiliza lo ya calculado.
+    const clave = `${lat.toFixed(4)}|${lon.toFixed(4)}|${ZOOM_UBICACION}`;
+    const guardada = mapasEnMemoria.get(clave);
+    if (guardada) return guardada;
+
+    const teselas = [
+        teselaDe(lat, lon, ZOOM_UBICACION, 0, 0),
+        teselaDe(lat, lon, ZOOM_UBICACION, 1, 0),
+        teselaDe(lat, lon, ZOOM_UBICACION, 0, 1),
+        teselaDe(lat, lon, ZOOM_UBICACION, 1, 1)
+    ];
+
+    // La chincheta va en el centro de la caja, que es donde cae el punto exacto
+    // porque la tesela de arriba a la izquierda se posiciona por su desfase.
+    const estilo = teselas.map((tesela) => {
+        return (
+            `url("${tesela.url}") ${tesela.izquierda}px ${tesela.arriba}px / ` +
+            `${LADO_TESELA_PANTALLA}px ${LADO_TESELA_PANTALLA}px no-repeat`
+        );
+    }).join(", ");
+
+    const mapa = { estilo, teselas };
+    mapasEnMemoria.set(clave, mapa);
+    return mapa;
 }
 
 function htmlTarjetaUbicacion(mensaje) {
@@ -1178,15 +1233,23 @@ function htmlTarjetaUbicacion(mensaje) {
         ? ` · ±${Math.round(Number(datos.precision))} m`
         : "";
 
+    const mapa = pintarMapaUbicacion(lat, lon);
+    const mias = mensaje.es_mio === true;
+
     return `
         <div class="tarjeta-ubicacion ${enVivo ? "en-vivo" : "detenida"}" data-lat="${lat}" data-lon="${lon}">
-            <a class="ubicacion-mapa" href="https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=17/${lat}/${lon}" target="_blank" rel="noopener noreferrer" title="Abrir en el mapa">
-                <img src="${escapeHtml(enlaceMapaUbicacion(lat, lon))}" alt="Mapa con la ubicación compartida" loading="lazy">
-            </a>
+            <div class="ubicacion-mapa" style="${mapa.estilo}">
+                <span class="ubicacion-chincheta" aria-hidden="true"></span>
+            </div>
             <div class="ubicacion-pie">
                 <span class="ubicacion-estado">${enVivo ? "● En vivo" : "■ Ubicación"}</span>
                 <span class="ubicacion-detalle">${escapeHtml(datos.nombre || "Ubicación en directo")}${escapeHtml(precision)}</span>
             </div>
+            <div class="ubicacion-acciones">
+                <a class="ubicacion-abrir-mapa" href="https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=17/${lat}/${lon}" target="_blank" rel="noopener noreferrer">ABRIR EN EL MAPA</a>
+                ${mias && enVivo ? `<button type="button" class="ubicacion-parar" data-parar-ubicacion="${escapeHtml(mensaje.id)}">DEJAR DE COMPARTIR</button>` : ""}
+            </div>
+            <a class="ubicacion-credito" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">© OpenStreetMap</a>
         </div>`;
 }
 
@@ -1414,6 +1477,19 @@ async function pararCompartido() {
     else if (grupoActual) await cargarMensajesServidor();
 }
 
+// El botón "DEJAR DE COMPARTIR" va en la propia tarjeta, para poder pararlo
+// sin tener que abrir la ventanita de la ubicación otra vez.
+document.addEventListener("click", async (evento) => {
+    const boton = evento.target.closest?.("[data-parar-ubicacion]");
+    if (!boton) return;
+
+    evento.preventDefault();
+    boton.disabled = true;
+    boton.textContent = "PARANDO...";
+
+    await pararCompartido();
+});
+
 /* ==============================
    SELECTOR DE EMOJIS, GIF Y STICKERS
    Un único panel sirve para los cuatro sitios donde se escribe: chat
@@ -1545,6 +1621,8 @@ function construirSelector() {
 
 function posicionarSelector(ancla) {
     const panel = document.getElementById("selector-medio");
+    if (!ancla || !panel) return;
+
     const caja = ancla.getBoundingClientRect();
 
     panel.style.left = "8px";
@@ -1563,9 +1641,13 @@ function alternarSelector(destino, idEntrada) {
 
     construirSelector();
     const nuevo = document.getElementById("selector-medio");
-    destinoSelector = { destino, idEntrada };
+    destinoSelector = {
+        destino,
+        idEntrada,
+        ancla: document.getElementById(`boton-emoji-${destino}`)
+    };
 
-    posicionarSelector(document.getElementById(`boton-emoji-${destino}`));
+    posicionarSelector(destinoSelector.ancla);
     nuevo.hidden = false;
     pintarSelector();
 }
@@ -1905,11 +1987,9 @@ function fechaAviso(iso) {
 }
 
 function pintarPuntoNotificaciones(cantidad) {
-    const haySinLeer = Number(cantidad) > 0;
+    // Solo queda un sitio donde mirar: la campanita de la cabecera.
     const punto = document.getElementById("punto-notificaciones");
-    const puntoCuenta = document.getElementById("punto-notificaciones-cuenta");
-    if (punto) punto.hidden = !haySinLeer;
-    if (puntoCuenta) puntoCuenta.hidden = !haySinLeer;
+    if (punto) punto.hidden = !(Number(cantidad) > 0);
 }
 
 // Solo se ofrece activar el dispositivo mientras el navegador no haya dado ya
@@ -1973,14 +2053,12 @@ window.addEventListener("pagehide", avisarSinVista);
 
 async function cargarListaNotificaciones() {
     const lista = document.getElementById("lista-notificaciones-app");
-    const botonLeerTodas = document.getElementById("boton-leer-todas-notificaciones");
     if (!lista) return;
     try {
         const datos = await solicitarGrupo("/api/notificaciones");
         const notificaciones = datos.notificaciones || [];
         const noLeidas = Number(datos.no_leidas) || 0;
         pintarPuntoNotificaciones(noLeidas);
-        if (botonLeerTodas) botonLeerTodas.hidden = noLeidas === 0;
         lista.innerHTML = "";
         if (notificaciones.length === 0) {
             lista.innerHTML = `<p class="sin-contenido">Todavía no hay avisos.</p>`;
@@ -2034,12 +2112,23 @@ async function actualizarPuntoNotificaciones() {
     }
 }
 
-function abrirModalNotificaciones() {
+// Al abrir el panel los avisos se dan por vistos solos: no hay ningún botón
+// de "marcar como leídas". Si el marcado falla por un momento, la lista se
+// enseña igualmente y el punto rojo se corrige al recargar.
+async function abrirModalNotificaciones() {
     if (!modalNotificaciones) return;
     modalNotificaciones.hidden = false;
     cargarConfiguracionNotificaciones();
-    cargarListaNotificaciones();
     actualizarBotonActivarDispositivo();
+
+    try {
+        await solicitarGrupo("/api/notificaciones/leer-todas", { method: "POST" });
+        pintarPuntoNotificaciones(0);
+    } catch {
+        // Sin conexión se muestran tal cual; no pasa nada por no marcar.
+    }
+
+    await cargarListaNotificaciones();
 }
 
 function cerrarModalNotificaciones() {
@@ -2049,19 +2138,10 @@ function cerrarModalNotificaciones() {
     modalNotificaciones.hidden = true;
 }
 
-document.getElementById("boton-abrir-notificaciones")?.addEventListener("click", abrirModalNotificaciones);
+document.getElementById("boton-campana-notificaciones")?.addEventListener("click", abrirModalNotificaciones);
 document.getElementById("boton-cerrar-notificaciones")?.addEventListener("click", cerrarModalNotificaciones);
 modalNotificaciones?.addEventListener("click", (evento) => {
     if (evento.target === modalNotificaciones) cerrarModalNotificaciones();
-});
-
-document.getElementById("boton-leer-todas-notificaciones")?.addEventListener("click", async () => {
-    try {
-        await solicitarGrupo("/api/notificaciones/leer-todas", { method: "POST" });
-    } catch {
-        // La lista se refresca de todos modos.
-    }
-    await cargarListaNotificaciones();
 });
 
 async function abrirChat(amigo) {
@@ -2175,6 +2255,143 @@ async function abrirChat(amigo) {
     }
 }
 
+/* ---------- Pintar los mensajes del chat privado ----------
+
+   Antes la lista se borraba entera y se volvía a construir en cada refresco
+   (cada dos segundos). Eso hacía parpadear fotos, audios y el mapa de la
+   ubicación, y se perdían los estados de los reproductores.
+
+   Ahora se reutiliza el nodo de cada mensaje si lo que muestra no ha
+   cambiado: solo se rehace lo que de verdad es distinto. Un chat normal no
+   toca ningún nodo, así que el refresco no se ve. */
+
+function firmaMensaje(mensaje) {
+    const ubicacion = mensaje.datos?.ubicacion;
+    return JSON.stringify([
+        mensaje.tipo,
+        mensaje.contenido,
+        mensaje.editado_en ?? null,
+        mensaje.archivo_ruta ?? null,
+        mensaje.mensaje_respuesta_contenido ?? null,
+        ubicacion
+            ? [Number(ubicacion.lat), Number(ubicacion.lon), ubicacion.enVivo === true]
+            : null
+    ]);
+}
+
+function crearNodoMensajeChat(mensaje) {
+    const elemento = document.createElement("div");
+
+    elemento.className = mensaje.es_mio
+        ? "mensaje-chat mensaje-chat-enviado"
+        : "mensaje-chat mensaje-chat-recibido";
+    elemento.dataset.mensajeId = mensaje.id;
+    elemento.dataset.esMio = mensaje.es_mio ? "1" : "0";
+    elemento.dataset.tipoMensaje = mensaje.tipo || "texto";
+
+    if (mensajesSeleccionadosChat.has(mensaje.id)) {
+        elemento.classList.add("mensaje-chat-seleccionado");
+    }
+
+    const envoltura = document.createElement("div");
+    envoltura.className = "mensaje-chat-contenido";
+
+    if (mensaje.mensaje_respuesta_contenido) {
+        const cita = document.createElement("small");
+        cita.className = "mensaje-chat-cita";
+        cita.textContent = `Respuesta: ${mensaje.mensaje_respuesta_contenido}`;
+        envoltura.appendChild(cita);
+    }
+
+    // Foto, audio o vídeo: el archivo ya viene con su ruta y su tipo.
+    if (mensaje.archivo_ruta) {
+        const fuente = escapeHtml(mensaje.archivo_ruta);
+        const adjunto = document.createElement("div");
+        adjunto.className = "adjunto-mensaje";
+
+        if (mensaje.tipo === "imagen") {
+            const imagen = document.createElement("img");
+            imagen.src = fuente;
+            imagen.alt = mensaje.contenido || "Imagen enviada";
+            imagen.loading = "lazy";
+            adjunto.appendChild(imagen);
+        } else if (mensaje.tipo === "audio") {
+            const audio = document.createElement("audio");
+            audio.src = fuente;
+            audio.controls = true;
+            audio.preload = "metadata";
+            adjunto.appendChild(audio);
+        } else if (mensaje.tipo === "video") {
+            const video = document.createElement("video");
+            video.src = fuente;
+            video.controls = true;
+            video.playsInline = true;
+            video.preload = "metadata";
+            adjunto.appendChild(video);
+        }
+
+        envoltura.appendChild(adjunto);
+    }
+
+    // La ubicación en vivo es un mensaje de texto con datos dentro: se pinta la
+    // tarjeta del mapa en vez del texto pelado.
+    if (mensaje.datos?.ubicacion) {
+        envoltura.insertAdjacentHTML("beforeend", htmlTarjetaUbicacion(mensaje));
+    }
+
+    const contenido = document.createElement("p");
+    contenido.textContent = mensaje.contenido || "";
+    if (mensaje.editado_en) {
+        const marca = document.createElement("small");
+        marca.className = "mensaje-chat-editado";
+        marca.textContent = " (editado)";
+        contenido.appendChild(marca);
+    }
+
+    // Un mensaje solo con archivo no necesita un párrafo vacío debajo. La
+    // ubicación tampoco: el texto ("📍 ...") solo haría ruido bajo el mapa.
+    const conUbicacion = Boolean(mensaje.datos?.ubicacion);
+    if ((mensaje.contenido || mensaje.editado_en) && !conUbicacion) {
+        envoltura.appendChild(contenido);
+    }
+
+    elemento.appendChild(envoltura);
+    elemento.dataset.firma = firmaMensaje(mensaje);
+
+    return elemento;
+}
+
+function pintarMensajesChat(listaMensajes, mensajes) {
+    // Los nodos que ya están en pantalla, indexados por id de mensaje.
+    const existentes = new Map();
+    for (const nodo of listaMensajes.children) {
+        if (nodo.dataset?.mensajeId) existentes.set(nodo.dataset.mensajeId, nodo);
+    }
+
+    mensajes.forEach((mensaje) => {
+        const previo = existentes.get(mensaje.id);
+        existentes.delete(mensaje.id);
+
+        // Mismo mensaje y mismo contenido: no se toca el nodo, y con él se
+        // quedan intactos la foto, el audio en marcha y el mapa ya descargado.
+        if (previo && previo.dataset.firma === firmaMensaje(mensaje)) return;
+
+        const nodo = crearNodoMensajeChat(mensaje);
+        configurarGestoMensajeChat(nodo, mensaje);
+
+        if (previo) {
+            listaMensajes.replaceChild(nodo, previo);
+        } else {
+            listaMensajes.appendChild(nodo);
+        }
+    });
+
+    // Los que quedan sin usar son mensajes que ya no existen (borrados).
+    for (const sobra of existentes.values()) {
+        sobra.remove();
+    }
+}
+
 async function cargarMensajesChat() {
     const token = localStorage.getItem("atuistas_token");
 
@@ -2220,8 +2437,6 @@ async function cargarMensajesChat() {
             listaMensajes.clientHeight <
             100;
 
-        listaMensajes.innerHTML = "";
-
         if (
             !datos.mensajes ||
             datos.mensajes.length === 0
@@ -2236,88 +2451,7 @@ async function cargarMensajesChat() {
             return;
         }
 
-        datos.mensajes.forEach((mensaje) => {
-            const elemento =
-                document.createElement("div");
-
-            elemento.className =
-                mensaje.es_mio
-                    ? "mensaje-chat mensaje-chat-enviado"
-                    : "mensaje-chat mensaje-chat-recibido";
-            elemento.dataset.mensajeId = mensaje.id;
-            elemento.dataset.esMio = mensaje.es_mio ? "1" : "0";
-            elemento.dataset.tipoMensaje = mensaje.tipo || "texto";
-
-            if (mensajesSeleccionadosChat.has(mensaje.id)) {
-                elemento.classList.add("mensaje-chat-seleccionado");
-            }
-
-            const envoltura = document.createElement("div");
-            envoltura.className = "mensaje-chat-contenido";
-
-            if (mensaje.mensaje_respuesta_contenido) {
-                const cita = document.createElement("small");
-                cita.className = "mensaje-chat-cita";
-                cita.textContent = `Respuesta: ${mensaje.mensaje_respuesta_contenido}`;
-                envoltura.appendChild(cita);
-            }
-
-            // Foto, audio o vídeo: el archivo ya viene con su ruta y su tipo.
-            if (mensaje.archivo_ruta) {
-                const fuente = escapeHtml(mensaje.archivo_ruta);
-                const adjunto = document.createElement("div");
-                adjunto.className = "adjunto-mensaje";
-
-                if (mensaje.tipo === "imagen") {
-                    const imagen = document.createElement("img");
-                    imagen.src = fuente;
-                    imagen.alt = mensaje.contenido || "Imagen enviada";
-                    imagen.loading = "lazy";
-                    adjunto.appendChild(imagen);
-                } else if (mensaje.tipo === "audio") {
-                    const audio = document.createElement("audio");
-                    audio.src = fuente;
-                    audio.controls = true;
-                    audio.preload = "metadata";
-                    adjunto.appendChild(audio);
-                } else if (mensaje.tipo === "video") {
-                    const video = document.createElement("video");
-                    video.src = fuente;
-                    video.controls = true;
-                    video.playsInline = true;
-                    video.preload = "metadata";
-                    adjunto.appendChild(video);
-                }
-
-                envoltura.appendChild(adjunto);
-            }
-
-            // La ubicación en vivo es un mensaje de texto con datos dentro:
-            // se pinta la tarjeta del mapa en vez del texto pelado.
-            if (mensaje.datos?.ubicacion) {
-                envoltura.insertAdjacentHTML("beforeend", htmlTarjetaUbicacion(mensaje));
-            }
-
-            const contenido = document.createElement("p");
-            contenido.textContent = mensaje.contenido || "";
-            if (mensaje.editado_en) {
-                const marca = document.createElement("small");
-                marca.className = "mensaje-chat-editado";
-                marca.textContent = " (editado)";
-                contenido.appendChild(marca);
-            }
-
-            // Un mensaje solo con archivo no necesita un párrafo vacío debajo. La
-            // ubicación tampoco: el texto ("📍 ...") solo haría ruido bajo el mapa.
-            const conUbicacion = Boolean(mensaje.datos?.ubicacion);
-            if ((mensaje.contenido || mensaje.editado_en) && !conUbicacion) {
-                envoltura.appendChild(contenido);
-            }
-
-            elemento.appendChild(envoltura);
-            configurarGestoMensajeChat(elemento, mensaje);
-            listaMensajes.appendChild(elemento);
-        });
+        pintarMensajesChat(listaMensajes, datos.mensajes);
 
         if (estabaAbajo) {
             listaMensajes.scrollTop =
@@ -9407,9 +9541,27 @@ observarCapas();
 // Los botones de emojis viven en cuatro sitios distintos: dos campos fijos y
 // dos formularios que se dibujan al abrir. Se preparan una vez aqui.
 document.addEventListener("click", manejarClicSelector);
-document.addEventListener("scroll", () => {
-    if (!document.getElementById("selector-medio")?.hidden) cerrarSelector();
-}, true);
+// Al desplazarse solo se cierra si el botón que lo abrió se sale de la
+// pantalla. Antes se cerraba con cualquier scroll y como el evento se escuchaba
+// en fase de captura, deslizar la propia lista de emojis lo cerraba.
+function comprobarSiElSelectorSigueVisible(evento) {
+    const panel = document.getElementById("selector-medio");
+    if (!panel || panel.hidden) return;
+
+    // Deslizar dentro del panel es justo lo que se quiere hacer con la lista.
+    if (evento?.target && panel.contains(evento.target)) return;
+
+    const ancla = destinoSelector?.ancla;
+    if (!ancla || !ancla.isConnected) {
+        cerrarSelector();
+        return;
+    }
+
+    const caja = ancla.getBoundingClientRect();
+    if (caja.top < 0 || caja.bottom > window.innerHeight) cerrarSelector();
+}
+
+document.addEventListener("scroll", comprobarSiElSelectorSigueVisible, true);
 
 asegurarBotonEmoji("entrada-mensaje", "chat");
 asegurarBotonEmoji("entrada-mensaje-servidor", "servidor");
