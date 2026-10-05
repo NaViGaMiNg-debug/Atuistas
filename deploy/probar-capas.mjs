@@ -26,13 +26,23 @@ const html = fs.readFileSync(path.join(raiz, "public", "index.html"), "utf8");
 const app = fs.readFileSync(path.join(raiz, "public", "app.js"), "utf8");
 
 // Saca el z-index de un selector, aunque la regla lo comparta con otros.
+// La comparacion es exacta: si no, ".modal-codigo" pareceria el mismo
+// selector que ".modal" y la escalera se leeria fatal.
 function zDe(selector) {
     const reglas = [...css.matchAll(/([^{}]+)\{([^}]*)\}/g)];
     for (const [, selectores, cuerpo] of reglas) {
-        if (!selectores.includes(selector)) continue;
+        // El texto previo al selector son comentarios: se quitan antes de
+        // comparar, y la comparacion es exacta para que ".modal-codigo" no
+        // cuente como ".modal".
+        const lista = selectores
+            .replace(/\/\*[\s\S]*?\*\//g, "")
+            .split(",")
+            .map((parte) => parte.trim())
+            .filter(Boolean);
+
+        if (!lista.includes(selector)) continue;
         if (!/z-index\s*:/.test(cuerpo)) continue;
-        const valor = Number(cuerpo.match(/z-index\s*:\s*(\d+)/)[1]);
-        return valor;
+        return Number(cuerpo.match(/z-index\s*:\s*(\d+)/)[1]);
     }
     return null;
 }
@@ -45,7 +55,12 @@ const peldanos = [
     ["#modal-perfil", 3100],
     ["#modal-acciones-perfil", 3200],
     ["#modal-foto-grande", 3300],
-    ["#modal-editor-foto", 3400]
+    // El editor de foto y la ubicacion salen los dos del composer y nunca a la
+    // vez, asi que comparten peldano a proposito.
+    ["#modal-editor-foto", 3400],
+    ["#modal-ubicacion", 3400],
+    [".selector-medio", 3500],
+    [".modal-codigo", 3600]
 ];
 
 let anterior = 0;
@@ -54,10 +69,10 @@ for (const [selector, minimo] of peldanos) {
     comprobar(valor !== null, `${selector} tiene z-index propio (${valor})`);
     comprobar(valor >= minimo, `${selector} esta al menos en ${minimo} (${valor})`);
     comprobar(
-        valor > anterior,
-        `${selector} va por encima del peldaño anterior (${anterior} < ${valor})`
+        valor >= anterior,
+        `${selector} va por encima del peldaño anterior (${anterior} <= ${valor})`
     );
-    anterior = valor ?? anterior;
+    anterior = Math.max(anterior, valor ?? 0);
 }
 
 // Estas dos comparten regla y se abren una detras de otra: el mismo peldaño es

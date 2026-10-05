@@ -1491,6 +1491,93 @@ document.addEventListener("click", async (evento) => {
 });
 
 /* ==============================
+   EL CÓDIGO QR
+   Atajo: mantener pulsadas la Q y la R a la vez durante cinco segundos
+   dentro de la web. En móvil, donde no hay teclado, hay un botón en la
+   cabecera que solo aparece dentro de Cuenta.
+   ============================== */
+
+const IMAGEN_CODIGO = "/qratuistas.png";
+const SEGUNDOS_ATAJO_CODIGO = 5;
+const TECLAS_ATAJO_CODIGO = ["q", "r"];
+
+const teclasAtajoPulsadas = new Set();
+let temporizadorAtajo = null;
+
+function construirVentanaCodigo() {
+    if (document.getElementById("modal-codigo")) return;
+
+    const ventana = document.createElement("div");
+    ventana.id = "modal-codigo";
+    ventana.className = "modal modal-codigo";
+    ventana.hidden = true;
+    ventana.innerHTML = `
+        <div class="dialogo-codigo" role="dialog" aria-modal="true" aria-label="Código QR">
+            <button
+                id="cerrar-codigo"
+                class="cerrar-codigo"
+                type="button"
+                aria-label="Cerrar"
+            >✕</button>
+            <img src="${IMAGEN_CODIGO}" alt="Código QR de Atuistas">
+        </div>`;
+
+    document.body.appendChild(ventana);
+
+    ventana.querySelector("#cerrar-codigo").addEventListener("click", cerrarCodigo);
+    ventana.addEventListener("click", (evento) => {
+        // Pulsar en el fondo también lo cierra; en la imagen no.
+        if (evento.target === ventana) cerrarCodigo();
+    });
+}
+
+function abrirCodigo() {
+    construirVentanaCodigo();
+    document.getElementById("modal-codigo").hidden = false;
+}
+
+function cerrarCodigo() {
+    const ventana = document.getElementById("modal-codigo");
+    if (ventana) ventana.hidden = true;
+}
+
+function cancelarAtajoCodigo() {
+    if (temporizadorAtajo) {
+        clearTimeout(temporizadorAtajo);
+        temporizadorAtajo = null;
+    }
+    teclasAtajoPulsadas.clear();
+}
+
+document.addEventListener("keydown", (evento) => {
+    // Con Ctrl u Alt no cuenta: si no, recargar con Ctrl+R saltaría el atajo.
+    if (evento.ctrlKey || evento.altKey || evento.metaKey) return;
+
+    const tecla = String(evento.key).toLowerCase();
+    if (!TECLAS_ATAJO_CODIGO.includes(tecla)) return;
+
+    teclasAtajoPulsadas.add(tecla);
+
+    // Solo cuando están las dos a la vez, y solo una cuenta de 5 segundos.
+    if (teclasAtajoPulsadas.size === TECLAS_ATAJO_CODIGO.length && !temporizadorAtajo) {
+        temporizadorAtajo = setTimeout(() => {
+            temporizadorAtajo = null;
+            abrirCodigo();
+        }, SEGUNDOS_ATAJO_CODIGO * 1000);
+    }
+});
+
+document.addEventListener("keyup", (evento) => {
+    teclasAtajoPulsadas.delete(String(evento.key).toLowerCase());
+    if (temporizadorAtajo) cancelarAtajoCodigo();
+});
+
+// Si se cambia de ventana con las teclas pulsadas, el atajo se cancela solo.
+window.addEventListener("blur", cancelarAtajoCodigo);
+
+document.getElementById("boton-qr-cuenta")?.addEventListener("click", abrirCodigo);
+
+/* ==============================
    SELECTOR DE EMOJIS, GIF Y STICKERS
    Un único panel sirve para los cuatro sitios donde se escribe: chat
    privado, servidor, comentarios de reels y comentarios de
@@ -3041,6 +3128,10 @@ function mostrarSeccion(seccion, opciones = {}) {
     }
 
     seccionActual = seccion;
+
+    // El botón del QR solo tiene sentido en Cuenta, y en el móvil.
+    const botonCodigo = document.getElementById("boton-qr-cuenta");
+    if (botonCodigo) botonCodigo.hidden = seccion !== "cuenta";
 
     // El historial se sincroniza con la sección, salvo que el cambio venga
     // del propio botón atrás (entonces ya se ha descontado).

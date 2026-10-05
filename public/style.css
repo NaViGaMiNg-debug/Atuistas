@@ -169,6 +169,79 @@ body {
     right: 7px;
 }
 
+/* El botón del QR va al lado de la campanita, y solo en móvil: en escritorio
+   está el atajo de teclado. */
+.boton-qr-cuenta {
+    right: 62px;
+}
+
+@media (min-width: 701px) {
+    .boton-qr-cuenta {
+        display: none;
+    }
+}
+
+/* ========================================
+   VENTANA DEL CÓDIGO QR
+   ======================================== */
+
+/* Por encima del panel del chat (3000) y del resto de ventanas, que se puede
+   abrir desde un chat sin cerrarlo antes. */
+.modal-codigo {
+    z-index: 3600;
+}
+
+.dialogo-codigo {
+    position: relative;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    max-width: min(92vw, 520px);
+    max-height: 90vh;
+
+    padding: 14px;
+
+    background: var(--fondo-elevado);
+    border-radius: 18px;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+}
+
+.dialogo-codigo img {
+    max-width: 100%;
+    max-height: calc(90vh - 28px);
+
+    border-radius: 10px;
+}
+
+.cerrar-codigo {
+    position: absolute;
+    top: -14px;
+    right: -14px;
+
+    z-index: 1;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 36px;
+    height: 36px;
+
+    font-size: 16px;
+    color: #fff;
+
+    background: #333;
+    border: 1px solid var(--borde);
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.cerrar-codigo:hover {
+    background: #444;
+}
+
 
 .barra-superior h1 {
     margin: 0;
