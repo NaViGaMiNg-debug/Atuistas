@@ -3927,7 +3927,11 @@ button.servidor-tarjeta:focus-visible {
 
 .selector-medio {
     position: fixed;
-    z-index: 900;
+
+    /* Por encima del panel del chat (3000) y del editor de foto (3400): el
+       botón está en el composer, dentro del chat, y por debajo se quedaba
+       escondido detrás. */
+    z-index: 3500;
 
     display: flex;
     flex-direction: column;
@@ -6104,6 +6108,13 @@ button.servidor-tarjeta:focus-visible {
    normales (1400) el editor se quedaba detrás del chat: no se veía hasta
    cerrarlo y la foto no llegaba a adjuntarse. Aquí va el peldaño más alto. */
 #modal-editor-foto {
+    z-index: 3400;
+}
+
+/* La ubicación se abre desde el mismo composer, así que le pasa lo mismo que
+   al editor: por debajo de 3000 se quedaba escondida detrás del chat y solo
+   se veía al cerrarlo. */
+#modal-ubicacion {
     z-index: 3400;
 }
 

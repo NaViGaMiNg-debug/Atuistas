@@ -2958,6 +2958,13 @@ function sincronizarAtrasSeccion(seccion) {
 // Cierra lo que haya abierto encima: primero las pantallas completas y
 // después la última ventana abierta, usando su propio botón de cerrar.
 function cerrarCapaSuperior() {
+    // El selector va el primero: es lo que está encima de todo (z-index 3500).
+    const selector = document.getElementById("selector-medio");
+    if (selector && selector.hidden === false) {
+        cerrarSelector();
+        return true;
+    }
+
     const visorReels = document.getElementById("visor-reels");
     if (visorReels && visorReels.hidden === false) {
         cerrarVisorReels();
@@ -3016,11 +3023,13 @@ window.addEventListener("popstate", () => {
 
 // Las capas que se abren y se cierran solas (cualquier ventana) apilan y
 // desapilan solas: así no hay que tocar una por una. Solo se mira el atributo
-// `hidden`, que es lo único que cambia al abrirlas; vigilar el árbol entero
-// añadiría trabajo a cada lista de mensajes que se repinta.
+// `hidden`, que es lo único que cambia al abrirlas; con attributeFilter el
+// navegador no llega a encolar el resto de mutaciones, así que una lista de
+// mensajes que se repinta cada dos segundos no cuesta nada.
+// Ojo con subtree: sin esto solo se vigila <body> y el observador no dispara.
 function observarCapas() {
     if (typeof MutationObserver !== "function") return;
-    const selectores = ".modal, #visor-reels, #visor-historias-pantalla, #panel-chat, #panel-servidor";
+    const selectores = ".modal, #selector-medio, #visor-reels, #visor-historias-pantalla, #panel-chat, #panel-servidor";
     const observador = new MutationObserver((cambios) => {
         for (const cambio of cambios) {
             if (cambio.type !== "attributes") continue;
@@ -3035,7 +3044,8 @@ function observarCapas() {
     });
     observador.observe(document.body, {
         attributes: true,
-        attributeFilter: ["hidden"]
+        attributeFilter: ["hidden"],
+        subtree: true
     });
 }
 

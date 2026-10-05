@@ -23,7 +23,7 @@ const comprobar = (ok, texto) => {
 /* ---------- DOM minimo ---------- */
 
 function crearElemento(id = "") {
-    return {
+    const elemento = {
         id,
         hidden: false,
         disabled: false,
@@ -43,9 +43,17 @@ function crearElemento(id = "") {
         appendChild() {},
         append() {},
         remove() {},
-        setAttribute() {},
-        getAttribute() { return null; },
-        removeAttribute() {},
+        // En el DOM de verdad setAttribute("hidden") y .hidden son lo mismo: sin
+        // esto, cerrar una capa no se reflejaba y las pruebas mienten.
+        setAttribute(nombre, valor) {
+            elemento[nombre] = nombre === "hidden" ? true : valor;
+        },
+        getAttribute(nombre) {
+            return nombre in elemento ? elemento[nombre] : null;
+        },
+        removeAttribute(nombre) {
+            delete elemento[nombre];
+        },
         querySelector() { return crearElemento(); },
         querySelectorAll() { return []; },
         prepend() {},
@@ -58,10 +66,23 @@ function crearElemento(id = "") {
         getBoundingClientRect() { return { top: 0, left: 0, width: 100, height: 100 }; },
         matches() { return false; }
     };
+
+    return elemento;
 }
 
 const codigo = fs.readFileSync(path.join(raiz, "public", "app.js"), "utf8");
 const emojis = fs.readFileSync(path.join(raiz, "public", "data", "emojis.js"), "utf8");
+
+/* Los ids devuelven siempre el mismo elemento: asi una prueba puede poner
+   hidden = false en dos capas a la vez y comprobar cual se cierra. */
+const elementosPorId = new Map();
+
+function elementoConId(id) {
+    if (!elementosPorId.has(id)) {
+        elementosPorId.set(id, crearElemento(id));
+    }
+    return elementosPorId.get(id);
+}
 
 const sandbox = {
     console: { log() {}, warn() {}, error() {} },
@@ -71,10 +92,17 @@ const sandbox = {
     clearInterval() {},
     requestAnimationFrame() { return 0; },
     document: {
-        getElementById: (id) => crearElemento(id),
+        getElementById: (id) => elementoConId(id),
         querySelector: () => crearElemento(),
         querySelectorAll: () => [],
-        createElement: () => crearElemento(),
+        createElement: (etiqueta) => {
+            const elemento = crearElemento();
+            // appendChild registra el panel del selector por su id.
+            elemento.appendChild = (hijo) => {
+                if (hijo?.id) elementosPorId.set(hijo.id, hijo);
+            };
+            return elemento;
+        },
         addEventListener() {},
         body: { classList: { add() {}, remove() {}, toggle() {} }, appendChild() {} }
     },
@@ -233,6 +261,99 @@ comprobar(
 const css = fs.readFileSync(path.join(raiz, "public", "style.css"), "utf8");
 comprobar(css.includes(".selector-medio {"), "El panel del selector tiene estilos");
 comprobar(css.includes(".boton-emoji {"), "El boton de emojis tiene estilos");
+
+/* ---------- Las capas: nada puede esconderse detras del chat ---------- */
+
+// El boton de emojis y el de ubicacion viven dentro del chat, que es un panel
+// fijo con z-index 3000. Si el selector o el modal se quedan por debajo,
+// abiertas por detras no se ven: el chat sigue ahi y parece que el boton no
+// hace nada (o que cierra el chat).
+function zIndexDe(selectorCss) {
+    const patron = new RegExp(
+        `(^|,\\s*|\\}\\s*)${selectorCss.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&")}\\s*\\{([^}]*)\\}`,
+        "m"
+    );
+    const bloque = css.match(patron);
+    return bloque ? Number(bloque[2].match(/z-index:\s*(\d+)/)?.[1] ?? 0) : 0;
+}
+
+const zChat = zIndexDe(".panel-chat");
+const zModal = zIndexDe(".modal");
+const zUbicacion = zIndexDe("#modal-ubicacion");
+const zSelector = zIndexDe(".selector-medio");
+
+comprobar(zChat > 0, `El panel del chat tiene z-index propio (${zChat})`);
+comprobar(
+    zSelector > zChat,
+    `El selector de emojis se ve por encima del chat (${zSelector} > ${zChat})`
+);
+comprobar(
+    zUbicacion > zChat,
+    `El modal de ubicacion se ve por encima del chat (${zUbicacion} > ${zChat})`
+);
+comprobar(
+    zUbicacion >= zModal,
+    `El modal de ubicacion gana a los modales normales (${zUbicacion} >= ${zModal})`
+);
+comprobar(
+    zUbicacion >= zIndexDe("#modal-editor-foto"),
+    "El modal de ubicacion va al mismo peldano que el editor de foto"
+);
+
+/* ---------- El boton atras apila y desapila de verdad ---------- */
+
+// El caso que rompia: con el chat abierto y el selector encima, atras tiene que
+// cerrar el selector y dejar el chat donde estaba. Las capas que no se nombran
+// se marcan como cerradas, porque en el DOM de mentira nacen visibles.
+function abrirSolo(...ids) {
+    for (const id of [
+        "selector-medio",
+        "panel-chat",
+        "panel-servidor",
+        "visor-reels",
+        "visor-historias-pantalla"
+    ]) {
+        elementoConId(id).hidden = !ids.includes(id);
+    }
+}
+
+abrirSolo("selector-medio", "panel-chat");
+const cerrado = vm.runInContext("cerrarCapaSuperior()", sandbox);
+comprobar(cerrado === true, "Atras cierra la capa de encima");
+comprobar(
+    elementoConId("selector-medio").hidden === true,
+    "Con el selector abierto, atras cierra el selector"
+);
+comprobar(
+    elementoConId("panel-chat").hidden === false,
+    "El chat se queda abierto: atras no lo cierra por error"
+);
+
+// Y sin selector, atras tiene que cerrar el chat.
+abrirSolo("panel-chat");
+vm.runInContext("cerrarCapaSuperior()", sandbox);
+comprobar(
+    elementoConId("panel-chat").hidden === true,
+    "Sin selector abierto, atras vuelve a cerrar el chat"
+);
+
+const bloqueObservador = codigo.slice(
+    codigo.indexOf("function observarCapas()"),
+    codigo.indexOf("function observarCapas()") + 1200
+);
+comprobar(
+    /subtree:\s*true/.test(bloqueObservador),
+    "El observador de capas vigila todo el arbol: sin subtree no dispara nada"
+);
+comprobar(
+    bloqueObservador.includes("#selector-medio"),
+    "El selector de emojis tambien apila en el historial del boton atras"
+);
+comprobar(
+    codigo.indexOf('document.getElementById("selector-medio")') <
+        codigo.indexOf('document.getElementById("panel-chat")?.hidden'),
+    "Atras cierra el selector antes que el chat"
+);
 
 console.log("");
 if (fallos.length) {
