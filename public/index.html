@@ -506,13 +506,30 @@
                                 CANCELAR
                             </button>
 
+                            <!-- Reenviar la selección a otro chat: la flecha
+                                 derecha es el icono de reenvío. -->
+                            <button
+                                id="boton-reenviar-seleccion-chat"
+                                class="boton-icono-seleccion"
+                                type="button"
+                                aria-label="Reenviar mensajes seleccionados"
+                                title="Reenviar"
+                            >
+                                <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+                                    <path d="M13 5l7 7-7 7v-4C7 15 4 18 3 19c0-6 4-10 10-10V5Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
+
                             <button
                                 id="boton-borrar-seleccion-chat"
-                                class="boton-papelera-chat"
+                                class="boton-icono-seleccion"
                                 type="button"
                                 aria-label="Eliminar mensajes seleccionados"
+                                title="Eliminar"
                             >
-                                🗑
+                                <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+                                    <path d="M4 7h16M10 4h4M6 7l1 13h10l1-13M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
                             </button>
                         </div>
 
@@ -1071,7 +1088,18 @@
                         <div id="barra-seleccion-servidor" class="barra-seleccion-chat" hidden>
                             <span id="contador-seleccion-servidor">0 seleccionados</span>
                             <button id="boton-cancelar-seleccion-servidor" type="button">CANCELAR</button>
-                            <button id="boton-borrar-seleccion-servidor" class="boton-papelera-chat" type="button" aria-label="Eliminar mensajes seleccionados">🗑</button>
+                            <button id="boton-reenviar-seleccion-servidor" class="boton-icono-seleccion" type="button"
+                                    aria-label="Reenviar mensajes seleccionados" title="Reenviar">
+                                <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+                                    <path d="M13 5l7 7-7 7v-4C7 15 4 18 3 19c0-6 4-10 10-10V5Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
+                            <button id="boton-borrar-seleccion-servidor" class="boton-icono-seleccion" type="button"
+                                    aria-label="Eliminar mensajes seleccionados" title="Eliminar">
+                                <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+                                    <path d="M4 7h16M10 4h4M6 7l1 13h10l1-13M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
                         </div>
 
                         <form id="formulario-mensaje-servidor" class="formulario-mensaje-servidor">
@@ -1474,6 +1502,35 @@
                 <button id="historia-anterior" class="zona-historia zona-historia-anterior" type="button" aria-label="Estado anterior"></button>
                 <div id="contenido-historia-pantalla" class="contenido-historia-pantalla"></div>
                 <button id="historia-siguiente" class="zona-historia zona-historia-siguiente" type="button" aria-label="Siguiente estado"></button>
+
+                <!-- Barra fija del visor: corazón y comentario directos, sin
+                     abrir nada. Deslizando hacia arriba se ven todos los
+                     comentarios (igual que la 💬 de la cabecera). -->
+                <form id="barra-comentario-estado" class="barra-comentario-estado" autocomplete="off">
+                    <button id="boton-like-estado" class="boton-like-estado" type="button" aria-label="Me gusta" aria-pressed="false">
+                        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+                            <path d="M12 20.5 4.6 13.1a4.7 4.7 0 0 1 0-6.7 4.7 4.7 0 0 1 6.7 0l.7.7.7-.7a4.7 4.7 0 0 1 6.7 0 4.7 4.7 0 0 1 0 6.7Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                        </svg>
+                        <span id="contador-likes-estado" class="contador-acciones-estado" hidden></span>
+                    </button>
+
+                    <button id="boton-ver-comentarios-estado" class="boton-ver-comentarios-estado" type="button" aria-label="Ver todos los comentarios">
+                        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+                            <path d="M4 5h16v11H8l-4 3.5V5Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                        </svg>
+                        <span id="cantidad-comentarios-barra-estado" class="contador-acciones-estado" hidden></span>
+                    </button>
+
+                    <input
+                        id="entrada-comentario-estado"
+                        type="text"
+                        maxlength="1000"
+                        placeholder="Escribe un comentario..."
+                        aria-label="Escribe un comentario"
+                    >
+
+                    <button id="boton-enviar-comentario-estado" class="boton-enviar-comentario-estado" type="submit" disabled>ENVIAR</button>
+                </form>
             </div>
 
             <div id="modal-publicacion" class="modal modal-contenido-social" hidden>
@@ -2106,6 +2163,42 @@
 
                 </div>
 
+            </div>
+
+
+            <!-- ==============================
+                 REENVIAR MENSAJES SELECCIONADOS
+                 Se elige a qué chat privado (amigo) se mandan
+                 los mensajes marcados con pulsación larga.
+                 ============================== -->
+
+            <div
+                id="modal-reenviar-mensaje"
+                class="modal modal-contenido-social"
+                hidden
+            >
+                <section
+                    class="dialogo-social"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="titulo-reenviar-mensaje"
+                >
+                    <header class="cabecera-dialogo-social">
+                        <h2 id="titulo-reenviar-mensaje">Reenviar a...</h2>
+                        <button
+                            id="boton-cerrar-reenviar-mensaje"
+                            class="boton-cerrar-modal"
+                            type="button"
+                            aria-label="Cerrar"
+                        >×</button>
+                    </header>
+
+                    <p id="estado-reenviar-mensaje" class="estado-amigos" aria-live="polite"></p>
+
+                    <div id="lista-reenviar-mensaje" class="lista-personas">
+                        <!-- Las personas se generan desde app.js. -->
+                    </div>
+                </section>
             </div>
 
 
