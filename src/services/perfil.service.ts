@@ -235,6 +235,11 @@ export async function obtenerEstadosPerfil(
              s.texto, s.visibilidad, s.creado_en, s.expira_en,
                u.nombre AS autor_nombre, u.color_nombre,
                CASE WHEN ar.ruta IS NULL THEN NULL ELSE REPLACE(ar.ruta, '\\', '/') END AS avatar_url,
+               (SELECT COUNT(*)::int FROM estados_likes l WHERE l.estado_id = s.id) AS likes,
+               EXISTS (
+                   SELECT 1 FROM estados_likes l
+                   WHERE l.estado_id = s.id AND l.usuario_id = $1::uuid
+               ) AS me_gusta,
                COALESCE((
                    SELECT json_agg(json_build_object(
                        'tipo', me.tipo,

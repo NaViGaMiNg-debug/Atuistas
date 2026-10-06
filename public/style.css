@@ -5639,11 +5639,30 @@ button.servidor-tarjeta:focus-visible {
     cursor: pointer;
 }
 
-.boton-papelera-chat {
+/* Botones de icono (papelera y reenviar): cuadraditos, con el SVG centrado.
+   CANCELAR se empuja a la derecha del contador para que los iconos queden
+   pegados a la derecha de la barra. */
+.boton-icono-seleccion {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 38px;
+    height: 34px;
+    padding: 0 !important;
+}
+
+#boton-cancelar-seleccion-chat,
+#boton-cancelar-seleccion-servidor {
     margin-left: auto;
-    font-size: 20px !important;
-    line-height: 1;
-    padding: 6px 12px !important;
+}
+
+.boton-icono-seleccion:hover {
+    background: #383838;
+}
+
+.boton-icono-seleccion[hidden] {
+    display: none !important;
 }
 
 .boton-cancelar-cita-chat {
@@ -6249,6 +6268,113 @@ button.servidor-tarjeta:focus-visible {
     right: 0;
 }
 
+/* ==============================
+   BARRA DE COMENTARIO DEL VISOR DE ESTADOS
+   Corazón y campo para comentar directamente desde el
+   estado, sin abrir nada. Está por encima de las zonas
+   de toque (z-index 4) para que el campo se pueda usar.
+   ============================== */
+
+.barra-comentario-estado {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 7;
+
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.82), rgba(0, 0, 0, 0.35) 70%, transparent);
+}
+
+.barra-comentario-estado[hidden] {
+    display: none;
+}
+
+.boton-like-estado,
+.boton-ver-comentarios-estado {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+
+    min-width: 34px;
+    height: 34px;
+    padding: 0 4px;
+
+    border: 0;
+    background: transparent;
+    color: #fff;
+
+    cursor: pointer;
+}
+
+/* El corazón se rellena en rojo cuando está puesto. */
+.boton-like-estado.activo {
+    color: #ff4d67;
+}
+
+.boton-like-estado.activo svg path {
+    fill: currentColor;
+}
+
+.contador-acciones-estado {
+    font-size: 11px;
+    font-weight: 700;
+    text-shadow: 0 1px 3px #000;
+}
+
+.contador-acciones-estado[hidden] {
+    display: none;
+}
+
+.barra-comentario-estado input {
+    flex: 1;
+    min-width: 0;
+
+    padding: 9px 14px;
+
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 999px;
+
+    background: rgba(0, 0, 0, 0.45);
+    color: #fff;
+
+    font-size: 14px;
+    outline: none;
+}
+
+.barra-comentario-estado input::placeholder {
+    color: #9a9a9a;
+}
+
+.barra-comentario-estado input:focus {
+    border-color: rgba(255, 255, 255, 0.7);
+}
+
+.boton-enviar-comentario-estado {
+    padding: 8px 4px;
+
+    border: 0;
+    background: transparent;
+    color: #fff;
+
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.boton-enviar-comentario-estado:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
 
 
 /* ==============================
@@ -6321,6 +6447,12 @@ button.servidor-tarjeta:focus-visible {
    demas, incluido el codigo QR (3600) por si se dejan ambos abiertos. */
 #modal-fotos-chat {
     z-index: 3700;
+}
+
+/* El reenvio de mensajes sale desde el chat (3000), por encima del codigo
+   QR y por debajo del visor de fotos (3700): no pueden estar los dos. */
+#modal-reenviar-mensaje {
+    z-index: 3650;
 }
 
 .dialogo-fotos-chat {

@@ -964,6 +964,27 @@ CREATE TABLE estados_comentarios (
 
 
 -- ============================================================
+-- LIKES DE ESTADOS
+-- Un corazón por persona y estado, con la misma cascada que
+-- los comentarios: si el estado se borra, sus likes se van con él.
+-- ============================================================
+
+CREATE TABLE estados_likes (
+    estado_id UUID NOT NULL
+        REFERENCES estados(id)
+        ON DELETE CASCADE,
+
+    usuario_id UUID NOT NULL
+        REFERENCES usuarios(id)
+        ON DELETE CASCADE,
+
+    creado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    PRIMARY KEY (estado_id, usuario_id)
+);
+
+
+-- ============================================================
 -- REELS
 -- Vídeo corto con título obligatorio: un único archivo de vídeo
 -- y visibilidad de amigos o público.
@@ -1198,6 +1219,9 @@ CREATE INDEX idx_multimedia_estado_estado
 
 CREATE INDEX idx_estados_comentarios_estado
     ON estados_comentarios(estado_id, creado_en);
+
+CREATE INDEX idx_estados_likes_estado
+    ON estados_likes(estado_id);
 
 CREATE INDEX idx_reels_autor
     ON reels(autor_id, creado_en DESC);

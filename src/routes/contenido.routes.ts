@@ -7,6 +7,7 @@ import {
 } from "../services/multimedia.service.js";
 import {
     alternarCorazon,
+    alternarLikeEstado,
     comentarEstado,
     comentarPublicacion,
     crearEstado,
@@ -177,6 +178,16 @@ export async function contenidoRoutes(app: FastifyInstance) {
             return { comentarios: await obtenerComentariosEstado(request.usuario!.id, request.params.estadoId) };
         } catch (error) {
             const message = error instanceof Error ? error.message : "No se pudieron cargar los comentarios";
+            return reply.code(400).send({ error: message });
+        }
+    });
+
+    // Corazón del estado: una pulsación lo pone y otra lo quita.
+    app.post<{ Params: { estadoId: string } }>("/api/estados/:estadoId/like", { preHandler: autenticar }, async (request, reply) => {
+        try {
+            return await alternarLikeEstado(request.usuario!.id, request.params.estadoId);
+        } catch (error) {
+            const message = error instanceof Error ? error.message : "No se pudo guardar el corazón";
             return reply.code(400).send({ error: message });
         }
     });

@@ -491,6 +491,20 @@ export async function migrarEsquema() {
             CREATE INDEX IF NOT EXISTS idx_estados_comentarios_estado
                 ON estados_comentarios(estado_id, creado_en);
 
+            -- Los corazones de un estado se borran con él, igual que sus
+            -- comentarios: clave foranea en cascada.
+            CREATE TABLE IF NOT EXISTS estados_likes (
+                estado_id UUID NOT NULL
+                    REFERENCES estados(id) ON DELETE CASCADE,
+                usuario_id UUID NOT NULL
+                    REFERENCES usuarios(id) ON DELETE CASCADE,
+                creado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                PRIMARY KEY (estado_id, usuario_id)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_estados_likes_estado
+                ON estados_likes(estado_id);
+
             -- ==========================================
             -- HISTORIAS
             -- Carpetas permanentes con muchos elementos

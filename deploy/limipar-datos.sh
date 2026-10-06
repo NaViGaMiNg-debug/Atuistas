@@ -54,7 +54,7 @@ BEGIN
         'reels_comentarios', 'reels_likes', 'reels',
         'historias_items', 'historias',
         'corazones_publicacion', 'multimedia_publicacion', 'publicaciones',
-        'estados_comentarios', 'estados', 'mensajes_privados', 'mensajes_grupo',
+        'estados_likes', 'estados_comentarios', 'estados', 'mensajes_privados', 'mensajes_grupo',
         'ocultos_restricidos_grupo', 'miembros_bloqueados_grupo',
         'bloqueos', 'solicitudes_amistad', 'amistades',
         'conversaciones_privadas', 'canales_grupo', 'miembros_grupo',

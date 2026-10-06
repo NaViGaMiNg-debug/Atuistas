@@ -185,6 +185,11 @@ export async function obtenerEstados(usuarioId: string, seccion: "amigos" | "pub
                u.nombre AS autor_nombre, u.color_nombre,
                CASE WHEN ar.ruta IS NULL THEN NULL ELSE REPLACE(ar.ruta, '\\', '/') END AS avatar_url,
                (SELECT COUNT(*)::int FROM estados_comentarios c WHERE c.estado_id = s.id) AS comentarios,
+               (SELECT COUNT(*)::int FROM estados_likes l WHERE l.estado_id = s.id) AS likes,
+               EXISTS (
+                   SELECT 1 FROM estados_likes l
+                   WHERE l.estado_id = s.id AND l.usuario_id = $1::uuid
+               ) AS me_gusta,
                COALESCE((
                    SELECT json_agg(json_build_object(
                        'tipo', me.tipo,
@@ -317,4 +322,25 @@ export async function comentarEstado(usuarioId: string, estadoId: string, texto:
         );
     }
     return resultado.rows[0];
+}
+
+// Un corazón por persona y estado, con las mismas reglas de visibilidad que
+// leerlo: pulsar una vez lo pone, otra vez lo quita (igual que en los reels).
+export async function alternarLikeEstado(usuarioId: string, estadoId: string) {
+    await puedeVerEstado(usuarioId, estadoId);
+    const quitado = await db.query(
+        `DELETE FROM estados_likes WHERE estado_id = $1 AND usuario_id = $2`,
+        [estadoId, usuarioId]
+    );
+    if (quitado.rowCount !== 1) {
+        await db.query(
+            `INSERT INTO estados_likes (estado_id, usuario_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+            [estadoId, usuarioId]
+        );
+    }
+    const cuenta = await db.query(
+        `SELECT COUNT(*)::int AS likes FROM estados_likes WHERE estado_id = $1`,
+        [estadoId]
+    );
+    return { me_gusta: quitado.rowCount !== 1, likes: cuenta.rows[0].likes };
 }
