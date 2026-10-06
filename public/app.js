@@ -1,9 +1,19 @@
+function generarUUID() {
+    // crypto.randomUUID solo existe en Chrome 92+ (Android 7+ al día): en
+    // Android viejos se genera uno compatible para que la app arranque.
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+        return crypto.randomUUID();
+    }
+    const aleatorio = () => Math.floor((1 + Math.random()) * 0x10000).toString(16).slice(1);
+    return `${aleatorio()}${aleatorio()}-${aleatorio()}-4${aleatorio().slice(1)}-${((Math.random() * 4) | 8).toString(16)}${aleatorio().slice(1)}-${aleatorio()}${aleatorio()}${aleatorio()}`;
+}
+
 function obtenerIdentificadorDispositivo() {
     let identificador =
         localStorage.getItem("atuistas_dispositivo");
 
     if (!identificador) {
-        identificador = crypto.randomUUID();
+        identificador = generarUUID();
 
         localStorage.setItem(
             "atuistas_dispositivo",
@@ -889,8 +899,21 @@ let secuenciaHistoriaActual = [];
 const botonInstalarApp = document.getElementById("boton-instalar-app");
 const avisoActualizacion = document.getElementById("aviso-actualizacion");
 const botonActualizarApp = document.getElementById("boton-actualizar-app");
+const ayudaInstalar = document.getElementById("ayuda-instalar");
 
 let instalacionPendiente = null;
+
+// Androides viejos (y navegadores sin el aviso de instalacion) nunca emiten
+// beforeinstallprompt: si a los pocos segundos no ha llegado ninguno, se
+// muestra el boton igual y al pulsarlo se explica como instalar a mano
+// desde el menu del navegador.
+if (!appYaInstalada()) {
+    setTimeout(() => {
+        if (!instalacionPendiente && botonInstalarApp && botonInstalarApp.hidden) {
+            botonInstalarApp.hidden = false;
+        }
+    }, 6000);
+}
 
 // Si la app ya se esta ejecutando como instalada, no tiene sentido ofrecer
 // volver a instalarla.
@@ -905,7 +928,12 @@ function mostrarBotonInstalar() {
 }
 
 botonInstalarApp?.addEventListener("click", async () => {
-    if (!instalacionPendiente) return;
+    // Sin aviso del navegador (Android viejo): se enseña como instalar
+    // desde el menu, que es la via que si existe en todas las versiones.
+    if (!instalacionPendiente) {
+        if (ayudaInstalar) ayudaInstalar.hidden = !ayudaInstalar.hidden;
+        return;
+    }
     botonInstalarApp.disabled = true;
     try {
         instalacionPendiente.prompt();
@@ -1000,7 +1028,10 @@ if ("serviceWorker" in navigator && window.isSecureContext) {
         })
         .catch((error) => console.warn("No se pudo registrar el service worker:", error));
 
-    // Chrome avisa cuando la app cumple los requisitos de instalacion.
+    // Chrome avisa cuando la app cumple los requisitos de instalacion: se
+    // guarda el aviso y se muestra el boton para lanzarlo cuando el usuario
+    // lo pida. Si la pagina no llega a registrarlo a tiempo (navegadores
+    // antiguos), ya se encarga el boton en modo manual de arriba.
     window.addEventListener("beforeinstallprompt", (event) => {
         event.preventDefault();
         instalacionPendiente = event;
@@ -5366,19 +5397,11 @@ async function buscarPersonas(texto) {
         return;
     }
 
-    const textoLimpio = texto.trim();
+    const textoLimpio = (texto || "").trim();
 
-    if (!textoLimpio) {
-        listaResultadosAmigos.innerHTML = "";
-
-        estadoBusquedaAmigos.textContent =
-            "Escribe un nombre para buscar personas.";
-
-        return;
-    }
-
+    // Sin texto se enseña la lista entera de personas; con texto se filtra.
     estadoBusquedaAmigos.textContent =
-        "Buscando...";
+        textoLimpio ? "Buscando..." : "Cargando personas...";
 
     listaResultadosAmigos.innerHTML = "";
 
@@ -5406,18 +5429,42 @@ async function buscarPersonas(texto) {
 
         if (!datos.usuarios || datos.usuarios.length === 0) {
             estadoBusquedaAmigos.textContent =
-                "No se han encontrado personas.";
+                textoLimpio
+                    ? "No se han encontrado personas."
+                    : "Todavía no hay más cuentas en la web.";
 
             return;
         }
 
-        estadoBusquedaAmigos.textContent = "";
+        // Arriba va el número de cuentas en la web. Cuando no hay filtro el
+        // backend devuelve las activas; con filtro hace falta aparte porque
+        // el total del filtro solo cuenta lo que coincide.
+        let totalCuentas = Number(datos.total ?? 0) || datos.usuarios.length;
+        if (textoLimpio) {
+            try {
+                const conteo = await fetch(
+                    "/api/amigos/buscar?texto=",
+                    {
+                        headers: { Authorization: `Bearer ${token}` }
+                    }
+                );
+                const cuentas = await conteo.json().catch(() => ({}));
+                totalCuentas = Number(cuentas.total ?? 0) || totalCuentas;
+            } catch {
+                // Sin el total exacto se enseña el de esta búsqueda.
+            }
+        }
+        estadoBusquedaAmigos.textContent =
+            `${totalCuentas} ${totalCuentas === 1 ? "cuenta" : "cuentas"} en la web`;
 
         datos.usuarios.forEach((usuario) => {
             const elemento =
                 document.createElement("div");
 
             elemento.className = "persona-resultado";
+            elemento.setAttribute("role", "button");
+            elemento.setAttribute("tabindex", "0");
+            elemento.dataset.abrirPerfil = usuario.id;
 
             elemento.innerHTML = `
                 <div class="persona-resultado-info">
@@ -5466,6 +5513,20 @@ async function buscarPersonas(texto) {
                 elemento.querySelector(
                     ".boton-enviar-solicitud"
                 );
+
+            // Pulsar la tarjeta abre el perfil (así el Creador puede meterse a
+            // ver cualquier cuenta); el botón AGREGAR no abre nada.
+            elemento.addEventListener("click", (evento) => {
+                if (evento.target.closest(".boton-enviar-solicitud")) return;
+                abrirPerfil(usuario.id);
+            });
+
+            elemento.addEventListener("keydown", (evento) => {
+                if (evento.key !== "Enter" && evento.key !== " ") return;
+                if (evento.target.closest(".boton-enviar-solicitud")) return;
+                evento.preventDefault();
+                abrirPerfil(usuario.id);
+            });
 
             if (
                 usuario.estado_amistad === "ninguno"
@@ -6241,6 +6302,8 @@ botonAmigos.addEventListener(
     () => {
 
         mostrarSeccion("amigos");
+        // Al abrir Amigos ya se enseña la lista entera con el total arriba.
+        buscarPersonas(buscadorPersonas.value);
 
     }
 );
@@ -6265,6 +6328,11 @@ botonEncontrarPersonas.addEventListener("click", () => {
         "aria-selected",
         "false"
     );
+
+    // Si la lista está vacía se rellena ahora, con el total arriba.
+    if (!listaResultadosAmigos.children.length) {
+        buscarPersonas(buscadorPersonas.value);
+    }
 });
 
 botonSolicitudes.addEventListener("click", () => {

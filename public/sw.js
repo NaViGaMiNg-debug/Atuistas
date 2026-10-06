@@ -8,7 +8,7 @@
    lo nuevo. Asi la app instalada se actualiza sola, sin reinstalarla.
    ======================================== */
 
-const VERSION = "v17";
+const VERSION = "v18";
 const CACHE = `atuistas-${VERSION}`;
 
 // Solo se cachean estos ficheros. Todo lo demas (API, subidas) va directo a
@@ -27,20 +27,25 @@ const RECURSOS = [
     "/icon-maskable-512.png"
 ];
 
+// cache.add falla entero si un recurso falla; se cachea uno a uno para que
+// un icono ausente no impida instalar el service worker entero. Escrito sin
+// Promise.allSettled (Chrome 76+) ni optional chaining para que los
+// Androides viejos puedan registrar este archivo y así instalar la PWA.
+function cachearTodo(cache) {
+    return Promise.all(RECURSOS.map((recurso) =>
+        cache.add(recurso).catch(() => null)
+    ));
+}
+
 self.addEventListener("install", (event) => {
-    event.waitUntil((async () => {
-        const cache = await caches.open(CACHE);
-        // addAll falla entero si un recurso falla; se cachea uno a uno para que
-        // un icono ausente no impida instalar el service worker entero.
-        await Promise.allSettled(RECURSOS.map((recurso) => cache.add(recurso)));
-    })());
+    event.waitUntil(caches.open(CACHE).then(cachearTodo));
 });
 
 // La pagina avisa que ya se puede aplicar la version nueva. Se responde a
 // los clientes que siguen con la version antigua y se toma el control, de
-// modo que recarguen y yaSirvan los ficheros nuevos.
+// modo que recarguen y ya sirvan los ficheros nuevos.
 self.addEventListener("message", (event) => {
-    if (event.data?.tipo !== "activar-version") return;
+    if (!event.data || event.data.tipo !== "activar-version") return;
 
     event.waitUntil((async () => {
         await self.skipWaiting();
@@ -82,7 +87,7 @@ self.addEventListener("fetch", (event) => {
         event.respondWith((async () => {
             try {
                 return await fetch(solicitud);
-            } catch {
+            } catch (error) {
                 const cache = await caches.open(CACHE);
                 return (await cache.match("/index.html")) || Response.error();
             }
@@ -102,7 +107,7 @@ self.addEventListener("fetch", (event) => {
                 cache.put(solicitud, respuesta.clone());
             }
             return respuesta;
-        } catch {
+        } catch (error) {
             // Sin conexion se sirve la ultima copia buena.
             return (await cache.match(solicitud)) || Response.error();
         }
@@ -117,8 +122,13 @@ self.addEventListener("push", (event) => {
     let data = {};
     try {
         data = event.data ? event.data.json() : {};
-    } catch {
-        data = { title: "Atuistas", body: event.data?.text() || "Tienes una notificaciÃ³n nueva." };
+    } catch (error) {
+        // Sin optional chaining: los Androides viejos no la entienden y el
+        // service worker dejaria de registrarse, bloqueando la instalacion.
+        const texto = event.data && typeof event.data.text === "function"
+            ? event.data.text()
+            : "Notificacion nueva.";
+        data = { title: "Atuistas", body: texto };
     }
 
     event.waitUntil(self.registration.showNotification(data.title || "Atuistas", {

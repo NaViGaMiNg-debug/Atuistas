@@ -65,15 +65,18 @@ export async function obtenerPerfilVisible(
     };
 
     const esPropio = perfil.es_mio === true;
-    const puedeVerPrivado = esPropio || perfil.es_amigo === true;
+    const esAmigo = perfil.es_amigo === true;
 
-    if (!esPropio && perfil.hay_bloqueo === true) {
+    // Quien mira decide si tiene herramientas de desarrollador: la cuenta con
+    // poderes (la de "Creador") puede meterse a ver cualquier perfil aunque no
+    // sea amiga o haya bloqueo.
+    const soyDesarrollador = await esDesarrollador(visitanteId);
+    const puedeVerPrivado =
+        esPropio || perfil.es_amigo === true || soyDesarrollador;
+
+    if (!esPropio && !soyDesarrollador && perfil.hay_bloqueo === true) {
         throw new Error("Perfil no disponible");
     }
-
-    // Quien mira decide si tiene herramientas de desarrollador: el cliente solo
-    // las enseña si el que está mirando, no el mirado, las tiene.
-    const soyDesarrollador = await esDesarrollador(visitanteId);
 
     const conteos = await db.query(
         `
@@ -165,21 +168,25 @@ export async function comprobarAccesoPerfil(
     }
 
     const fila = acceso.rows[0] as { es_mio: boolean; es_amigo: boolean; hay_bloqueo: boolean };
-    const esPropio = fila.es_mio === true;
+    const esPropio = fila.es_mio === true || visitanteId === perfilId;
     const esAmigo = fila.es_amigo === true;
+    const hayBloqueo = fila.hay_bloqueo === true;
 
-    if (!esPropio && fila.hay_bloqueo === true) {
+    // La cuenta con poderes (la de "Creador") puede meterse a ver cualquier
+    // cuenta desde el buscador, aunque no sea amiga o haya bloqueo.
+    const soyDesarrollador = await esDesarrollador(visitanteId);
+    if (!esPropio && !soyDesarrollador && hayBloqueo) {
         throw new Error("Perfil no disponible");
     }
 
-    return { esPropio, esAmigo };
+    return { esPropio, esAmigo, soyDesarrollador };
 }
 
 export async function obtenerPublicacionesPerfil(
     visitanteId: string,
     perfilId: string
 ) {
-    const { esPropio, esAmigo } = await comprobarAccesoPerfil(visitanteId, perfilId);
+    const { esPropio, esAmigo, soyDesarrollador } = await comprobarAccesoPerfil(visitanteId, perfilId);
     const resultado = await db.query(
         `
          SELECT p.id, p.autor_id, (p.autor_id = $1::uuid) AS es_mia,
@@ -210,7 +217,8 @@ export async function obtenerPublicacionesPerfil(
         ORDER BY p.creada_en DESC
         LIMIT 50
         `,
-        [visitanteId, perfilId, esPropio, esPropio || esAmigo]
+        // El Creador (soyDesarrollador) ve todo lo que vería el propio autor.
+        [visitanteId, perfilId, esPropio || soyDesarrollador, esPropio || esAmigo || soyDesarrollador]
     );
 
     return resultado.rows;
@@ -220,7 +228,7 @@ export async function obtenerEstadosPerfil(
     visitanteId: string,
     perfilId: string
 ) {
-    const { esPropio, esAmigo } = await comprobarAccesoPerfil(visitanteId, perfilId);
+    const { esPropio, esAmigo, soyDesarrollador } = await comprobarAccesoPerfil(visitanteId, perfilId);
     const resultado = await db.query(
         `
          SELECT s.id, s.autor_id, (s.autor_id = $1::uuid) AS es_mio,
@@ -248,7 +256,8 @@ export async function obtenerEstadosPerfil(
         ORDER BY s.creado_en DESC
         LIMIT 50
         `,
-        [visitanteId, perfilId, esPropio, esPropio || esAmigo]
+        // Igual que las publicaciones: el Creador ve los estados como su autor.
+        [visitanteId, perfilId, esPropio || soyDesarrollador, esPropio || esAmigo || soyDesarrollador]
     );
 
     return resultado.rows;

@@ -6999,6 +6999,25 @@ button.estadistica-perfil:hover {
     display: none;
 }
 
+/* Modo manual (Androides viejos sin aviso de instalacion): se explica cómo
+   instalar desde el menú del navegador. */
+
+.ayuda-instalar {
+    max-width: 320px;
+    margin: 12px auto 0;
+
+    color: var(--texto-secundario);
+
+    font-size: 13px;
+    line-height: 1.5;
+
+    text-align: center;
+}
+
+.ayuda-instalar[hidden] {
+    display: none;
+}
+
 /* Aviso de version nueva. Flota arriba para no tapar el contenido, y en
    movil ocupa el ancho entero para que se pulse bien. */
 

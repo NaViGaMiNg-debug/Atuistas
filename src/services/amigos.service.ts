@@ -7,9 +7,12 @@ export async function buscarUsuarios(
 ) {
     const textoLimpio = texto.trim();
 
-    if (!textoLimpio) {
-        return [];
-    }
+    // Sin texto se devuelve la lista entera (ordenada por nombre) para que el
+    // buscador enseñe a todo el mundo; con texto se filtra como siempre.
+    // El tope de 500 es solo por si la web crece mucho: el pintado en el
+    // cliente se volvería lento.
+    const filtrar = textoLimpio.length > 0;
+    const limite = filtrar ? 20 : 500;
 
     const resultado = await db.query(
         `
@@ -19,6 +22,7 @@ export async function buscarUsuarios(
             u.descripcion,
             u.avatar_archivo_id,
             u.color_nombre,
+            COUNT(*) OVER()::int AS total,
 
             CASE
                 WHEN EXISTS (
@@ -63,15 +67,16 @@ export async function buscarUsuarios(
 
         WHERE u.activo = TRUE
         AND u.id <> $1
-        AND u.nombre ILIKE $2
+        AND ($2 = '' OR u.nombre ILIKE $2)
 
         ORDER BY u.nombre
 
-        LIMIT 20
+        LIMIT $3
         `,
         [
             usuarioId,
-            `%${textoLimpio}%`
+            filtrar ? `%${textoLimpio}%` : ``,
+            limite
         ]
     );
 

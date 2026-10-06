@@ -19,19 +19,23 @@ export async function amigosRoutes(app: FastifyInstance) {
             texto?: string;
         };
 
-        if (!query.texto) {
-            return reply.status(400).send({
-                error: "El texto de búsqueda es obligatorio"
-            });
-        }
+        // Sin texto se devuelve la lista entera para que el buscador enseñe
+        // a todo el mundo; ya no es un error.
+        const texto = (query.texto ?? "").toString();
 
         const usuarios = await buscarUsuarios(
-            query.texto,
+            texto,
             request.usuario!.id
         );
 
+        // El servicio pone el total en cada fila (COUNT OVER): se saca de la
+        // primera para poner arriba el número de cuentas en la web.
+        const total = (usuarios[0] as { total?: number } | undefined)?.total
+            ?? usuarios.length;
+
         return {
-            usuarios
+            usuarios,
+            total
         };
     });
 

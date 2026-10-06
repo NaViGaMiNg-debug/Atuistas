@@ -263,11 +263,68 @@ comprobar(
     "app.js sube y quita el fondo del perfil"
 );
 
+/* ---------- Buscador: lista entera, contador y perfil del Creador ---------- */
+
+const servicio = fs.readFileSync(path.join(raiz, "src", "services", "amigos.service.ts"), "utf8");
+const ruta = fs.readFileSync(path.join(raiz, "src", "routes", "amigos.routes.ts"), "utf8");
+const perfil = fs.readFileSync(path.join(raiz, "src", "services", "perfil.service.ts"), "utf8");
+
+const buscada = await fetch(`${base}/api/amigos/buscar`, { headers: cabeceras }).then((r) => r.json());
+comprobar(
+    Array.isArray(buscada.usuarios) && typeof buscada.total === "number",
+    "Buscar sin texto devuelve la lista de cuentas y el total"
+);
+comprobar(
+    servicio.includes("COUNT(*) OVER()") && servicio.includes("LIMIT $3"),
+    "La busqueda cuenta el total y filtra solo cuando hay texto"
+);
+comprobar(
+    !ruta.includes("El texto de búsqueda es obligatorio"),
+    "Buscar sin caracteres ya no es un error"
+);
+comprobar(
+    codigo.includes("en la web") && codigo.includes("datos.total"),
+    "El buscador enseña arriba el número de cuentas en la web"
+);
+comprobar(
+    codigo.includes('elemento.dataset.abrirPerfil = usuario.id')
+        && codigo.includes("abrirPerfil(usuario.id)"),
+    "Al pulsar una persona del buscador se abre su perfil"
+);
+comprobar(
+    /buscarPersonas\(buscadorPersonas\.value\)/.test(codigo),
+    "Al abrir Amigos se carga la lista completa con el contador"
+);
+comprobar(
+    perfil.includes("soyDesarrollador && hayBloqueo")
+        && perfil.includes("esPropio || soyDesarrollador"),
+    "El Creador entra a cualquier perfil, incluso con bloqueo"
+);
+
+/* ---------- Instalación en Androides viejos ---------- */
+
+const swInstalacion = fs.readFileSync(path.join(raiz, "public", "sw.js"), "utf8");
+comprobar(
+    !/\?\./.test(swInstalacion)
+        && !swInstalacion.includes("Promise.allSettled(")
+        && !/catch\s*\{/.test(swInstalacion),
+    "El service worker no usa sintaxis que los Androides viejos no entienden"
+);
+comprobar(
+    codigo.includes("generarUUID"),
+    "El identificador de dispositivo no depende solo de crypto.randomUUID"
+);
+comprobar(
+    html.includes('id="ayuda-instalar"')
+        && codigo.includes("ayuda-instalar"),
+    "Si el navegador nunca avisa, el botón explica instalar a mano"
+);
+
 /* ---------- El service worker cambia de version ---------- */
 
 const sw = fs.readFileSync(path.join(raiz, "public", "sw.js"), "utf8");
 const versionSw = sw.match(/const VERSION = "(v\d+)"/)?.[1] || "?";
-comprobar(versionSw === "v17", `El service worker subio a la version v17 (${versionSw})`);
+comprobar(versionSw === "v18", `El service worker subio a la version v18 (${versionSw})`);
 
 console.log("");
 if (fallos.length) {

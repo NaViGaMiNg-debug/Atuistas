@@ -65,9 +65,10 @@
                     CREAR CUENTA
                 </button>
 
-                <!-- Instalar la app. El boton se muestra solo cuando el
-                     navegador confirma que se puede instalar, de modo que
-                     nunca aparece un boton que no haga nada. -->
+                <!-- Instalar la app. Si el navegador avisa de que se puede
+                     instalar, el boton instala de una vez; en Androides
+                     viejos, que nunca avisan, se muestra igual a los pocos
+                     segundos y explica como instalar desde el menu. -->
                 <button id="boton-instalar-app" class="boton-instalar-app" type="button" hidden>
                     <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
                         <path d="M12 3v11m0 0 4-4m-4 4-4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -75,6 +76,12 @@
                     </svg>
                     <span>INSTALAR APLICACIÓN</span>
                 </button>
+
+                <p id="ayuda-instalar" class="ayuda-instalar" hidden>
+                    Tu navegador no ofrece el botón de instalar: abre su menú
+                    (⋮) y elige «Instalar aplicación» o «Añadir a pantalla de
+                    inicio».
+                </p>
 
             </div>
 
@@ -880,7 +887,7 @@
                             id="estado-busqueda-amigos"
                             class="estado-amigos"
                         >
-                            Escribe un nombre para buscar personas.
+                            Aparecerán todas las cuentas de la web; escribe para filtrar.
                         </p>
 
 
