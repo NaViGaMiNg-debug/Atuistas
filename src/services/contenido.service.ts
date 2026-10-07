@@ -2,6 +2,8 @@ import { db } from "../db/database.js";
 import { crearNotificacion } from "./notificaciones.service.js";
 import { puedeEditarComoDesarrollador } from "./desarrollador.service.js";
 
+// Lo publico lo ve todo el mundo, lo de amigos solo los amigos y lo mio siempre.
+// Si no cumple nada de eso la publicacion es como si no existiera.
 async function puedeVerPublicacion(usuarioId: string, publicacionId: string) {
     const resultado = await db.query(
         `

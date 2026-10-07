@@ -1,6 +1,8 @@
 import { db } from "../db/database.js";
 import { crearNotificacion } from "./notificaciones.service.js";
 
+// Solo se puede escribir a quien es amigo: da igual quien mando la solicitud,
+// la amistad vale para los dos lados.
 async function comprobarAmistad(
     usuarioId: string,
     otroUsuarioId: string

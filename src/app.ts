@@ -25,6 +25,8 @@ const app = Fastify({
     logger: true
 });
 
+// Limpieza de lo que caduca: estados, servidores temporales y mensajes viejos
+// de los canales que tienen retencion. Va una vez al arrancar y luego cada hora.
 async function limpiarContenidoExpirado() {
     await db.query("DELETE FROM estados WHERE expira_en <= NOW()");
     await db.query("DELETE FROM grupos WHERE desaparece_en <= NOW()");
@@ -56,12 +58,15 @@ await app.register(cors, {
 });
 
 await app.register(multipart, {
+    // Fotos y videos: 50MB por archivo y 10 como mucho de una vez, que si no
+    // se llena el disco en dos dias.
     limits: {
         fileSize: 50 * 1024 * 1024,
         files: 10
     }
 });
 
+// Las fotos y videos subidos se sirven tal cual desde uploads/.
 await app.register(fastifyStatic, {
     root: path.join(
         process.cwd(),

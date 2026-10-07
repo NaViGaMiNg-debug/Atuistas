@@ -4,6 +4,8 @@ import { crearNotificacion } from "./notificaciones.service.js";
 import { emitirAUsuarios } from "../ws/tiempo-real.js";
 import { prepararDatosUbicacion } from "./mensajes.service.js";
 
+// Hay que ser miembro para hacer nada en el servidor: si no sales en la lista
+// de miembros te dice que no perteneces y punto.
 interface MiembroGrupo {
     rol: "creador" | "moderador" | "miembro";
     silenciado: boolean;

@@ -1,6 +1,8 @@
 import type { WebSocket } from "ws";
 
-// Tickets de un solo uso para conectar por WebSocket sin exponer el token.
+// Tickets de un solo uso para conectar sin exponer el token.
+// Cada persona puede tener varias pestañas abiertas, asi que se guarda
+// una lista de enchufes por usuario y no uno solo.
 const TTL_TICKET_MS = 60 * 1000;
 const ABIERTO = 1;
 
@@ -31,7 +33,8 @@ export function crearTicket(usuarioId: string) {
     return ticket;
 }
 
-// Consume el ticket una sola vez y devuelve el usuario o null si no es válido.
+// Consume el ticket una sola vez y devuelve el usuario. Si ya se uso o caduco
+// devuelve null y el enchufe se cierra con ticket no valido.
 export function consumirTicket(ticket: string): string | null {
     limpiarTickets();
     const guardado = tickets.get(ticket);
