@@ -3131,19 +3131,88 @@ button.servidor-tarjeta:focus-visible {
 }
 
 /* El reproductor propio dentro de un mensaje se funde con la burbuja: sin
-   borde ni fondo propio, hereda el color del mensaje (propio o ajeno). */
+   borde propio, hereda la burbuja (propia o ajena) y el color de texto de
+   ese mensaje. Las ondas y la barra de progreso usan el acento de la web. */
 .adjunto-mensaje .reproductor-audio {
     width: 100%;
-    min-width: 200px;
-    padding: 6px 4px 10px;
-    gap: 10px;
+    min-width: 180px;
+    max-width: 100%;
+    padding: 10px 8px 12px;
+    gap: 12px;
     border: 0;
-    background: transparent;
+    border-radius: var(--radio-md);
+    background: var(--fondo-burbuja-ajena);
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    cursor: pointer;
 }
 
 .adjunto-mensaje .reproductor-audio-boton {
     width: 36px;
     height: 36px;
+    flex: 0 0 auto;
+    color: var(--texto-principal);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.adjunto-mensaje .reproductor-audio-boton svg {
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
+}
+
+.adjunto-mensaje .reproductor-audio-ondas {
+    flex: 1 1 auto;
+    min-width: 50px;
+    height: 26px;
+    gap: 2px;
+}
+
+.adjunto-mensaje .reproductor-audio-ondas span {
+    min-width: 1px;
+    max-width: 4px;
+    border-radius: 2px;
+    background: var(--borde-medio);
+    opacity: 0.7;
+    transform-origin: center;
+    transition: opacity 0.25s ease, background 0.25s ease;
+}
+
+.adjunto-mensaje .reproductor-audio-ondas span.encendida {
+    background: var(--acento);
+    opacity: 1;
+}
+
+.adjunto-mensaje .reproductor-audio-ondas span.viva {
+    animation: onda-reproductor 0.9s ease-in-out infinite;
+}
+
+.adjunto-mensaje .reproductor-audio-ondas span.viva:nth-child(2n) {
+    animation-delay: 0.15s;
+}
+
+.adjunto-mensaje .reproductor-audio-ondas span.viva:nth-child(3n) {
+    animation-delay: 0.3s;
+}
+
+.adjunto-mensaje .reproductor-audio-ondas span.viva:nth-child(4n) {
+    animation-delay: 0.45s;
+}
+
+.adjunto-mensaje .reproductor-audio-ondas span.viva:nth-child(5n) {
+    animation-delay: 0.6s;
+}
+
+.adjunto-mensaje .reproductor-audio-tiempo {
+    flex: 0 0 auto;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    color: var(--texto-secundario);
+    min-width: 34px;
+    text-align: right;
 }
 
 .meta-mensaje-servidor {

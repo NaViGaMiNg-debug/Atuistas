@@ -324,7 +324,8 @@ function crearComposer(config) {
         pararMedidorVoz();
         if (!flujoLocal || typeof AudioContext === "undefined") return;
         try {
-            contextoVoz = new AudioContext();
+            if (!contextoVoz) contextoVoz = new AudioContext();
+            else if (contextoVoz.state === "suspended") contextoVoz.resume();
             const fuente = contextoVoz.createMediaStreamSource(flujoLocal);
             analizadorVoz = contextoVoz.createAnalyser();
             analizadorVoz.fftSize = 512;
@@ -345,6 +346,22 @@ function crearComposer(config) {
             contextoVoz = null;
             analizadorVoz = null;
         }
+    }
+
+    // La grabadora se pone en pausa (no se termina): queda escuchable en ese
+    // punto y se reanuda desde ahí. No muestra el chip del nombre del archivo.
+    function pausaGrabacion() {
+        if (!grabadora || grabadora.state === "inactive") return;
+        if (grabadora.state === "paused") {
+            grabadora.resume();
+            pararMedidorVoz();
+            arrancarMedidorVoz();
+        } else {
+            grabadora.pause();
+            pararMedidorVoz();
+        }
+        pintarOndasGrabacion();
+        actualizarBoton();
     }
 
     function pararMedidorVoz() {
@@ -633,10 +650,10 @@ function crearComposer(config) {
         limpiarAdjunto();
     });
 
-    // Botón PARAR de la fila: corta la grabación y deja el audio listo para
-    // enviar (igual que parar con el botón principal, pero a mano abajo).
+    // Botón PARAR de la fila: pausa/reanuda la grabación (no la termina).
     botonParar?.addEventListener("click", () => {
-        if (grabando()) detenerGrabacion(false);
+        if (!grabando()) return;
+        pausaGrabacion();
     });
 
     formulario.addEventListener("keydown", (evento) => {
@@ -662,6 +679,12 @@ function crearComposer(config) {
             }
             detenerGrabacion(false);
             return;
+        }
+
+        // Si la graba está pausada (o en curso, por si acaso) se termina para que
+        // el audio quede como adjunto y se pueda enviar con un clic.
+        if (grabadora && (grabadora.state === "paused" || grabadora.state === "recording")) {
+            detenerGrabacion(false);
         }
 
         const contenido = entrada.value.trim();
@@ -3650,6 +3673,19 @@ async function cargarAmigos() {
 
             return;
         }
+
+        // Chats con mensaje primero, del más reciente al más antiguo; los que
+        // nunca se han escrito van al final. Como el backend ya los manda por
+        // nombre y sort es estable, los que no tienen fecha conservan ese orden
+        // alfabético entre sí.
+        datos.amigos.sort((a, b) => {
+            const fechaA = a.ultimo_mensaje_en ? new Date(a.ultimo_mensaje_en).getTime() : 0;
+            const fechaB = b.ultimo_mensaje_en ? new Date(b.ultimo_mensaje_en).getTime() : 0;
+            if (fechaA && fechaB) return fechaB - fechaA;
+            if (fechaA) return -1;
+            if (fechaB) return 1;
+            return 0;
+        });
 
         datos.amigos.forEach((amigo) => {
 
