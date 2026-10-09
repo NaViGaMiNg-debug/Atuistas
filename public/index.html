@@ -614,7 +614,11 @@
 
                             <div id="fila-grabacion-chat" class="fila-grabacion" hidden>
                                 <span class="grabacion-punto" aria-hidden="true"></span>
+                                <div class="grabacion-ondas" id="ondas-grabacion-chat" aria-hidden="true"></div>
                                 <span id="tiempo-grabacion-chat" class="grabacion-tiempo">0:00</span>
+                                <button id="boton-parar-grabacion-chat" class="boton-parar-grabacion" type="button">
+                                    PARAR
+                                </button>
                                 <button id="boton-descartar-grabacion-chat" class="boton-descartar-grabacion" type="button">
                                     BORRAR
                                 </button>
@@ -1135,7 +1139,11 @@
 
                             <div id="fila-grabacion-servidor" class="fila-grabacion" hidden>
                                 <span class="grabacion-punto" aria-hidden="true"></span>
+                                <div class="grabacion-ondas" id="ondas-grabacion-servidor" aria-hidden="true"></div>
                                 <span id="tiempo-grabacion-servidor" class="grabacion-tiempo">0:00</span>
+                                <button id="boton-parar-grabacion-servidor" class="boton-parar-grabacion" type="button">
+                                    PARAR
+                                </button>
                                 <button id="boton-descartar-grabacion-servidor" class="boton-descartar-grabacion" type="button">
                                     BORRAR
                                 </button>
@@ -2532,7 +2540,7 @@
     <!-- ?v tiene que subir junto con VERSION en sw.js cada vez que cambie
          app.js: sin esa firma, la caché del navegador y la del service worker
          sirven el fichero viejo para siempre y los arreglos no llegan nunca. -->
-    <script src="/app.js?v=24"></script>
+    <script src="/app.js?v=25"></script>
 
 </body>
 

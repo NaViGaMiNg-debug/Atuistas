@@ -184,6 +184,24 @@ function crearComposer(config) {
         enviar
     } = config;
 
+    // Botón PARAR y tira de ondas de cada fila de grabación (chat o servidor).
+    const botonParar = document.getElementById(
+        filaGrabacion?.id === "fila-grabacion-servidor"
+            ? "boton-parar-grabacion-servidor"
+            : "boton-parar-grabacion-chat"
+    );
+    const ondasGrabacion = document.getElementById(
+        filaGrabacion?.id === "fila-grabacion-servidor"
+            ? "ondas-grabacion-servidor"
+            : "ondas-grabacion-chat"
+    );
+
+    // Máximo de audio que acepta el servidor (3:30): al llegar se para sola.
+    const MAXIMO_GRABACION_SEG = 3 * 60 + 30;
+    // Las ondas de la fila son 24 barras: se van encendiendo según pasa el
+    // tiempo para que se vea cuánto falta para el corte automático.
+    const BARRAS_GRABACION = 24;
+
     let adjunto = null;
     let grabadora = null;
     let flujoLocal = null;
@@ -193,6 +211,13 @@ function crearComposer(config) {
     let segundos = 0;
     let descartarGrabacion = false;
     let temporizadorAviso = null;
+    // Medidor de voz en vivo: el analizador lee lo fuerte que hablas y el
+    // intervalo pinta las barras encendidas con esa altura.
+    let contextoVoz = null;
+    let analizadorVoz = null;
+    let datosVoz = null;
+    let intervaloVoz = null;
+    let nivelVoz = 0;
 
     const grabando = () => Boolean(grabadora) && grabadora.state === "recording";
     const hayTexto = () => Boolean(entrada.value.trim());
@@ -251,10 +276,77 @@ function crearComposer(config) {
         botonMas.setAttribute("aria-expanded", "false");
     }
 
+    // Tira de ondas de la fila: 24 barras que se encienden con el paso del
+    // tiempo (cuánto falta para el corte) y crecen según lo fuerte que
+    // hables. Al rellenarse del todo, la grabación se para sola.
+    function prepararOndasGrabacion() {
+        if (!ondasGrabacion) return;
+        ondasGrabacion.replaceChildren();
+        for (let i = 0; i < BARRAS_GRABACION; i += 1) {
+            ondasGrabacion.appendChild(document.createElement("span"));
+        }
+    }
+
+    function pintarOndasGrabacion() {
+        if (!ondasGrabacion) return;
+        const barras = ondasGrabacion.children;
+        if (!barras.length) return;
+        const encendidas = Math.min(
+            barras.length,
+            Math.floor((segundos / MAXIMO_GRABACION_SEG) * barras.length)
+        );
+        for (let i = 0; i < barras.length; i += 1) {
+            const barra = barras[i];
+            barra.classList.toggle("encendida", i < encendidas);
+            // La última encendida respira con tu voz; las anteriores quedan
+            // a media altura y las que faltan, bajas.
+            const altura = i < encendidas - 1 ? 0.6 : i === encendidas - 1 ? 0.3 + nivelVoz * 0.7 : 0.25;
+            barra.style.transform = `scaleY(${Math.max(0.2, Math.min(1, altura))})`;
+        }
+    }
+
+    function arrancarMedidorVoz() {
+        pararMedidorVoz();
+        if (!flujoLocal || typeof AudioContext === "undefined") return;
+        try {
+            contextoVoz = new AudioContext();
+            const fuente = contextoVoz.createMediaStreamSource(flujoLocal);
+            analizadorVoz = contextoVoz.createAnalyser();
+            analizadorVoz.fftSize = 512;
+            fuente.connect(analizadorVoz);
+            datosVoz = new Uint8Array(analizadorVoz.frequencyBinCount);
+            intervaloVoz = setInterval(() => {
+                if (!analizadorVoz) return;
+                analizadorVoz.getByteTimeDomainData(datosVoz);
+                let pico = 0;
+                for (let i = 0; i < datosVoz.length; i += 1) {
+                    pico = Math.max(pico, Math.abs(datosVoz[i] - 128) / 128);
+                }
+                // Suavizado: sube rápido al hablar y baja despacio en silencio.
+                nivelVoz = Math.max(pico, nivelVoz * 0.75);
+                pintarOndasGrabacion();
+            }, 120);
+        } catch {
+            contextoVoz = null;
+            analizadorVoz = null;
+        }
+    }
+
+    function pararMedidorVoz() {
+        if (intervaloVoz) clearInterval(intervaloVoz);
+        intervaloVoz = null;
+        analizadorVoz = null;
+        datosVoz = null;
+        nivelVoz = 0;
+        if (contextoVoz?.close) contextoVoz.close().catch(() => {});
+        contextoVoz = null;
+    }
+
     function limpiarGrabacion() {
         if (intervalo) clearInterval(intervalo);
         intervalo = null;
         segundos = 0;
+        pararMedidorVoz();
         filaGrabacion.hidden = true;
         formulario.classList.remove("grabando");
     }
@@ -342,6 +434,7 @@ function crearComposer(config) {
     function alDetenerGrabacion() {
         flujoLocal?.getTracks().forEach((pista) => pista.stop());
         flujoLocal = null;
+        pararMedidorVoz();
 
         // Se usa el MIME guardado al arrancar: la grabadora ya está liberada.
         const tipo = mimeActual;
@@ -417,11 +510,20 @@ function crearComposer(config) {
 
         grabadora.start();
         pintarTiempo();
+        prepararOndasGrabacion();
+        pintarOndasGrabacion();
+        arrancarMedidorVoz();
         filaGrabacion.hidden = false;
         formulario.classList.add("grabando");
         intervalo = setInterval(() => {
             segundos += 1;
             pintarTiempo();
+            pintarOndasGrabacion();
+            // Al llegar al máximo del servidor se para sola: queda lista
+            // para enviar (no se tira).
+            if (segundos >= MAXIMO_GRABACION_SEG && grabando()) {
+                detenerGrabacion(false);
+            }
         }, 1000);
         actualizarBoton();
     }
@@ -498,6 +600,12 @@ function crearComposer(config) {
             return;
         }
         limpiarAdjunto();
+    });
+
+    // Botón PARAR de la fila: corta la grabación y deja el audio listo para
+    // enviar (igual que parar con el botón principal, pero a mano abajo).
+    botonParar?.addEventListener("click", () => {
+        if (grabando()) detenerGrabacion(false);
     });
 
     formulario.addEventListener("keydown", (evento) => {
@@ -2781,11 +2889,9 @@ function crearNodoMensajeChat(mensaje) {
             imagen.loading = "lazy";
             adjunto.appendChild(imagen);
         } else if (mensaje.tipo === "audio") {
-            const audio = document.createElement("audio");
-            audio.src = fuente;
-            audio.controls = true;
-            audio.preload = "metadata";
-            adjunto.appendChild(audio);
+            // Reproductor propio (funciona aunque el gesto del mensaje capture
+            // el puntero: se controla con clic delegado, no con controles nativos).
+            adjunto.insertAdjacentHTML("beforeend", reproductorAudioHTML(fuente));
         } else if (mensaje.tipo === "video") {
             const video = document.createElement("video");
             video.src = fuente;
@@ -3126,6 +3232,9 @@ function configurarGestoMensajeChat(elemento, mensaje) {
     elemento.addEventListener("pointerdown", (evento) => {
         if (evento.pointerType === "mouse" && evento.button !== 0) return;
         if (punteroActivo !== null) return;
+        // El reproductor de audio tiene sus propios controles (play y salto):
+        // el gesto del mensaje no debe capturar ese toque ni marcar nada.
+        if (evento.target.closest?.(".reproductor-audio")) return;
         punteroActivo = evento.pointerId;
         interaccionChatEnCurso = true;
         try {
@@ -4241,7 +4350,7 @@ const autorId = mensaje.autor_id;
         if (mensaje.tipo === "imagen") {
             adjunto = `<div class="adjunto-mensaje"><img src="${fuente}" alt="${escapeHtml(mensaje.contenido || "imagen")}" loading="lazy"></div>`;
         } else if (mensaje.tipo === "audio") {
-            adjunto = `<div class="adjunto-mensaje"><audio src="${fuente}" controls preload="metadata"></audio></div>`;
+            adjunto = `<div class="adjunto-mensaje">${reproductorAudioHTML(fuente)}</div>`;
         } else if (mensaje.tipo === "video") {
             adjunto = `<div class="adjunto-mensaje"><video src="${fuente}" controls playsinline preload="metadata"></video></div>`;
         }
@@ -4522,6 +4631,8 @@ function configurarGestoMensajeServidor(elemento, mensaje) {
     elemento.addEventListener("pointerdown", (evento) => {
         if (evento.pointerType === "mouse" && evento.button !== 0) return;
         if (punteroActivo !== null) return;
+        // Igual que en el privado: el reproductor se controla solo.
+        if (evento.target.closest?.(".reproductor-audio")) return;
         punteroActivo = evento.pointerId;
         try {
             elemento.setPointerCapture(evento.pointerId);
@@ -7647,7 +7758,10 @@ function renderizarMedios(multimedia = []) {
    eventos en el documento para funcionar también con el contenido que se
    repinta (el <audio> real queda oculto dentro y es el que suena). */
 function reproductorAudioHTML(ruta) {
-    const ondas = "<span></span>".repeat(14);
+    // 30 barras: al sonar se van encendiendo en color de acento según el
+    // avance (las que faltan quedan apagadas). Nada de "lo que falta para el
+    // máximo": la tira entera ES el audio y se rellena al terminar.
+    const ondas = "<span></span>".repeat(30);
     return `
         <div class="reproductor-audio contenido-multimedia-social">
             <audio src="${ruta}" preload="metadata"></audio>
@@ -7675,6 +7789,11 @@ function pintarProgresoReproductor(audio) {
     const avance = dur ? Math.min(audio.currentTime / dur, 1) : 0;
     const relleno = contenedor.querySelector(".reproductor-audio-relleno");
     if (relleno) relleno.style.width = `${avance * 100}%`;
+    // Las ondas se encienden con el avance: lo ya sonado en acento, lo que
+    // falta apagado. Al acabar queda la tira entera encendida.
+    const barras = contenedor.querySelectorAll(".reproductor-audio-ondas span");
+    const encendidas = Math.round(avance * barras.length);
+    barras.forEach((barra, indice) => barra.classList.toggle("encendida", indice < encendidas));
     const tiempo = contenedor.querySelector(".reproductor-audio-tiempo");
     if (tiempo) tiempo.textContent = formatearTiempoReproductor(audio.currentTime);
 }
@@ -7700,11 +7819,13 @@ document.addEventListener("click", (evento) => {
         alternarReproductorAudio(boton);
         return;
     }
-    const pista = evento.target.closest?.("[data-reproductor-pista]");
+    // El salto funciona tocando la barra baja o las propias ondas.
+    const pista = evento.target.closest?.("[data-reproductor-pista], .reproductor-audio-ondas");
     if (pista) {
-        const audio = pista.closest(".reproductor-audio")?.querySelector("audio");
+        const contenedor = pista.closest(".reproductor-audio");
+        const audio = contenedor?.querySelector("audio");
         if (audio && Number.isFinite(audio.duration) && audio.duration > 0) {
-            const rect = pista.getBoundingClientRect();
+            const rect = contenedor.getBoundingClientRect();
             const ratio = Math.min(1, Math.max(0, (evento.clientX - rect.left) / rect.width));
             audio.currentTime = ratio * audio.duration;
             pintarProgresoReproductor(audio);
@@ -7730,6 +7851,8 @@ document.addEventListener("ended", (e) => {
     contenedor?.classList.remove("sonando");
     const relleno = contenedor?.querySelector(".reproductor-audio-relleno");
     if (relleno) relleno.style.width = "100%";
+    // Al acabar, la tira entera queda encendida: se ve que se rellenó del todo.
+    contenedor?.querySelectorAll(".reproductor-audio-ondas span").forEach((barra) => barra.classList.add("encendida"));
 }, true);
 
 function renderizarMediosPublicacion(multimedia = []) {

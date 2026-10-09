@@ -2967,6 +2967,63 @@ button.servidor-tarjeta:focus-visible {
     color: var(--peligro);
 }
 
+/* Botón PARAR de la fila de grabación: corta el audio y lo deja listo para
+   enviar (no lo tira). Lleva el acento de la web para que se vea la acción. */
+.boton-parar-grabacion {
+    min-height: 0;
+
+    padding: 5px 14px;
+
+    border: 0;
+    border-radius: var(--radio-full);
+
+    background: var(--acento);
+    color: var(--acento-texto);
+
+    font-size: 10px;
+    font-weight: 700;
+
+    cursor: pointer;
+}
+
+.boton-parar-grabacion:hover {
+    background: var(--acento-claro);
+}
+
+.boton-parar-grabacion:active {
+    transform: scale(0.95);
+}
+
+/* Tira de ondas de la grabación en vivo: 24 barras que se van encendiendo
+   según pasa el tiempo (al llenarse del todo se para sola) y cuya altura
+   sigue lo fuerte que hablas. */
+.grabacion-ondas {
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    height: 26px;
+    min-width: 40px;
+    overflow: hidden;
+}
+
+.grabacion-ondas span {
+    flex: 1 1 0;
+    min-width: 2px;
+    height: 100%;
+    border-radius: 2px;
+    background: var(--borde-medio);
+    opacity: 0.6;
+    transform: scaleY(0.25);
+    transform-origin: center;
+    transition: transform 0.12s linear, background 0.2s ease, opacity 0.2s ease;
+}
+
+.grabacion-ondas span.encendida {
+    background: var(--acento);
+    opacity: 1;
+}
+
 /* Pestaña de "oculto" junto al botón de enviar, solo en servidores. */
 
 .pastilla-oculto {
@@ -3057,6 +3114,15 @@ button.servidor-tarjeta:focus-visible {
 .adjunto-mensaje audio {
     width: 100%;
     min-width: 220px;
+}
+
+/* El reproductor propio dentro de un mensaje ocupa el ancho de la burbuja
+   sin romperla (los mensajes son estrechos: max 75%). */
+.adjunto-mensaje .reproductor-audio {
+    width: 100%;
+    min-width: 200px;
+    padding: 10px 12px;
+    gap: 10px;
 }
 
 .meta-mensaje-servidor {
@@ -7885,7 +7951,8 @@ button.estadistica-perfil:hover {
     display: block;
 }
 
-/* Ondas: 14 barras que se mueven de forma escalonada mientras suena. */
+/* Ondas: 30 barras con altura variada que se encienden en acento según el
+   avance (lo que falta queda apagado). Al sonar también respiran. */
 .reproductor-audio-ondas {
     flex: 1 1 auto;
     display: flex;
@@ -7894,39 +7961,50 @@ button.estadistica-perfil:hover {
     height: 32px;
     min-width: 0;
     overflow: hidden;
+    cursor: pointer;
 }
 
 .reproductor-audio-ondas span {
     flex: 1 1 0;
     min-width: 2px;
     max-width: 6px;
-    height: 100%;
     border-radius: 3px;
-    background: var(--acento);
-    opacity: 0.45;
-    transform: scaleY(0.28);
+    background: var(--borde-medio);
+    opacity: 0.7;
     transform-origin: center;
-    transition: transform 0.25s ease, opacity 0.25s ease;
+    transition: transform 0.25s ease, opacity 0.25s ease, background 0.25s ease;
 }
 
-.reproductor-audio.sonando .reproductor-audio-ondas span {
+/* Altura variada de fábrica para que parezca una forma de onda real. */
+.reproductor-audio-ondas span:nth-child(3n+1) { height: 45%; transform: scaleY(1); }
+.reproductor-audio-ondas span:nth-child(3n+2) { height: 80%; transform: scaleY(1); }
+.reproductor-audio-ondas span:nth-child(3n) { height: 60%; transform: scaleY(1); }
+.reproductor-audio-ondas span:nth-child(5n) { height: 100%; transform: scaleY(1); }
+.reproductor-audio-ondas span:nth-child(7n+3) { height: 30%; transform: scaleY(1); }
+
+/* Lo ya sonado se enciende con el color de acento de la web. */
+.reproductor-audio-ondas span.encendida {
+    background: var(--acento);
     opacity: 1;
+}
+
+.reproductor-audio.sonando .reproductor-audio-ondas span.encendida {
     animation: onda-reproductor 0.9s ease-in-out infinite;
 }
 
-.reproductor-audio.sonando .reproductor-audio-ondas span:nth-child(2n) {
+.reproductor-audio.sonando .reproductor-audio-ondas span.encendida:nth-child(2n) {
     animation-delay: 0.15s;
 }
 
-.reproductor-audio.sonando .reproductor-audio-ondas span:nth-child(3n) {
+.reproductor-audio.sonando .reproductor-audio-ondas span.encendida:nth-child(3n) {
     animation-delay: 0.3s;
 }
 
-.reproductor-audio.sonando .reproductor-audio-ondas span:nth-child(4n) {
+.reproductor-audio.sonando .reproductor-audio-ondas span.encendida:nth-child(4n) {
     animation-delay: 0.45s;
 }
 
-.reproductor-audio.sonando .reproductor-audio-ondas span:nth-child(5n) {
+.reproductor-audio.sonando .reproductor-audio-ondas span.encendida:nth-child(5n) {
     animation-delay: 0.6s;
 }
 

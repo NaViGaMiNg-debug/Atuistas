@@ -407,7 +407,18 @@ export async function obtenerAmigos(usuarioId: string) {
                   AND mp.leido_en IS NULL
                   AND cp.usuario_a_id = LEAST($1::uuid, u.id)
                   AND cp.usuario_b_id = GREATEST($1::uuid, u.id)
-            ) AS mensajes_sin_leer
+            ) AS mensajes_sin_leer,
+            -- Fecha del último mensaje que YO le escribí a este amigo: sirve
+            -- para ordenar la lista de chats por recencia (lo último escrito
+            -- primero; a quien nunca escribí queda al final, por nombre).
+            (
+                SELECT MAX(mp.creado_en)
+                FROM mensajes_privados mp
+                INNER JOIN conversaciones_privadas cp ON cp.id = mp.conversacion_id
+                WHERE mp.autor_id = $1::uuid
+                  AND cp.usuario_a_id = LEAST($1::uuid, u.id)
+                  AND cp.usuario_b_id = GREATEST($1::uuid, u.id)
+            ) AS ultimo_enviado
         FROM amistades a
         INNER JOIN usuarios u
             ON (
@@ -421,7 +432,7 @@ export async function obtenerAmigos(usuarioId: string) {
         LEFT JOIN archivos ar
             ON ar.id = u.avatar_archivo_id
         WHERE u.activo = TRUE
-        ORDER BY u.nombre
+        ORDER BY ultimo_enviado DESC NULLS LAST, u.nombre
         `,
         [usuarioId]
     );
