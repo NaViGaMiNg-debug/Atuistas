@@ -22,7 +22,10 @@ import fastifyStatic from "@fastify/static";
 import path from "node:path";
 
 const app = Fastify({
-    logger: true
+    logger: true,
+    // Detras del tunel de Cloudflare: respeta X-Forwarded-Proto/Host para
+    // que la app vea https://atuistas.com aunque escuche en http local.
+    trustProxy: true
 });
 
 // Limpieza de lo que caduca: estados, servidores temporales y mensajes viejos

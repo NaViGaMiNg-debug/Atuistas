@@ -718,3 +718,200 @@ export async function eliminarMensajesTexto(usuarioId: string, mensajeIds: strin
     }
     return { mensaje: ids.length === 1 ? "Mensaje eliminado" : `${ids.length} mensajes eliminados` };
 }
+
+// ============================================================
+// REENVIAR MENSAJES A UN AMIGO
+// Copia mensajes visibles (míos o ajenos) de un chat privado o de un
+// servidor al chat privado con un amigo. No se cita la respuesta original
+// y el autor pasa a ser quien reenvía, como en WhatsApp. La ubicación en
+// vivo se congela (enVivo: false): no se comparte el movimiento.
+// ============================================================
+
+export interface OrigenReenvio {
+    tipo?: "privado" | "servidor";
+    grupoId?: string;
+}
+
+const TIPOS_REENVIABLES = ["texto", "imagen", "audio", "video"] as const;
+
+function congelarUbicacion(datos: any): any | null {
+    const ubicacion = datos?.ubicacion;
+    if (!ubicacion || typeof ubicacion.lat !== "number" || typeof ubicacion.lon !== "number") {
+        return null;
+    }
+    return {
+        ubicacion: {
+            lat: ubicacion.lat,
+            lon: ubicacion.lon,
+            precision: Number(ubicacion.precision) || 0,
+            enVivo: false,
+            expiraEn: ubicacion.expiraEn ?? new Date().toISOString(),
+            nombre: String(ubicacion.nombre ?? "Ubicación").slice(0, 80) || "Ubicación"
+        }
+    };
+}
+
+async function leerPrivadosReenviables(usuarioId: string, ids: string[]) {
+    const resultado = await db.query(
+        `
+        SELECT mp.id, mp.conversacion_id, mp.autor_id, mp.tipo, mp.contenido,
+               mp.archivo_id, mp.datos, mp.creado_en
+        FROM mensajes_privados mp
+        INNER JOIN conversaciones_privadas cp ON cp.id = mp.conversacion_id
+        WHERE mp.id = ANY($1::uuid[])
+          AND (cp.usuario_a_id = $2::uuid OR cp.usuario_b_id = $2::uuid)
+        `,
+        [ids, usuarioId]
+    );
+    return resultado.rows as Array<{
+        id: string; conversacion_id: string; autor_id: string; tipo: string;
+        contenido: string | null; archivo_id: string | null; datos: any; creado_en: string;
+    }>;
+}
+
+async function leerGrupoReenviables(usuarioId: string, grupoId: string, ids: string[]) {
+    const miembro = await db.query(
+        `SELECT 1 FROM miembros_grupo WHERE grupo_id = $1 AND usuario_id = $2`,
+        [grupoId, usuarioId]
+    );
+    if (miembro.rowCount !== 1) {
+        throw new Error("Ya no estás en ese servidor");
+    }
+    const resultado = await db.query(
+        `
+        SELECT mg.id, mg.autor_id, mg.tipo, mg.contenido, mg.archivo_id,
+               mg.oculto, mg.datos, mg.creado_en
+        FROM mensajes_grupo mg
+        WHERE mg.id = ANY($1::uuid[]) AND mg.grupo_id = $2
+        `,
+        [ids, grupoId]
+    );
+    return resultado.rows as Array<{
+        id: string; autor_id: string; tipo: string; contenido: string | null;
+        archivo_id: string | null; oculto: boolean; datos: any; creado_en: string;
+    }>;
+}
+
+export async function reenviarMensajes(
+    usuarioId: string,
+    mensajeIds: string[],
+    destinatarioId: string,
+    origen: OrigenReenvio = {}
+) {
+    const ids = [...new Set((mensajeIds ?? []).map((id) => String(id ?? "").trim()).filter(Boolean))];
+    if (ids.length === 0 || ids.length > 10) {
+        throw new Error("Selecciona entre 1 y 10 mensajes para reenviar");
+    }
+    const destino = String(destinatarioId ?? "").trim();
+    if (!destino) {
+        throw new Error("Elige a quién reenviar los mensajes");
+    }
+
+    await comprobarConversacionPermitida(usuarioId, destino);
+    const conversacionId = await obtenerOCrearConversacion(usuarioId, destino);
+
+    const tipoOrigen = origen.tipo === "servidor" ? "servidor" : "privado";
+    let originales: Array<{
+        id: string; tipo: string; contenido: string | null;
+        archivo_id: string | null; datos: any; creado_en: string;
+    }> = [];
+
+    if (tipoOrigen === "servidor") {
+        const grupoId = String(origen.grupoId ?? "").trim();
+        if (!grupoId) {
+            throw new Error("Falta el servidor de origen");
+        }
+        const filas = await leerGrupoReenviables(usuarioId, grupoId, ids);
+        if (filas.length !== ids.length) {
+            throw new Error("Algunos mensajes ya no existen en ese servidor");
+        }
+        for (const fila of filas) {
+            // Oculto ajeno: su contenido está enmascarado y no se puede copiar.
+            if (fila.oculto && fila.autor_id !== usuarioId) {
+                throw new Error("Hay mensajes ocultos que no puedes reenviar");
+            }
+        }
+        originales = [...filas].sort((a, b) =>
+            new Date(a.creado_en).getTime() - new Date(b.creado_en).getTime()
+        );
+    } else {
+        const filas = await leerPrivadosReenviables(usuarioId, ids);
+        if (filas.length !== ids.length) {
+            throw new Error("Algunos mensajes ya no existen en ese chat");
+        }
+        originales = [...filas].sort((a, b) =>
+            new Date(a.creado_en).getTime() - new Date(b.creado_en).getTime()
+        );
+    }
+
+    let creados = 0;
+    for (const original of originales) {
+        const tipo = original.tipo as (typeof TIPOS_REENVIABLES)[number];
+        if (!TIPOS_REENVIABLES.includes(tipo)) {
+            throw new Error("Hay mensajes de un tipo que no se puede reenviar");
+        }
+        const texto = (original.contenido ?? "").trim();
+        if (tipo === "texto" && !texto && !original.datos?.ubicacion) {
+            throw new Error("Hay mensajes vacíos que no se pueden reenviar");
+        }
+        if (texto.length > 5000) {
+            throw new Error("Hay mensajes demasiado largos para reenviar");
+        }
+        let archivoId: string | null = null;
+        if (tipo !== "texto") {
+            if (!original.archivo_id) {
+                throw new Error("Hay adjuntos que ya no existen");
+            }
+            // El archivo puede ser del otro: basta el mensaje visible de origen.
+            const existe = await db.query(`SELECT 1 FROM archivos WHERE id = $1`, [original.archivo_id]);
+            if (existe.rowCount !== 1) {
+                throw new Error("Hay adjuntos que ya no existen");
+            }
+            archivoId = original.archivo_id;
+        }
+        const datosFrios = congelarUbicacion(original.datos);
+        const contenidoFinal = tipo === "texto" && !texto && datosFrios
+            ? `📍 ${datosFrios.ubicacion.nombre}`
+            : (texto || null);
+        const insertado = await db.query(
+            `
+            INSERT INTO mensajes_privados (
+                conversacion_id, autor_id, tipo, contenido, archivo_id, datos
+            )
+            VALUES ($1, $2, $3, $4, $5, $6::jsonb)
+            RETURNING id
+            `,
+            [
+                conversacionId,
+                usuarioId,
+                tipo,
+                contenidoFinal,
+                archivoId,
+                datosFrios ? JSON.stringify(datosFrios) : '{}'
+            ]
+        );
+        if (insertado.rowCount === 1) {
+            creados += 1;
+        }
+    }
+
+    if (creados === 0) {
+        throw new Error("No se pudo reenviar ningún mensaje");
+    }
+
+    const resumen = creados === 1 ? "Te ha reenviado un mensaje" : `Te ha reenviado ${creados} mensajes`;
+    await crearNotificacion(
+        destino,
+        "mensajes_privados",
+        "mensaje_privado",
+        "Mensaje reenviado",
+        resumen,
+        { usuarioId },
+        usuarioId
+    );
+
+    return {
+        mensaje: creados === 1 ? "Mensaje reenviado" : `${creados} mensajes reenviados`,
+        reenviados: creados
+    };
+}

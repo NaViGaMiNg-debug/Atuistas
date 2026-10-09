@@ -1476,6 +1476,8 @@
                         <div id="controles-grabar-audio" class="controles-grabar-audio" hidden>
                             <button id="boton-iniciar-audio" type="button">GRABAR AUDIO</button>
                             <button id="boton-detener-audio" type="button" disabled>DETENER</button>
+                            <button id="boton-pausar-audio" type="button" disabled hidden>PAUSAR</button>
+                            <button id="boton-borrar-audio" type="button" disabled hidden>BORRAR</button>
                             <audio id="vista-previa-audio" controls hidden></audio>
                         </div>
                         <label class="selector-audiencia-social" for="visibilidad-estado">Quién puede verlo</label>
@@ -1918,7 +1920,7 @@
 
                         <div id="lista-items-historia" class="lista-items-historia"></div>
 
-                        <div class="acciones-historia">
+                        <div id="acciones-historia" class="acciones-historia">
                             <button id="boton-guardar-historia" type="button">GUARDAR NOMBRE</button>
                             <button id="boton-borrar-historia" type="button" hidden>BORRAR HISTORIA</button>
                         </div>
@@ -2224,7 +2226,7 @@
 
                     <button
                         id="cerrar-fotos-chat"
-                        class="boton-cerrar-modal"
+                        class="boton-cerrar-modal boton-cerrar-fotos-chat"
                         type="button"
                         aria-label="Cerrar"
                     >
@@ -2527,7 +2529,10 @@
             </div>
 
     <script src="/data/emojis.js"></script>
-    <script src="/app.js"></script>
+    <!-- ?v tiene que subir junto con VERSION en sw.js cada vez que cambie
+         app.js: sin esa firma, la caché del navegador y la del service worker
+         sirven el fichero viejo para siempre y los arreglos no llegan nunca. -->
+    <script src="/app.js?v=24"></script>
 
 </body>
 

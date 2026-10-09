@@ -9,6 +9,7 @@ import {
     enviarMensajeAdjunto,
     editarMensajeTexto,
     eliminarMensajesTexto,
+    reenviarMensajes,
     enviarUbicacion,
     actualizarUbicacion,
     detenerUbicacion
@@ -325,6 +326,31 @@ export async function mensajesRoutes(app: FastifyInstance) {
             return await eliminarMensajesTexto(request.usuario!.id, request.body.mensajeIds ?? []);
         } catch (error) {
             const message = error instanceof Error ? error.message : "No se pudieron eliminar los mensajes";
+            return reply.code(400).send({ error: message });
+        }
+    });
+
+    // Reenviar mensajes visibles (míos o ajenos) de un chat privado o de un
+    // servidor al chat privado con un amigo. El destino es siempre privado.
+    app.post<{
+        Body: {
+            mensajeIds?: string[];
+            destinatarioId?: string;
+            origen?: { tipo?: "privado" | "servidor"; grupoId?: string };
+        }
+    }>("/api/mensajes/reenviar", {
+        preHandler: autenticar
+    }, async (request, reply) => {
+        try {
+            const resultado = await reenviarMensajes(
+                request.usuario!.id,
+                request.body.mensajeIds ?? [],
+                request.body.destinatarioId ?? "",
+                request.body.origen ?? {}
+            );
+            return reply.code(201).send(resultado);
+        } catch (error) {
+            const message = error instanceof Error ? error.message : "No se pudo reenviar";
             return reply.code(400).send({ error: message });
         }
     });

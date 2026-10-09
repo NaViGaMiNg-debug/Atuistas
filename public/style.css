@@ -1,5 +1,7 @@
 * {
     box-sizing: border-box;
+    /* Al tocar no se pinta el recuadro azul de resaltado del navegador. */
+    -webkit-tap-highlight-color: transparent;
 }
 
 /*
@@ -6213,6 +6215,7 @@ button.servidor-tarjeta:focus-visible {
 }
 
 .contenido-historia-pantalla {
+    position: relative;
     width: min(100vw, 56.25vh);
     height: min(100vh, 177.78vw);
     max-width: 100%;
@@ -6463,14 +6466,23 @@ button.servidor-tarjeta:focus-visible {
     align-items: center;
     justify-content: center;
     overflow: hidden;
-    background: #000;
+    /* Negro puro de base: al salir deslizando se atenúa a transparente. */
+    background: rgba(0, 0, 0, 1);
 }
 
 .dialogo-fotos-chat .boton-cerrar-modal {
     position: absolute;
     top: max(12px, env(safe-area-inset-top));
-    right: max(12px, env(safe-area-inset-right));
-    z-index: 2;
+    right: auto;
+    left: max(12px, env(safe-area-inset-left));
+    z-index: 3;
+    background: rgba(0, 0, 0, 0.5);
+}
+
+/* La X del visor va arriba a la izquierda, como en los estados. */
+.boton-cerrar-fotos-chat {
+    left: max(12px, env(safe-area-inset-left));
+    right: auto;
 }
 
 .fotos-chat-pista {
@@ -7768,4 +7780,227 @@ button.estadistica-perfil:hover {
     right: 12px;
     bottom: 24px;
     z-index: 3;
+}
+
+/* ============================== TÍTULO DE UN ESTADO CON MULTIMEDIA
+   Cuando el estado lleva texto y además foto/vídeo/audio, el texto se pinta
+   como título superpuesto arriba, no como bloque centrado. ============================== */
+.titulo-historia-pantalla {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 3;
+    margin: 0;
+    padding: 58px 18px 26px;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.72), rgba(0, 0, 0, 0));
+    color: #fff;
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 1.3;
+    text-align: center;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.85);
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+    pointer-events: none;
+}
+
+/* ============================== DESPEJAR LA PANTALLA CON PULSACIÓN LARGA
+   Al mantener pulsado el centro del visor se ocultan la cabecera, el progreso
+   y la barra de comentarios; el contenido queda solo. ============================== */
+.progreso-historias,
+.cabecera-historia-pantalla,
+.barra-comentario-estado {
+    transition: opacity 0.2s ease;
+}
+
+.visor-historias-pantalla.historia-despejada .progreso-historias,
+.visor-historias-pantalla.historia-despejada .cabecera-historia-pantalla,
+.visor-historias-pantalla.historia-despejada .barra-comentario-estado {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* ============================== REPRODUCTOR DE AUDIO PROPIO
+   Sustituye al <audio controls> nativo: botón de play/pausa, ondas que se
+   mueven mientras suena y barra de progreso con brillo, todo con el color de
+   acento y los fondos oscuros de la web. ============================== */
+.reproductor-audio {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 13px 14px;
+    background: #101010;
+    border: 1px solid var(--borde-suave);
+    border-radius: var(--radio-md);
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+.reproductor-audio > audio {
+    display: none;
+}
+
+.reproductor-audio-boton {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: var(--acento);
+    color: var(--acento-texto);
+    cursor: pointer;
+    transition: transform var(--transicion-rapida), background var(--transicion-rapida);
+}
+
+.reproductor-audio-boton:hover {
+    background: var(--acento-claro);
+}
+
+.reproductor-audio-boton:active {
+    transform: scale(0.92);
+}
+
+.reproductor-audio-icono {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+}
+
+.reproductor-audio-boton .pausa {
+    display: none;
+}
+
+.reproductor-audio.sonando .reproductor-audio-boton .reproducir {
+    display: none;
+}
+
+.reproductor-audio.sonando .reproductor-audio-boton .pausa {
+    display: block;
+}
+
+/* Ondas: 14 barras que se mueven de forma escalonada mientras suena. */
+.reproductor-audio-ondas {
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    height: 32px;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.reproductor-audio-ondas span {
+    flex: 1 1 0;
+    min-width: 2px;
+    max-width: 6px;
+    height: 100%;
+    border-radius: 3px;
+    background: var(--acento);
+    opacity: 0.45;
+    transform: scaleY(0.28);
+    transform-origin: center;
+    transition: transform 0.25s ease, opacity 0.25s ease;
+}
+
+.reproductor-audio.sonando .reproductor-audio-ondas span {
+    opacity: 1;
+    animation: onda-reproductor 0.9s ease-in-out infinite;
+}
+
+.reproductor-audio.sonando .reproductor-audio-ondas span:nth-child(2n) {
+    animation-delay: 0.15s;
+}
+
+.reproductor-audio.sonando .reproductor-audio-ondas span:nth-child(3n) {
+    animation-delay: 0.3s;
+}
+
+.reproductor-audio.sonando .reproductor-audio-ondas span:nth-child(4n) {
+    animation-delay: 0.45s;
+}
+
+.reproductor-audio.sonando .reproductor-audio-ondas span:nth-child(5n) {
+    animation-delay: 0.6s;
+}
+
+@keyframes onda-reproductor {
+    0%, 100% { transform: scaleY(0.28); }
+    50% { transform: scaleY(1); }
+}
+
+.reproductor-audio-tiempo {
+    flex: 0 0 auto;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    color: var(--texto-secundario);
+    min-width: 34px;
+    text-align: right;
+}
+
+/* Barra de progreso con brillo que recorre el tramo reproducido. */
+.reproductor-audio-pista {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 5px;
+    background: rgba(255, 255, 255, 0.1);
+    cursor: pointer;
+    overflow: hidden;
+}
+
+.reproductor-audio-relleno {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 0%;
+    background: var(--acento);
+    overflow: hidden;
+    transition: width 0.15s linear;
+}
+
+.reproductor-audio-relleno::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 46px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+    transform: translateX(-60px);
+    animation: brillo-reproductor 1.5s ease-in-out infinite;
+}
+
+.reproductor-audio:not(.sonando) .reproductor-audio-relleno::after {
+    animation-play-state: paused;
+    opacity: 0;
+}
+
+@keyframes brillo-reproductor {
+    from { transform: translateX(-60px); }
+    to { transform: translateX(400px); }
+}
+
+/* Los estados en el feed y en el visor usan .contenido-multimedia-social;
+   hay que darles el ancho del reproductor para que no quede raro. */
+.tarjeta-historia > .reproductor-audio,
+.estado-texto-amigo .reproductor-audio {
+    position: absolute;
+    inset: 0;
+    width: auto;
+    border: 0;
+    border-radius: 0;
+    background: rgba(0, 0, 0, 0.35);
+}
+
+.contenido-historia-pantalla > .reproductor-audio {
+    width: calc(100% - 32px);
 }

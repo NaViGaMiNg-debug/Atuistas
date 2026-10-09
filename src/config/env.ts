@@ -14,7 +14,7 @@ export const env = {
 
     vapidPublicKey: process.env.ATUISTAS_VAPID_PUBLIC_KEY ?? "",
     vapidPrivateKey: process.env.ATUISTAS_VAPID_PRIVATE_KEY ?? "",
-    vapidSubject: process.env.ATUISTAS_VAPID_SUBJECT ?? "mailto:admin@atuistas.local",
+    vapidSubject: process.env.ATUISTAS_VAPID_SUBJECT ?? "mailto:admin@atuistas.com",
 
     // Proveedor de GIF y stickers. Tenor apagó su API el 30 de junio de 2026
     // y ya no admite clientes nuevos, así que el servicio es Giphy, que además

@@ -24,6 +24,7 @@ const comprobar = (ok, texto) => {
 const html = fs.readFileSync(path.join(raiz, "public", "index.html"), "utf8");
 const css = fs.readFileSync(path.join(raiz, "public", "style.css"), "utf8");
 const app = fs.readFileSync(path.join(raiz, "public", "app.js"), "utf8");
+const appSinVersion = fs.readFileSync(path.join(raiz, "public", "sw.js"), "utf8");
 
 // Devuelve el cuerpo de la regla cuyo selector coincide exactamente.
 function reglaDe(selector) {
@@ -142,6 +143,27 @@ comprobar(
 comprobar(
     app.includes('["lista-mensajes", "mensajes-servidor"]'),
     "Se puede abrir una foto desde cualquier conversacion"
+);
+comprobar(html.includes("boton-cerrar-fotos-chat"), "La X del visor tiene su propia clase");
+comprobar(
+    /\.boton-cerrar-fotos-chat[\s\S]{0,160}left:/.test(css),
+    "La X del visor esta arriba a la izquierda"
+);
+comprobar(
+    app.includes("vistaPreviaSalidaFotoChat") && app.includes("restablecerSalidaFotoChat"),
+    "Al arrastrar en vertical la foto sigue al dedo y el fondo se atenua"
+);
+comprobar(
+    /Math\.abs\(deltaY\) > Math\.abs\(deltaX\)[\s\S]{0,160}cerrarFotosChat\(\)/.test(app),
+    "Deslizando arriba o abajo se sale del visor en cualquier foto"
+);
+comprobar(
+    app.includes("document.elementFromPoint(evento.clientX, evento.clientY)"),
+    "El toque abre la foto aunque el gesto del mensaje capture el puntero"
+);
+comprobar(
+    html.includes("/app.js?v=24") && appSinVersion.includes('"/app.js?v=24"'),
+    "El HTML y el service worker sirven el JS nuevo y no la copia vieja"
 );
 
 console.log("");

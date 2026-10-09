@@ -853,6 +853,9 @@ let respuestaGrupoActual = null;
 let mensajeRespuestaChat = null;
 let mensajeEdicionChat = null;
 let mensajesSeleccionadosChat = new Set();
+// Mapa id -> mensaje para saber si lo marcado se puede borrar (solo míos
+// de texto) o solo reenviar (cualquiera visible).
+const mensajesChatPorId = new Map();
 let gestoChatEnCurso = false;
 let interaccionChatEnCurso = false;
 let temporizadorBusquedaGrupo = null;
@@ -872,9 +875,11 @@ const buscadorServidores = document.getElementById("buscador-servidores");
 const panelServidor = document.getElementById("panel-servidor");
 const zonaChatServidor = document.querySelector("#panel-servidor .zona-chat-servidor");
 const mensajesServidor = document.getElementById("mensajes-servidor");
-// Mensajes de servidor marcados con pulsación larga para borrarlos,
-// igual que la selección del chat privado.
+// Mensajes de servidor marcados con pulsación larga para reenviarlos o
+// borrarlos, igual que la selección del chat privado.
 let mensajesSeleccionadosServidor = new Set();
+// Mapa id -> mensaje para decidir si la papelera se enseña.
+const mensajesServidorPorId = new Map();
 const modalEstado = document.getElementById("modal-estado");
 const modalPublicacion = document.getElementById("modal-publicacion");
 const modalEditorFoto = document.getElementById("modal-editor-foto");
@@ -883,6 +888,7 @@ let flujoAudio = null;
 let blobAudioEstado = null;
 let misEstadosActuales = [];
 let limiteGrabacionAudio = null;
+let descartarGrabacionAudio = false;
 let registroServiceWorker = null;
 const secuenciasEstadosFeed = new Map();
 let indiceHistoriaActual = 0;
@@ -2049,9 +2055,11 @@ async function enviarMedioSeleccionado(url, destino, idEntrada) {
    VISOR DE FOTOS DEL CHAT
    Pulsar la foto de un mensaje la abre
    en grande: se amplia con la rueda,
-   doble pulsación o pellizco, y se
-   cambia de foto deslizando con el
-   dedo (o con las flechas, en ratón).
+   doble pulsación o pellizco, se cambia
+   de foto deslizando a los lados (o con
+   las flechas, en ratón) y se sale con
+   la X de arriba a la izquierda o
+   deslizando arriba o abajo.
    ============================== */
 
 let fotosChatAbiertas = [];
@@ -2066,6 +2074,35 @@ function aplicarTransformFotoChat() {
     if (!imagen || !imagen.style) return;
     imagen.style.transform =
         `translate(${desplazFotoChat.x}px, ${desplazFotoChat.y}px) scale(${escalaFotoChat})`;
+    restablecerSalidaFotoChat();
+}
+
+function obtenerDialogoFotosChat() {
+    return document.querySelector("#modal-fotos-chat .dialogo-fotos-chat");
+}
+
+/* Al arrastrar en vertical se atenúa el fondo para avisar de que al soltar
+   se sale del visor, como en los estados. */
+function vistaPreviaSalidaFotoChat(deltaX, deltaY) {
+    const imagen = document.getElementById("foto-chat-grande");
+    const dialogo = obtenerDialogoFotosChat();
+    if (imagen?.style) {
+        imagen.style.transition = "none";
+        imagen.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(1)`;
+    }
+    if (dialogo?.style) {
+        const vertical = Math.abs(deltaY);
+        const horizontal = Math.abs(deltaX);
+        const arrastreVertical = vertical > horizontal ? vertical : 0;
+        dialogo.style.background = `rgba(0, 0, 0, ${Math.max(0, 1 - arrastreVertical / 320)})`;
+    }
+}
+
+function restablecerSalidaFotoChat() {
+    const imagen = document.getElementById("foto-chat-grande");
+    const dialogo = obtenerDialogoFotosChat();
+    if (imagen?.style) imagen.style.transition = "";
+    if (dialogo?.style) dialogo.style.background = "";
 }
 
 function pintarFotoChat(indice) {
@@ -2103,6 +2140,7 @@ function cerrarFotosChat() {
     punterosFotoChat.clear();
     arrastreFotoChat = null;
     fotosChatAbiertas = [];
+    restablecerSalidaFotoChat();
     document.getElementById("modal-fotos-chat").hidden = true;
 }
 
@@ -2133,11 +2171,26 @@ document.addEventListener("keydown", (evento) => {
 });
 
 // Pulsar una foto de cualquier conversación (privada o de servidor) la abre.
+// OJO: el gesto del mensaje hace setPointerCapture en pointerdown, así que
+// cuando el clic llega el evento.target ya no es la foto sino el mensaje.
+// Por eso se busca también bajo el puntero y, si el mensaje solo trae una
+// foto, se usa esa.
 for (const contenedorId of ["lista-mensajes", "mensajes-servidor"]) {
     document.getElementById(contenedorId)?.addEventListener("click", (evento) => {
         // Con la selección de mensajes activa, el toque selecciona: no se abre.
         if (typeof mensajesSeleccionadosChat !== "undefined" && mensajesSeleccionadosChat.size > 0) return;
-        const imagen = evento.target.closest?.(".adjunto-mensaje img");
+        if (typeof mensajesSeleccionadosServidor !== "undefined" && mensajesSeleccionadosServidor.size > 0) return;
+        let imagen = evento.target.closest?.(".adjunto-mensaje img") ?? null;
+        if (!imagen && typeof document.elementFromPoint === "function"
+            && Number.isFinite(evento.clientX) && Number.isFinite(evento.clientY)) {
+            const bajoPuntero = document.elementFromPoint(evento.clientX, evento.clientY);
+            imagen = bajoPuntero?.closest?.(".adjunto-mensaje img") ?? null;
+        }
+        if (!imagen) {
+            const mensaje = evento.target.closest?.(".mensaje-chat");
+            const fotos = mensaje ? [...mensaje.querySelectorAll(".adjunto-mensaje img")] : [];
+            if (fotos.length === 1) imagen = fotos[0];
+        }
         if (imagen) abrirFotosChat(contenedorId, imagen);
     });
 }
@@ -2206,13 +2259,16 @@ if (pistaFotosChat) {
         if (Math.abs(deltaX) > 8 || Math.abs(deltaY) > 8) arrastreFotoChat.movido = true;
 
         // Ampliada, el dedo arrastra la foto; al tamaño normal se guarda el
-        // movimiento para decidir al soltar si se cambia de foto.
+        // movimiento para decidir al soltar si se cambia de foto (a los
+        // lados) o se sale del visor (arriba o abajo).
         if (escalaFotoChat > 1) {
             desplazFotoChat = {
                 x: arrastreFotoChat.origenX + deltaX,
                 y: arrastreFotoChat.origenY + deltaY
             };
             aplicarTransformFotoChat();
+        } else {
+            vistaPreviaSalidaFotoChat(deltaX, deltaY);
         }
     });
 
@@ -2224,11 +2280,20 @@ if (pistaFotosChat) {
             arrastreFotoChat && !arrastreFotoChat.pinch && escalaFotoChat === 1 && arrastreFotoChat.movido
         );
         const deltaX = arrastreFotoChat ? evento.clientX - arrastreFotoChat.inicioX : 0;
+        const deltaY = arrastreFotoChat ? evento.clientY - arrastreFotoChat.inicioY : 0;
 
         if (punterosFotoChat.size === 0) {
             arrastreFotoChat = null;
-            // Deslizar a un lado y a otro pasa de foto, como en los estados.
-            if (eraDesliz && Math.abs(deltaX) > 60) cambiarFotoChat(deltaX < 0 ? 1 : -1);
+            // Al tamaño normal, deslizar a un lado y a otro pasa de foto y
+            // deslizar arriba o abajo sale del visor, en cualquier foto.
+            if (eraDesliz) {
+                if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > 70) {
+                    cerrarFotosChat();
+                    return;
+                }
+                if (Math.abs(deltaX) > 60) cambiarFotoChat(deltaX < 0 ? 1 : -1);
+                else aplicarTransformFotoChat();
+            } else aplicarTransformFotoChat();
             if (escalaFotoChat < 1) {
                 escalaFotoChat = 1;
                 aplicarTransformFotoChat();
@@ -2771,6 +2836,8 @@ function pintarMensajesChat(listaMensajes, mensajes) {
     mensajes.forEach((mensaje) => {
         const previo = existentes.get(mensaje.id);
         existentes.delete(mensaje.id);
+        // Ficha para la barra de selección: decide si la papelera se enseña.
+        mensajesChatPorId.set(mensaje.id, mensaje);
 
         // Mismo mensaje y mismo contenido: no se toca el nodo, y con él se
         // quedan intactos la foto, el audio en marcha y el mapa ya descargado.
@@ -2908,6 +2975,7 @@ function limpiarEstadoGestosChat() {
     mensajeRespuestaChat = null;
     mensajeEdicionChat = null;
     mensajesSeleccionadosChat = new Set();
+    mensajesChatPorId.clear();
     gestoChatEnCurso = false;
     interaccionChatEnCurso = false;
     const citaRespuesta = document.getElementById("cita-respuesta-chat");
@@ -2981,24 +3049,40 @@ function activarEdicionChat(mensaje) {
 }
 
 function alternarSeleccionMensajeChat(mensaje, elemento) {
-    if (!mensaje.es_mio) return;
+    // Reenviar vale para cualquiera visible; borrar se filtra en la barra.
     if (mensajesSeleccionadosChat.has(mensaje.id)) {
         mensajesSeleccionadosChat.delete(mensaje.id);
         elemento?.classList.remove("mensaje-chat-seleccionado");
     } else {
+        mensajesChatPorId.set(mensaje.id, mensaje);
         mensajesSeleccionadosChat.add(mensaje.id);
         elemento?.classList.add("mensaje-chat-seleccionado");
     }
     actualizarBarraSeleccionChat();
 }
 
+function puedeBorrarSeleccionChat() {
+    if (mensajesSeleccionadosChat.size === 0) return false;
+    for (const id of mensajesSeleccionadosChat) {
+        const mensaje = mensajesChatPorId.get(id);
+        // Sin ficha (nodo viejo): solo se deja reenviar, no borrar.
+        if (!mensaje || !mensaje.es_mio || (mensaje.tipo || "texto") !== "texto") return false;
+    }
+    return true;
+}
+
 function actualizarBarraSeleccionChat() {
     const barra = document.getElementById("barra-seleccion-chat");
     const contador = document.getElementById("contador-seleccion-chat");
+    const botonReenviar = document.getElementById("boton-reenviar-seleccion-chat");
+    const botonBorrar = document.getElementById("boton-borrar-seleccion-chat");
     if (!barra || !contador) return;
     const total = mensajesSeleccionadosChat.size;
     barra.hidden = total === 0;
     contador.textContent = total === 1 ? "1 seleccionado" : `${total} seleccionados`;
+    // Reenviar: cualquiera marcado. Borrar: solo míos de texto.
+    if (botonReenviar) botonReenviar.hidden = total === 0;
+    if (botonBorrar) botonBorrar.hidden = !puedeBorrarSeleccionChat();
 }
 
 function configurarGestoMensajeChat(elemento, mensaje) {
@@ -3059,7 +3143,7 @@ function configurarGestoMensajeChat(elemento, mensaje) {
         limpiarSeleccion();
         const idPuntero = evento.pointerId;
         temporizadorSeleccion = setTimeout(() => {
-            if (!movido && mensaje.es_mio && punteroActivo === idPuntero) {
+            if (!movido && punteroActivo === idPuntero) {
                 alternarSeleccionMensajeChat(mensaje, elemento);
                 punteroActivo = null;
                 interaccionChatEnCurso = false;
@@ -3109,7 +3193,7 @@ function configurarGestoMensajeChat(elemento, mensaje) {
         ocultarIndicadorGestoChat();
         gestoChatEnCurso = false;
         if (!movido) {
-            if (mensajesSeleccionadosChat.size > 0 && mensaje.es_mio) {
+            if (mensajesSeleccionadosChat.size > 0) {
                 alternarSeleccionMensajeChat(mensaje, elemento);
             }
             desplazamiento = 0;
@@ -3176,6 +3260,7 @@ async function eliminarSeleccionChat() {
             body: JSON.stringify({ mensajeIds: [...mensajesSeleccionadosChat] })
         });
         mensajesSeleccionadosChat = new Set();
+        mensajesChatPorId.clear();
         actualizarBarraSeleccionChat();
         await cargarMensajesChat();
     } catch (error) {
@@ -3187,10 +3272,156 @@ document.getElementById("boton-borrar-seleccion-chat")?.addEventListener("click"
 
 document.getElementById("boton-cancelar-seleccion-chat")?.addEventListener("click", () => {
     mensajesSeleccionadosChat = new Set();
+    mensajesChatPorId.clear();
     document.querySelectorAll(".mensaje-chat-seleccionado").forEach((nodo) => {
         nodo.classList.remove("mensaje-chat-seleccionado");
     });
     actualizarBarraSeleccionChat();
+});
+
+/* ==============================
+   REENVIAR MENSAJES A UN AMIGO
+   Vale desde el chat privado y desde el servidor. El destino es
+   siempre un chat privado: se elige al amigo en el modal.
+   ============================== */
+
+// Origen pendiente: { tipo: "privado" } o { tipo: "servidor", grupoId }.
+let reenvioPendiente = null;
+
+function limpiarReenvioPendiente() {
+    reenvioPendiente = null;
+    const estado = document.getElementById("estado-reenviar-mensaje");
+    if (estado) estado.textContent = "";
+}
+
+function cerrarModalReenviar() {
+    const modal = document.getElementById("modal-reenviar-mensaje");
+    if (modal) modal.hidden = true;
+    limpiarReenvioPendiente();
+}
+
+function limpiarSeleccionReenvio() {
+    mensajesSeleccionadosChat = new Set();
+    mensajesChatPorId.clear();
+    mensajesSeleccionadosServidor = new Set();
+    mensajesServidorPorId.clear();
+    document.querySelectorAll(".mensaje-chat-seleccionado").forEach((nodo) => {
+        nodo.classList.remove("mensaje-chat-seleccionado");
+    });
+    actualizarBarraSeleccionChat();
+    actualizarBarraSeleccionServidor();
+}
+
+async function abrirModalReenviar(origen) {
+    const total = origen.tipo === "servidor"
+        ? mensajesSeleccionadosServidor.size
+        : mensajesSeleccionadosChat.size;
+    if (total === 0) return;
+    reenvioPendiente = {
+        tipo: origen.tipo,
+        grupoId: origen.grupoId ?? null,
+        total
+    };
+    const modal = document.getElementById("modal-reenviar-mensaje");
+    const lista = document.getElementById("lista-reenviar-mensaje");
+    const estado = document.getElementById("estado-reenviar-mensaje");
+    if (!modal || !lista) return;
+    if (estado) estado.textContent = "";
+    const titulo = document.getElementById("titulo-reenviar-mensaje");
+    if (titulo) {
+        titulo.textContent = total === 1
+            ? "Reenviar 1 mensaje a..."
+            : `Reenviar ${total} mensajes a...`;
+    }
+    lista.innerHTML = '<p class="estado-amigos">Cargando amigos...</p>';
+    modal.hidden = false;
+    try {
+        const datos = await solicitarGrupo("/api/amigos");
+        const amigos = datos.amigos || [];
+        if (!amigos.length) {
+            lista.innerHTML = '<p class="estado-amigos">Todavía no tienes amigos.</p>';
+            return;
+        }
+        lista.innerHTML = "";
+        for (const amigo of amigos) {
+            const fila = document.createElement("button");
+            fila.type = "button";
+            fila.className = "persona-resultado";
+            fila.innerHTML = `
+                <span class="persona-resultado-info">
+                    <span class="persona-resultado-avatar">${
+                        amigo.avatar_url
+                            ? `<img src="/${escapeHtml(amigo.avatar_url)}" alt="">`
+                            : ""
+                    }</span>
+                    <span class="persona-resultado-datos">
+                        <strong style="${estiloNombre(amigo.color_nombre)}">${escapeHtml(nombreVisible(amigo.id, amigo.nombre))}</strong>
+                    </span>
+                </span>`;
+            fila.addEventListener("click", () => reenviarA(amigo));
+            lista.appendChild(fila);
+        }
+    } catch (error) {
+        lista.innerHTML = "";
+        if (estado) estado.textContent = error.message || "No se pudieron cargar los amigos";
+    }
+}
+
+async function reenviarA(amigo) {
+    const estado = document.getElementById("estado-reenviar-mensaje");
+    if (!reenvioPendiente || !amigo?.id) return;
+    const ids = reenvioPendiente.tipo === "servidor"
+        ? [...mensajesSeleccionadosServidor]
+        : [...mensajesSeleccionadosChat];
+    if (!ids.length) {
+        cerrarModalReenviar();
+        return;
+    }
+    if (estado) estado.textContent = "Reenviando...";
+    try {
+        const cuerpo = {
+            mensajeIds: ids,
+            destinatarioId: amigo.id,
+            origen: reenvioPendiente.tipo === "servidor"
+                ? { tipo: "servidor", grupoId: reenvioPendiente.grupoId }
+                : { tipo: "privado" }
+        };
+        const datos = await solicitarGrupo("/api/mensajes/reenviar", {
+            method: "POST",
+            body: JSON.stringify(cuerpo)
+        });
+        const eraServidor = reenvioPendiente.tipo === "servidor";
+        cerrarModalReenviar();
+        limpiarSeleccionReenvio();
+        // Si el destino es el chat abierto, se recarga para verlo llegar.
+        if (!eraServidor && amigoChatActual && amigoChatActual.id === amigo.id) {
+            await cargarMensajesChat();
+        }
+        alert(datos?.mensaje || "Mensaje reenviado");
+    } catch (error) {
+        if (estado) estado.textContent = error.message || "No se pudo reenviar";
+    }
+}
+
+document.getElementById("boton-reenviar-seleccion-chat")?.addEventListener("click", () => {
+    abrirModalReenviar({ tipo: "privado" });
+});
+
+document.getElementById("boton-reenviar-seleccion-servidor")?.addEventListener("click", () => {
+    if (!grupoActual) return;
+    abrirModalReenviar({ tipo: "servidor", grupoId: grupoActual.id });
+});
+
+document.getElementById("boton-cerrar-reenviar-mensaje")?.addEventListener("click", cerrarModalReenviar);
+
+document.getElementById("modal-reenviar-mensaje")?.addEventListener("click", (evento) => {
+    if (evento.target === document.getElementById("modal-reenviar-mensaje")) cerrarModalReenviar();
+});
+
+document.addEventListener("keydown", (evento) => {
+    if (evento.key !== "Escape") return;
+    const modal = document.getElementById("modal-reenviar-mensaje");
+    if (modal && !modal.hidden) cerrarModalReenviar();
 });
 
 // ========================================
@@ -3359,6 +3590,7 @@ async function abrirChatPorId(usuarioId) {
 let seccionActual = "entrar";
 
 function mostrarSeccion(seccion, opciones = {}) {
+    trazaHistorial("seccion", seccion);
     const panelChat = document.getElementById("panel-chat");
 
     if (panelChat) {
@@ -3463,33 +3695,110 @@ function mostrarSeccion(seccion, opciones = {}) {
 
 let capasApiladas = 0;
 let gestionandoAtras = false;
-let desapilandoPorInterfaz = false;
+let backEnCurso = false;
+let backsPendientes = 0;
+
+// Diagnóstico temporal del botón atrás: cada paso manda un beacon cuya URL
+// queda registrada en el log del servidor (POST /__hist?...). Sirve para ver
+// desde el móvil qué historial real está manejando la app mientras se cierra
+// el fallo de la fuga a Google. Se quita cuando quede cerrado.
+function trazaHistorial(accion, detalle) {
+    try {
+        const q = new URLSearchParams({
+            a: accion,
+            s: JSON.stringify(window.history?.state ?? null) ?? "null",
+            c: String(capasApiladas),
+            p: String(backsPendientes),
+            u: location.href
+        });
+        if (detalle) q.set("d", detalle);
+        navigator.sendBeacon?.(`/__hist?${q.toString()}`, "");
+    } catch {
+        // El diagnóstico nunca puede romper la app.
+    }
+}
 
 function apilarCapa() {
-    window.history?.pushState?.({ capa: true }, "");
-    capasApiladas += 1;
+    try {
+        window.history?.pushState?.({ capa: "capa" }, "");
+        capasApiladas += 1;
+        trazaHistorial("push", "capa");
+    } catch {
+        // Sin historial (incrustado, PWA rara): no se apila nada.
+    }
+}
+
+// Gasta una entrada del historial con UN solo history.back(). Reglas:
+//  1. Solo si la entrada actual la apiló la app (state.capa). Si no, o si el
+//     contador está en 0, NO se toca el historial: un back() sobre la entrada
+//     inicial sacaría al usuario de Atuistas (a Google, a la pestaña anterior).
+//  2. Nunca hay dos back() en vuelo a la vez: si se lanzan juntos en el mismo
+//     lote, el segundo atraviesa la comprobación de estado sin pasar por aquí
+//     y sale de la app. Los que queden pendientes se gastan desde popstate,
+//     de uno en uno y siempre revalidando el estado.
+function gastarEntradaPropia() {
+    if (backEnCurso || gestionandoAtras || capasApiladas <= 0) {
+        trazaHistorial("back-saltado", backEnCurso ? "en-vuelo" : (gestionandoAtras ? "gestionando" : "sin-contador"));
+        return;
+    }
+    const estado = window.history?.state;
+    const esNuestra = estado &&
+        (estado.capa === true || estado.capa === "capa" || estado.capa === "seccion");
+    if (!esNuestra) {
+        // Entrada ajena (la inicial o la de otro sitio): se resincroniza el
+        // contador sin navegar para no expulsar al usuario.
+        trazaHistorial("back-rechazado", "estado-ajeno");
+        capasApiladas = 0;
+        backsPendientes = 0;
+        return;
+    }
+    // Segunda barrera: aunque el state sea nuestro, si el navegador dice que
+    // no hay entrada debajo (historial podado al recuperar la pestaña), un
+    // back() cerraria la pestana y dejaria en Google. navigation.canGoBack
+    // existe desde Chrome 102; en navegadores viejos se omite este control.
+    if (typeof navigation !== "undefined" && navigation && navigation.canGoBack === false) {
+        trazaHistorial("back-rechazado", "sin-atras-posible");
+        capasApiladas = 0;
+        backsPendientes = 0;
+        return;
+    }
+    trazaHistorial("back", "en-vuelo");
+    backEnCurso = true;
+    try {
+        window.history?.back?.();
+    } catch {
+        backEnCurso = false;
+    }
 }
 
 // Al cerrar con el botón o la × de la propia capa, la entrada del historial
-// se gasta sola para que el botón atrás no la encuentre por detrás.
+// se gasta sola para que el botón atrás no la encuentre por detrás. El
+// contador se descuenta en popstate (único punto de descuento).
 function desapilarCapa() {
-    if (gestionandoAtras || capasApiladas === 0) return;
-    desapilandoPorInterfaz = true;
-    window.history?.back?.();
+    if (gestionandoAtras || capasApiladas <= 0) return;
+    backsPendientes = Math.min(backsPendientes + 1, capasApiladas);
+    gastarEntradaPropia();
 }
 
 // El historial y las secciones se cuadran solos: si no estamos en Entrar hay
-// una entrada; al volver a Entrar se gasta.
+// una entrada; al volver a Entrar se gasta. Igual que desapilarCapa: nunca se
+// vuelve atrás sobre una entrada ajena ni con dos back() en vuelo (eso sacaría
+// al usuario de Atuistas).
 function sincronizarAtrasSeccion(seccion) {
     const hayEntradaDeSeccion = window.history?.state?.capa === "seccion";
     if (seccion !== "entrar" && !hayEntradaDeSeccion) {
-        window.history?.pushState?.({ capa: "seccion" }, "");
-        capasApiladas += 1;
+        try {
+            window.history?.pushState?.({ capa: "seccion" }, "");
+            capasApiladas += 1;
+            trazaHistorial("push", "seccion");
+        } catch {
+            // Sin historial: no se apila nada.
+        }
         return;
     }
-    if (seccion === "entrar" && hayEntradaDeSeccion) {
-        desapilandoPorInterfaz = true;
-        window.history?.back?.();
+    if (seccion === "entrar" && hayEntradaDeSeccion && capasApiladas > 0) {
+        backsPendientes = Math.min(backsPendientes + 1, capasApiladas);
+        gastarEntradaPropia();
     }
 }
 
@@ -3539,14 +3848,25 @@ function cerrarCapaSuperior() {
 }
 
 window.addEventListener("popstate", () => {
-    capasApiladas = Math.max(0, capasApiladas - 1);
-
-    // Esta entrada se gastó por un cierre hecho con los botones de la propia
-    // pantalla: no hay nada que hacer.
-    if (desapilandoPorInterfaz) {
-        desapilandoPorInterfaz = false;
+    // Travesía lanzada por la propia app (gastarEntradaPropia): la interfaz ya
+    // se actualizó sola al cerrar la capa. Solo se descuenta y, si quedaban
+    // entradas por gastar en el mismo lote, se encadena la siguiente de una
+    // en una: nunca dos back() en vuelo a la vez.
+    if (backEnCurso) {
+        backEnCurso = false;
+        capasApiladas = Math.max(0, capasApiladas - 1);
+        backsPendientes = Math.max(0, backsPendientes - 1);
+        trazaHistorial("pop", "propio");
+        if (backsPendientes > 0) {
+            setTimeout(gastarEntradaPropia, 0);
+        }
         return;
     }
+
+    // Botón atrás del sistema: la entrada gastada se descuenta aquí (único
+    // punto de descuento junto con el de arriba).
+    capasApiladas = Math.max(0, capasApiladas - 1);
+    trazaHistorial("pop", "usuario");
 
     gestionandoAtras = true;
     try {
@@ -3996,7 +4316,10 @@ async function cargarMensajesServidor() {
         // Los gestos de responder, editar y borrar se cablean tras cada render.
         for (const elemento of mensajesServidor.querySelectorAll(".mensaje-chat")) {
             const mensaje = datos.mensajes.find((item) => item.id === elemento.dataset.mensajeId);
-            if (mensaje) configurarGestoMensajeServidor(elemento, mensaje);
+            if (!mensaje) continue;
+            // Ficha para la barra de selección (papelera sí / papelera no).
+            mensajesServidorPorId.set(mensaje.id, mensaje);
+            configurarGestoMensajeServidor(elemento, mensaje);
         }
         mensajesServidor.scrollTop = mensajesServidor.scrollHeight;
     } catch (error) {
@@ -4215,7 +4538,7 @@ function configurarGestoMensajeServidor(elemento, mensaje) {
         const idPuntero = evento.pointerId;
         temporizadorSeleccion = setTimeout(() => {
             if (movido || punteroActivo !== idPuntero) return;
-            // Pulsación larga: marca el mensaje para borrarlo, igual que en el chat privado.
+            // Pulsación larga: marca el mensaje para reenviarlo o borrarlo.
             punteroActivo = null;
             if (alternarSeleccionMensajeServidor(mensaje, elemento) && navigator.vibrate) {
                 navigator.vibrate(20);
@@ -4279,19 +4602,29 @@ function configurarGestoMensajeServidor(elemento, mensaje) {
     elemento.addEventListener("pointercancel", resetear);
 }
 
-// Selección de mensajes de servidor: la pulsación larga marca mensajes para borrarlos,
-// igual que en el chat privado. Un toque con la selección activa la activa o desactiva.
+// Selección de mensajes de servidor: la pulsación larga marca mensajes para
+// reenviarlos (cualquiera visible) o borrarlos (míos o de gestor).
+// Un toque con la selección activa la activa o desactiva.
 function puedeEliminarMensajeServidor(mensaje) {
     const gestor = Boolean(detalleGrupo) && (detalleGrupo.mi_rol === "creador" || detalleGrupo.mi_rol === "moderador");
     return Boolean(mensaje.es_mio) || gestor;
 }
 
+// Oculto ajeno: su contenido está enmascarado y no se puede reenviar.
+function puedeReenviarMensajeServidor(mensaje) {
+    if (!mensaje) return false;
+    if (mensaje.oculto && !mensaje.es_mio) return false;
+    if (mensaje.oculto && !mensaje.autor_nombre && !mensaje.contenido && !mensaje.archivo_ruta) return false;
+    return true;
+}
+
 function alternarSeleccionMensajeServidor(mensaje, elemento) {
-    if (!puedeEliminarMensajeServidor(mensaje)) return false;
+    if (!puedeReenviarMensajeServidor(mensaje)) return false;
     if (mensajesSeleccionadosServidor.has(mensaje.id)) {
         mensajesSeleccionadosServidor.delete(mensaje.id);
         elemento?.classList.remove("mensaje-chat-seleccionado");
     } else {
+        mensajesServidorPorId.set(mensaje.id, mensaje);
         mensajesSeleccionadosServidor.add(mensaje.id);
         elemento?.classList.add("mensaje-chat-seleccionado");
     }
@@ -4299,17 +4632,32 @@ function alternarSeleccionMensajeServidor(mensaje, elemento) {
     return true;
 }
 
+function puedeBorrarSeleccionServidor() {
+    if (mensajesSeleccionadosServidor.size === 0) return false;
+    for (const id of mensajesSeleccionadosServidor) {
+        const mensaje = mensajesServidorPorId.get(id);
+        if (!mensaje || !puedeEliminarMensajeServidor(mensaje)) return false;
+    }
+    return true;
+}
+
 function actualizarBarraSeleccionServidor() {
     const barra = document.getElementById("barra-seleccion-servidor");
     const contador = document.getElementById("contador-seleccion-servidor");
+    const botonReenviar = document.getElementById("boton-reenviar-seleccion-servidor");
+    const botonBorrar = document.getElementById("boton-borrar-seleccion-servidor");
     if (!barra || !contador) return;
     const total = mensajesSeleccionadosServidor.size;
     barra.hidden = total === 0;
     contador.textContent = total === 1 ? "1 seleccionado" : `${total} seleccionados`;
+    // Reenviar: cualquiera marcado. Borrar: solo borrables.
+    if (botonReenviar) botonReenviar.hidden = total === 0;
+    if (botonBorrar) botonBorrar.hidden = !puedeBorrarSeleccionServidor();
 }
 
 function limpiarSeleccionServidor() {
     mensajesSeleccionadosServidor = new Set();
+    mensajesServidorPorId.clear();
     mensajesServidor?.querySelectorAll(".mensaje-chat-seleccionado").forEach((nodo) => {
         nodo.classList.remove("mensaje-chat-seleccionado");
     });
@@ -7284,13 +7632,105 @@ function renderizarMedio(medio = {}) {
     const ruta = `/${escapeHtml(medio.url)}`;
     if (medio.tipo === "imagen") return `<img class="contenido-multimedia-social" src="${ruta}" alt="Imagen compartida">`;
     if (medio.tipo === "video") return `<video class="contenido-multimedia-social" src="${ruta}" controls playsinline></video>`;
-    if (medio.tipo === "audio") return `<audio class="contenido-multimedia-social" src="${ruta}" controls></audio>`;
+    if (medio.tipo === "audio") return reproductorAudioHTML(ruta);
     return "";
 }
 
 function renderizarMedios(multimedia = []) {
     return (multimedia || []).map((medio) => renderizarMedio(medio)).join("");
 }
+
+/* ---------- Reproductor de audio propio (estados, publicaciones, historias)
+   Sustituye al <audio controls> nativo con un reproductor que lleva ondas
+   animadas al reproducir y una barra de progreso con brillo, usando el color
+   de acento y el fondo oscuro de la web. Se controla con delegación de
+   eventos en el documento para funcionar también con el contenido que se
+   repinta (el <audio> real queda oculto dentro y es el que suena). */
+function reproductorAudioHTML(ruta) {
+    const ondas = "<span></span>".repeat(14);
+    return `
+        <div class="reproductor-audio contenido-multimedia-social">
+            <audio src="${ruta}" preload="metadata"></audio>
+            <button type="button" class="reproductor-audio-boton" aria-label="Reproducir audio">
+                <svg class="reproductor-audio-icono reproducir" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 5v14l11-7z"/></svg>
+                <svg class="reproductor-audio-icono pausa" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>
+            </button>
+            <div class="reproductor-audio-ondas" aria-hidden="true">${ondas}</div>
+            <div class="reproductor-audio-pista" data-reproductor-pista><i class="reproductor-audio-relleno"></i></div>
+            <span class="reproductor-audio-tiempo">0:00</span>
+        </div>`;
+}
+
+function formatearTiempoReproductor(segundos) {
+    if (!Number.isFinite(segundos) || segundos < 0) return "0:00";
+    const min = Math.floor(segundos / 60);
+    const seg = Math.floor(segundos % 60);
+    return `${min}:${String(seg).padStart(2, "0")}`;
+}
+
+function pintarProgresoReproductor(audio) {
+    const contenedor = audio.closest(".reproductor-audio");
+    if (!contenedor) return;
+    const dur = Number.isFinite(audio.duration) && audio.duration > 0 ? audio.duration : 0;
+    const avance = dur ? Math.min(audio.currentTime / dur, 1) : 0;
+    const relleno = contenedor.querySelector(".reproductor-audio-relleno");
+    if (relleno) relleno.style.width = `${avance * 100}%`;
+    const tiempo = contenedor.querySelector(".reproductor-audio-tiempo");
+    if (tiempo) tiempo.textContent = formatearTiempoReproductor(audio.currentTime);
+}
+
+function alternarReproductorAudio(boton) {
+    const contenedor = boton.closest(".reproductor-audio");
+    const audio = contenedor?.querySelector("audio");
+    if (!audio) return;
+    if (audio.paused || audio.ended) {
+        // Que solo suene uno a la vez.
+        document.querySelectorAll(".reproductor-audio audio").forEach((otro) => { if (otro !== audio) otro.pause(); });
+        audio.play().catch(() => {});
+    } else {
+        audio.pause();
+    }
+}
+
+document.addEventListener("click", (evento) => {
+    const boton = evento.target.closest?.(".reproductor-audio-boton");
+    if (boton) {
+        evento.preventDefault();
+        evento.stopPropagation();
+        alternarReproductorAudio(boton);
+        return;
+    }
+    const pista = evento.target.closest?.("[data-reproductor-pista]");
+    if (pista) {
+        const audio = pista.closest(".reproductor-audio")?.querySelector("audio");
+        if (audio && Number.isFinite(audio.duration) && audio.duration > 0) {
+            const rect = pista.getBoundingClientRect();
+            const ratio = Math.min(1, Math.max(0, (evento.clientX - rect.left) / rect.width));
+            audio.currentTime = ratio * audio.duration;
+            pintarProgresoReproductor(audio);
+        }
+    }
+});
+
+// timeupdate/play/pause no burbujean, así que se escuchan en fase de captura.
+document.addEventListener("timeupdate", (e) => { if (e.target instanceof HTMLAudioElement) pintarProgresoReproductor(e.target); }, true);
+document.addEventListener("loadedmetadata", (e) => { if (e.target instanceof HTMLAudioElement) pintarProgresoReproductor(e.target); }, true);
+document.addEventListener("play", (e) => {
+    if (!(e.target instanceof HTMLAudioElement)) return;
+    e.target.closest(".reproductor-audio")?.classList.add("sonando");
+    pintarProgresoReproductor(e.target);
+}, true);
+document.addEventListener("pause", (e) => {
+    if (!(e.target instanceof HTMLAudioElement)) return;
+    e.target.closest(".reproductor-audio")?.classList.remove("sonando");
+}, true);
+document.addEventListener("ended", (e) => {
+    if (!(e.target instanceof HTMLAudioElement)) return;
+    const contenedor = e.target.closest(".reproductor-audio");
+    contenedor?.classList.remove("sonando");
+    const relleno = contenedor?.querySelector(".reproductor-audio-relleno");
+    if (relleno) relleno.style.width = "100%";
+}, true);
 
 function renderizarMediosPublicacion(multimedia = []) {
     const medios = (multimedia || []).filter((medio) => medio?.url);
@@ -7449,7 +7889,11 @@ function mostrarHistoriaActual() {
     `).join("");
 
     const contenido = document.getElementById("contenido-historia-pantalla");
-    contenido.innerHTML = `${renderizarMedios(estado.multimedia)}${estado.texto ? `<p class="texto-historia-pantalla">${escapeHtml(estado.texto)}</p>` : ""}`;
+    // Si el estado lleva texto y además multimedia, el texto se muestra como
+    // título sobre el contenido; si es solo texto, ocupa la pantalla centrado.
+    const hayMultimedia = (estado.multimedia || []).length > 0;
+    const claseTexto = hayMultimedia ? "titulo-historia-pantalla" : "texto-historia-pantalla";
+    contenido.innerHTML = `${renderizarMedios(estado.multimedia)}${estado.texto ? `<p class="${claseTexto}">${escapeHtml(estado.texto)}</p>` : ""}`;
     const medio = contenido.querySelector("img, video, audio");
     const duracion = 5000;
     const fill = progreso.querySelector(".progreso-historia i.activo");
@@ -7507,6 +7951,52 @@ document.addEventListener("keydown", (evento) => {
     else if (evento.key === "ArrowLeft") pasarHistoriaAnterior();
 });
 
+/* Mantener pulsado el centro del visor despeja la pantalla (se ocultan la
+   cabecera, el progreso y la barra de comentarios) y se para el vídeo o el
+   audio; al soltar, vuelve todo como estaba. Si la persona es desarrolladora,
+   esta pulsación anula la de borrar: en el centro manda despejar. */
+let temporizadorDespejeHistoria = null;
+let mediosDespejados = [];
+
+function despejarHistoria() {
+    temporizadorDespejeHistoria = null;
+    if (typeof soyDesarrollador !== "undefined" && soyDesarrollador) terminarPulsacionLarga();
+    const visor = document.getElementById("visor-historias-pantalla");
+    visor.classList.add("historia-despejada");
+    mediosDespejados = [];
+    visor.querySelectorAll("#contenido-historia-pantalla video, #contenido-historia-pantalla audio").forEach((medio) => {
+        if (!medio.paused) {
+            mediosDespejados.push(medio);
+            medio.pause();
+        }
+    });
+}
+
+function restaurarHistoria() {
+    if (temporizadorDespejeHistoria) {
+        clearTimeout(temporizadorDespejeHistoria);
+        temporizadorDespejeHistoria = null;
+    }
+    const visor = document.getElementById("visor-historias-pantalla");
+    if (!visor.classList.contains("historia-despejada")) return;
+    visor.classList.remove("historia-despejada");
+    mediosDespejados.forEach((medio) => medio.play().catch(() => {}));
+    mediosDespejados = [];
+}
+
+const contenidoVisorHistorias = document.getElementById("contenido-historia-pantalla");
+contenidoVisorHistorias.addEventListener("pointerdown", (evento) => {
+    if (evento.pointerType === "mouse" && evento.button !== 0) return;
+    if (temporizadorDespejeHistoria) clearTimeout(temporizadorDespejeHistoria);
+    // 450 ms: es una pulsación sostenida a propósito, no un toque normal, y
+    // sigue por debajo de la de borrar (550 ms) para que en el centro mande
+    // despejar cuando la persona es desarrolladora.
+    temporizadorDespejeHistoria = setTimeout(despejarHistoria, 450);
+});
+for (const tipoFinal of ["pointerup", "pointercancel", "pointerleave"]) {
+    contenidoVisorHistorias.addEventListener(tipoFinal, restaurarHistoria);
+}
+
 function actualizarTarjetaMiEstado() {
     const imagen = document.getElementById("avatar-mi-estado");
     const etiqueta = document.getElementById("texto-mi-estado");
@@ -7563,6 +8053,7 @@ document.getElementById("boton-mi-estado").addEventListener("click", async () =>
     document.getElementById("archivo-estado").value = "";
     document.getElementById("vista-previa-audio").hidden = true;
     blobAudioEstado = null;
+    pintarControlesGrabacion();
     document.getElementById("visor-estados").hidden = true;
     if (misEstadosActuales.length) {
         document.getElementById("acciones-mi-estado").hidden = false;
@@ -8034,39 +8525,91 @@ if (modalEditorFoto) {
         lienzoEditor.addEventListener("pointercancel", editorTerminarTrazo);
     }
 }
+// Pinta los botones del grabador de audio según el estado de la grabación:
+// mientras suena aparecen PAUSAR (o REANUDAR) y BORRAR, sin necesidad de
+// haber terminado de grabar.
+function pintarControlesGrabacion() {
+    const activo = Boolean(grabadoraAudio) && grabadoraAudio.state !== "inactive";
+    const enPausa = Boolean(grabadoraAudio) && grabadoraAudio.state === "paused";
+    const conAudio = activo || Boolean(blobAudioEstado);
+    document.getElementById("boton-iniciar-audio").disabled = activo;
+    document.getElementById("boton-detener-audio").disabled = !activo;
+    const pausar = document.getElementById("boton-pausar-audio");
+    const borrar = document.getElementById("boton-borrar-audio");
+    pausar.hidden = !activo;
+    pausar.disabled = !activo;
+    pausar.textContent = enPausa ? "REANUDAR" : "PAUSAR";
+    borrar.hidden = !conAudio;
+    borrar.disabled = !conAudio;
+}
+
 document.getElementById("boton-iniciar-audio").addEventListener("click", async () => {
     try {
+        descartarGrabacionAudio = false;
+        blobAudioEstado = null;
+        document.getElementById("vista-previa-audio").hidden = true;
         flujoAudio = await navigator.mediaDevices.getUserMedia({ audio: true });
         const mimeType = ["audio/webm;codecs=opus", "audio/ogg;codecs=opus"].find((type) => MediaRecorder.isTypeSupported(type));
         grabadoraAudio = new MediaRecorder(flujoAudio, mimeType ? { mimeType } : undefined);
         const chunks = [];
         grabadoraAudio.addEventListener("dataavailable", (evento) => { if (evento.data.size) chunks.push(evento.data); });
         grabadoraAudio.addEventListener("stop", () => {
-            blobAudioEstado = new Blob(chunks, { type: grabadoraAudio.mimeType || "audio/webm" });
-            const preview = document.getElementById("vista-previa-audio");
-            preview.src = URL.createObjectURL(blobAudioEstado);
-            preview.hidden = false;
+            const descartar = descartarGrabacionAudio;
+            descartarGrabacionAudio = false;
+            grabadoraAudio = null;
             flujoAudio?.getTracks().forEach((track) => track.stop());
             flujoAudio = null;
-        }, { once: true });
+            const preview = document.getElementById("vista-previa-audio");
+            if (descartar || !chunks.length) {
+                blobAudioEstado = null;
+                preview.hidden = true;
+                preview.removeAttribute("src");
+            } else {
+                blobAudioEstado = new Blob(chunks, { type: mimeType || "audio/webm" });
+                preview.src = URL.createObjectURL(blobAudioEstado);
+                preview.hidden = false;
+            }
+            pintarControlesGrabacion();
+        });
         grabadoraAudio.start();
         limiteGrabacionAudio = setTimeout(() => {
-            if (grabadoraAudio?.state === "recording") grabadoraAudio.stop();
-            document.getElementById("boton-iniciar-audio").disabled = false;
-            document.getElementById("boton-detener-audio").disabled = true;
+            if (grabadoraAudio && grabadoraAudio.state !== "inactive") grabadoraAudio.stop();
         }, 210000);
-        document.getElementById("boton-iniciar-audio").disabled = true;
-        document.getElementById("boton-detener-audio").disabled = false;
+        pintarControlesGrabacion();
     } catch (error) {
         document.getElementById("error-estado-social").textContent = error.message || "No se pudo acceder al micrófono.";
+        pintarControlesGrabacion();
     }
 });
 
 document.getElementById("boton-detener-audio").addEventListener("click", () => {
     if (limiteGrabacionAudio) clearTimeout(limiteGrabacionAudio);
-    if (grabadoraAudio?.state === "recording") grabadoraAudio.stop();
-    document.getElementById("boton-iniciar-audio").disabled = false;
-    document.getElementById("boton-detener-audio").disabled = true;
+    descartarGrabacionAudio = false;
+    if (grabadoraAudio && grabadoraAudio.state !== "inactive") grabadoraAudio.stop();
+    pintarControlesGrabacion();
+});
+
+// Pausar y reanudar sin tener que terminar la grabación.
+document.getElementById("boton-pausar-audio").addEventListener("click", () => {
+    if (!grabadoraAudio || grabadoraAudio.state === "inactive") return;
+    if (grabadoraAudio.state === "recording") grabadoraAudio.pause();
+    else if (grabadoraAudio.state === "paused") grabadoraAudio.resume();
+    pintarControlesGrabacion();
+});
+
+// Borrar la grabación en cualquier momento, sin terminarla si está en marcha.
+document.getElementById("boton-borrar-audio").addEventListener("click", () => {
+    if (limiteGrabacionAudio) clearTimeout(limiteGrabacionAudio);
+    if (grabadoraAudio && grabadoraAudio.state !== "inactive") {
+        descartarGrabacionAudio = true;
+        grabadoraAudio.stop();
+    } else {
+        blobAudioEstado = null;
+        const preview = document.getElementById("vista-previa-audio");
+        preview.hidden = true;
+        preview.removeAttribute("src");
+        pintarControlesGrabacion();
+    }
 });
 
 document.getElementById("formulario-estado").addEventListener("submit", async (evento) => {
@@ -8104,6 +8647,7 @@ document.getElementById("formulario-estado").addEventListener("submit", async (e
         }
         form.reset();
         blobAudioEstado = null;
+        pintarControlesGrabacion();
         await cargarContenidoInicio();
         modalEstado.hidden = true;
     } catch (failure) {
@@ -9010,6 +9554,10 @@ async function cargarComentariosPublicacion(publicacionId, contenedor) {
 
 function conectarFeed(contenedor) {
     contenedor.addEventListener("click", async (evento) => {
+        // El reproductor de audio se maneja por su cuenta (play, pausa y barra
+        // de progreso): un clic suyo no debe abrir el estado ni la publicación
+        // en la que va dentro, aunque comparta la tarjeta con data-ver-historias.
+        if (evento.target.closest?.(".reproductor-audio")) return;
         const perfil = evento.target.closest("[data-abrir-perfil]");
         const corazon = evento.target.closest("[data-corazon-publicacion]");
         const comentarios = evento.target.closest("[data-comentarios-publicacion]");
@@ -9280,6 +9828,8 @@ contenidoPerfil.innerHTML = `
                 <span>Solicitudes enviadas</span>
             </div>
         </div>
+
+        <h3 class="titulo-publicaciones-perfil">HISTORIAS</h3>
 
         <div id="burbujas-historias-perfil"></div>
 
