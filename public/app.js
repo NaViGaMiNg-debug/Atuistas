@@ -1063,14 +1063,30 @@ botonInstalarApp?.addEventListener("click", async () => {
     }
 });
 
-// Cuando hay una version nueva esperando, se avisa en vez de recargar solo:
-// recargar sin permiso perderia lo que el usuario estuviera escribiendo.
+// Cuando hay una version nueva esperando, se aplica sola en cuanto la app
+// queda en segundo plano o se recarga: esperar al clic manual dejaba a la
+// gente (sobre todo en movil) mirando la version vieja eternamente aunque
+// recargara la pagina. Si el usuario esta escribiendo algo, se espera a que
+// termine para no perderle el texto.
 function avisarActualizacion(registration) {
     if (!avisoActualizacion) return;
 
-    avisoActualizacion.hidden = false;
+    const hayTextoSinEnviar = () => {
+        const cajas = [
+            document.getElementById("entrada-mensaje"),
+            document.getElementById("entrada-mensaje-servidor")
+        ];
+        return cajas.some((caja) => Boolean(caja && String(caja.value || "").trim()));
+    };
 
     const aplicar = () => {
+        if (hayTextoSinEnviar()) {
+            // Se reintenta en 10 s: no se pierde lo que se esta escribiendo.
+            setTimeout(() => {
+                try { aplicar(); } catch { /* reintento siguiente */ }
+            }, 10 * 1000);
+            return;
+        }
         avisarActualizacion.hidden = true;
         botonActualizarApp.disabled = true;
         if (registration.waiting) {
@@ -1080,8 +1096,12 @@ function avisarActualizacion(registration) {
         }
     };
 
+    // Se sigue enseñando el aviso por si alguien quiere forzarla ya, pero la
+    // aplicacion tambien avanza sola sin esperar al clic.
+    avisoActualizacion.hidden = false;
     botonActualizarApp.onclick = aplicar;
     botonActualizarApp.disabled = false;
+    try { aplicar(); } catch { /* el boton manual sigue disponible */ }
 }
 
 function vigilarActualizaciones(registration) {
