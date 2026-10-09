@@ -162,7 +162,7 @@ comprobar(
     "El toque abre la foto aunque el gesto del mensaje capture el puntero"
 );
 comprobar(
-    html.includes("/app.js?v=25") && appSinVersion.includes('"/app.js?v=25"'),
+    html.includes("/app.js?v=26") && appSinVersion.includes('"/app.js?v=26"'),
     "El HTML y el service worker sirven el JS nuevo y no la copia vieja"
 );
 

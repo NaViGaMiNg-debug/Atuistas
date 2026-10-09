@@ -211,6 +211,9 @@ function crearComposer(config) {
     let segundos = 0;
     let descartarGrabacion = false;
     let temporizadorAviso = null;
+    // Si el usuario pulsa enviar mientras graba, al parar el audio se manda
+    // solo: no hay que pulsar dos veces.
+    let enviarAlParar = false;
     // Medidor de voz en vivo: el analizador lee lo fuerte que hablas y el
     // intervalo pinta las barras encendidas con esa altura.
     let contextoVoz = null;
@@ -276,14 +279,19 @@ function crearComposer(config) {
         botonMas.setAttribute("aria-expanded", "false");
     }
 
-    // Tira de ondas de la fila: 24 barras que se encienden con el paso del
-    // tiempo (cuánto falta para el corte) y crecen según lo fuerte que
-    // hables. Al rellenarse del todo, la grabación se para sola.
+    // Tira de ondas de la fila: 24 barras con altura fija que respiran con tu
+    // voz. Se van encendiendo según pasa el tiempo (al llenarse del todo la
+    // grabación se para sola). El encendido se cuenta desde la última barra
+    // visible: la tira crece hacia la derecha conforme hablas.
+    const ALTURAS_GRABACION = [38, 62, 45, 80, 55, 92, 48, 70, 35, 66, 84, 50, 74, 42, 95, 58, 68, 40, 78, 52, 88, 46, 64, 36];
+
     function prepararOndasGrabacion() {
         if (!ondasGrabacion) return;
         ondasGrabacion.replaceChildren();
         for (let i = 0; i < BARRAS_GRABACION; i += 1) {
-            ondasGrabacion.appendChild(document.createElement("span"));
+            const barra = document.createElement("span");
+            barra.style.height = `${ALTURAS_GRABACION[i % ALTURAS_GRABACION.length]}%`;
+            ondasGrabacion.appendChild(barra);
         }
     }
 
@@ -291,6 +299,8 @@ function crearComposer(config) {
         if (!ondasGrabacion) return;
         const barras = ondasGrabacion.children;
         if (!barras.length) return;
+        // Las barras se encienden de izquierda a derecha con el paso del
+        // tiempo; la última encendida late con el volumen de tu voz.
         const encendidas = Math.min(
             barras.length,
             Math.floor((segundos / MAXIMO_GRABACION_SEG) * barras.length)
@@ -298,10 +308,15 @@ function crearComposer(config) {
         for (let i = 0; i < barras.length; i += 1) {
             const barra = barras[i];
             barra.classList.toggle("encendida", i < encendidas);
-            // La última encendida respira con tu voz; las anteriores quedan
-            // a media altura y las que faltan, bajas.
-            const altura = i < encendidas - 1 ? 0.6 : i === encendidas - 1 ? 0.3 + nivelVoz * 0.7 : 0.25;
-            barra.style.transform = `scaleY(${Math.max(0.2, Math.min(1, altura))})`;
+            // Solo la barra "viva" respira con la voz; el resto mantiene su
+            // altura fija para que se lea el progreso.
+            if (i === encendidas - 1) {
+                barra.style.setProperty("--latido-voz", String(0.35 + nivelVoz * 0.65));
+                barra.classList.add("viva");
+            } else {
+                barra.classList.remove("viva");
+                barra.style.removeProperty("--latido-voz");
+            }
         }
     }
 
@@ -461,6 +476,22 @@ function crearComposer(config) {
         };
         pintarChip();
         actualizarBoton();
+        // Venía de pulsar enviar grabando: se manda solo, sin segundo clic.
+        if (enviarAlParar) {
+            enviarAlParar = false;
+            botonAccion.disabled = true;
+            Promise.resolve()
+                .then(() => enviar(entrada.value.trim(), adjunto))
+                .then(() => limpiarTodo())
+                .catch((error) => {
+                    console.error("No se pudo enviar el mensaje:", error);
+                    avisar(error?.message || "No se pudo enviar el mensaje");
+                })
+                .finally(() => {
+                    botonAccion.disabled = false;
+                    actualizarBoton();
+                });
+        }
     }
 
     // Pide el micrófono y arranca la grabación. Mientras suena, el botón pasa a
@@ -623,8 +654,12 @@ function crearComposer(config) {
     formulario.addEventListener("submit", async (evento) => {
         evento.preventDefault();
 
-        // Grabando, el botón solo corta el audio; al parar queda listo para enviar.
+        // Grabando, el botón corta el audio; si además hay intención de
+        // enviar (texto o submit del botón), al parar se manda solo.
         if (grabando()) {
+            if (entrada.value.trim() || evento.submitter === botonAccion) {
+                enviarAlParar = true;
+            }
             detenerGrabacion(false);
             return;
         }
@@ -7778,10 +7813,11 @@ function renderizarMedios(multimedia = []) {
    eventos en el documento para funcionar también con el contenido que se
    repinta (el <audio> real queda oculto dentro y es el que suena). */
 function reproductorAudioHTML(ruta) {
-    // 30 barras: al sonar se van encendiendo en color de acento según el
-    // avance (las que faltan quedan apagadas). Nada de "lo que falta para el
-    // máximo": la tira entera ES el audio y se rellena al terminar.
-    const ondas = "<span></span>".repeat(30);
+    // 30 barras con altura fija variada (forma de onda): al sonar se van
+    // encendiendo en color de acento según el avance. La tira entera ES el
+    // audio y se rellena al terminar. El tiempo muestra la duración total.
+    const alturas = [38, 62, 45, 80, 55, 92, 48, 70, 35, 66, 84, 50, 74, 42, 95, 58, 68, 40, 78, 52, 88, 46, 64, 36, 72, 56, 82, 44, 60, 76];
+    const ondas = alturas.map((h) => `<span style="height:${h}%"></span>`).join("");
     return `
         <div class="reproductor-audio contenido-multimedia-social">
             <audio src="${ruta}" preload="metadata"></audio>
@@ -7814,8 +7850,13 @@ function pintarProgresoReproductor(audio) {
     const barras = contenedor.querySelectorAll(".reproductor-audio-ondas span");
     const encendidas = Math.round(avance * barras.length);
     barras.forEach((barra, indice) => barra.classList.toggle("encendida", indice < encendidas));
+    // El tiempo enseña la duración total (no 00:00): mientras suena muestra
+    // lo que queda por escuchar.
     const tiempo = contenedor.querySelector(".reproductor-audio-tiempo");
-    if (tiempo) tiempo.textContent = formatearTiempoReproductor(audio.currentTime);
+    if (tiempo) {
+        const mostrar = dur && (audio.currentTime > 0 || !audio.paused) ? Math.max(0, dur - audio.currentTime) : dur;
+        tiempo.textContent = formatearTiempoReproductor(mostrar);
+    }
 }
 
 function alternarReproductorAudio(boton) {

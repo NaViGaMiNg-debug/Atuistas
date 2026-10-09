@@ -2967,12 +2967,17 @@ button.servidor-tarjeta:focus-visible {
     color: var(--peligro);
 }
 
-/* Botón PARAR de la fila de grabación: corta el audio y lo deja listo para
-   enviar (no lo tira). Lleva el acento de la web para que se vea la acción. */
+/* Botón PARAR de la fila de grabación: círculo con el acento de la web y el
+   icono de detener en blanco. Corta el audio y lo deja listo para enviar. */
 .boton-parar-grabacion {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
     min-height: 0;
-
-    padding: 5px 14px;
+    padding: 0;
 
     border: 0;
     border-radius: var(--radio-full);
@@ -2980,10 +2985,8 @@ button.servidor-tarjeta:focus-visible {
     background: var(--acento);
     color: var(--acento-texto);
 
-    font-size: 10px;
-    font-weight: 700;
-
     cursor: pointer;
+    transition: transform var(--transicion-rapida), background var(--transicion-rapida);
 }
 
 .boton-parar-grabacion:hover {
@@ -2991,12 +2994,16 @@ button.servidor-tarjeta:focus-visible {
 }
 
 .boton-parar-grabacion:active {
-    transform: scale(0.95);
+    transform: scale(0.9);
 }
 
-/* Tira de ondas de la grabación en vivo: 24 barras que se van encendiendo
-   según pasa el tiempo (al llenarse del todo se para sola) y cuya altura
-   sigue lo fuerte que hablas. */
+.boton-parar-grabacion svg {
+    display: block;
+}
+
+/* Tira de ondas de la grabación en vivo: 24 barras con altura fija que se
+   van encendiendo según pasa el tiempo (al llenarse del todo se para sola).
+   La barra "viva" late con el volumen de tu voz. */
 .grabacion-ondas {
     flex: 1 1 auto;
     display: flex;
@@ -3010,18 +3017,25 @@ button.servidor-tarjeta:focus-visible {
 .grabacion-ondas span {
     flex: 1 1 0;
     min-width: 2px;
-    height: 100%;
     border-radius: 2px;
     background: var(--borde-medio);
     opacity: 0.6;
-    transform: scaleY(0.25);
     transform-origin: center;
-    transition: transform 0.12s linear, background 0.2s ease, opacity 0.2s ease;
+    transition: background 0.2s ease, opacity 0.2s ease;
 }
 
 .grabacion-ondas span.encendida {
     background: var(--acento);
     opacity: 1;
+}
+
+.grabacion-ondas span.viva {
+    animation: latido-voz 0.35s ease-in-out infinite alternate;
+}
+
+@keyframes latido-voz {
+    from { transform: scaleY(calc(var(--latido-voz, 0.6) * 0.7)); }
+    to { transform: scaleY(var(--latido-voz, 0.6)); }
 }
 
 /* Pestaña de "oculto" junto al botón de enviar, solo en servidores. */
@@ -3116,13 +3130,20 @@ button.servidor-tarjeta:focus-visible {
     min-width: 220px;
 }
 
-/* El reproductor propio dentro de un mensaje ocupa el ancho de la burbuja
-   sin romperla (los mensajes son estrechos: max 75%). */
+/* El reproductor propio dentro de un mensaje se funde con la burbuja: sin
+   borde ni fondo propio, hereda el color del mensaje (propio o ajeno). */
 .adjunto-mensaje .reproductor-audio {
     width: 100%;
     min-width: 200px;
-    padding: 10px 12px;
+    padding: 6px 4px 10px;
     gap: 10px;
+    border: 0;
+    background: transparent;
+}
+
+.adjunto-mensaje .reproductor-audio-boton {
+    width: 36px;
+    height: 36px;
 }
 
 .meta-mensaje-servidor {
@@ -7951,8 +7972,9 @@ button.estadistica-perfil:hover {
     display: block;
 }
 
-/* Ondas: 30 barras con altura variada que se encienden en acento según el
-   avance (lo que falta queda apagado). Al sonar también respiran. */
+/* Ondas: 30 barras con altura fija variada (forma de onda real) que se
+   encienden en acento según el avance (lo que falta queda apagado).
+   Al sonar, las encendidas también respiran. */
 .reproductor-audio-ondas {
     flex: 1 1 auto;
     display: flex;
@@ -7972,15 +7994,8 @@ button.estadistica-perfil:hover {
     background: var(--borde-medio);
     opacity: 0.7;
     transform-origin: center;
-    transition: transform 0.25s ease, opacity 0.25s ease, background 0.25s ease;
+    transition: opacity 0.25s ease, background 0.25s ease;
 }
-
-/* Altura variada de fábrica para que parezca una forma de onda real. */
-.reproductor-audio-ondas span:nth-child(3n+1) { height: 45%; transform: scaleY(1); }
-.reproductor-audio-ondas span:nth-child(3n+2) { height: 80%; transform: scaleY(1); }
-.reproductor-audio-ondas span:nth-child(3n) { height: 60%; transform: scaleY(1); }
-.reproductor-audio-ondas span:nth-child(5n) { height: 100%; transform: scaleY(1); }
-.reproductor-audio-ondas span:nth-child(7n+3) { height: 30%; transform: scaleY(1); }
 
 /* Lo ya sonado se enciende con el color de acento de la web. */
 .reproductor-audio-ondas span.encendida {
