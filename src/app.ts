@@ -97,12 +97,14 @@ await app.register(fastifyStatic, {
 
 app.get("/", async (_request, reply) => {
     // Sin cache: es la puerta de entrada y si se cachea, la app instalada
-    // no ve nunca el HTML nuevo (y con el, ni el JS nuevo).
-    reply.header("Cache-Control", "no-store");
-    return reply.sendFile(
-        "index.html",
-        path.join(process.cwd(), "public")
-    );
+    // no ve nunca el HTML nuevo (y con el, ni el JS nuevo). Se sirve a mano
+    // porque el estatico pisaba la cabecera con la suya propia.
+    const fs = await import("node:fs/promises");
+    const html = await fs.readFile(path.join(process.cwd(), "public", "index.html"));
+    return reply
+        .header("Content-Type", "text/html; charset=utf-8")
+        .header("Cache-Control", "no-store, no-cache, must-revalidate")
+        .send(html);
 });
 
 await app.register(websocket);
