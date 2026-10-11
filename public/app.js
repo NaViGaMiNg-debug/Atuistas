@@ -8007,66 +8007,41 @@ function alternarReproductorAudio(destino) {
     }
 }
 
-// Cableado del reproductor: TODO en fase de captura y por identidad de
-// puntero, sin depender del click ni de elementFromPoint. El gesto del
-// mensaje (setPointerCapture) redirige los eventos al mensaje y el click
-// puede no llegar nunca al boton: el pointerdown si que llega siempre, asi
-// que ahi se guarda el puntero y en el pointerup se ejecuta el play.
-let audioPunteroPendiente = null;
-let ultimoGestoAudio = 0;
-function gestoReproducirAudio(contenedor) {
-    const ahora = Date.now();
-    if (ahora - ultimoGestoAudio < 400) return;
-    ultimoGestoAudio = ahora;
+// El reproductor responde al click nativo (el único que funciona fiable en
+// Android sin depender de pointerdown/pointerup). El toque puede venir sobre
+// el boton, la barra, las ondas o cualquier otra parte de la pastilla; en
+// cualquier caso se arranca el audio. Con el audio parado: play. Sonando:
+// el click se suelta y se pausa (alternarReproductorAudio).
+document.addEventListener("click", (evento) => {
+    // La pulsacion larga de desarrollador se traga su propio clic:
+    // no jugar.
+    let clicTragado = false;
+    try { clicTragado = pulsacionConsumida; } catch { clicTragado = false; }
+    if (clicTragado) return;
+    const contenedor = evento.target.closest?.(".reproductor-audio");
+    if (!contenedor) return;
+    // Si el toque se produjo fuera del boton (barra, ondas, texto), lo
+    // consideramos un toque en la pastilla: arranca o pausa.
+    const boton = evento.target.closest?.(".reproductor-audio-boton");
+    const pista = evento.target.closest?.("[data-reproductor-pista], .reproductor-audio-ondas");
+    if (boton) {
+        alternarReproductorAudio(contenedor);
+        return;
+    }
+    if (pista) {
+        const audio = contenedor.querySelector("audio");
+        if (!audio || !Number.isFinite(audio.duration) || audio.duration <= 0) return;
+        const rect = contenedor.getBoundingClientRect();
+        const ratio = Math.min(1, Math.max(0, (evento.clientX - rect.left) / rect.width));
+        audio.currentTime = ratio * audio.duration;
+        pintarProgresoReproductor(audio);
+        return;
+    }
+    // Tocado en cualquier otra parte de la pastilla (lo mas comun):
+    // arranca o pausa.
     alternarReproductorAudio(contenedor);
-}
-
-function saltarAudioEn(contenedor, x) {
-    const audio = contenedor?.querySelector("audio");
-    if (!audio || !Number.isFinite(audio.duration) || audio.duration <= 0) return;
-    const rect = contenedor.getBoundingClientRect();
-    const ratio = Math.min(1, Math.max(0, (x - rect.left) / rect.width));
-    audio.currentTime = ratio * audio.duration;
-    pintarProgresoReproductor(audio);
-}
-
-document.addEventListener("pointerdown", (evento) => {
-    const reproductor = evento.target.closest?.(".reproductor-audio");
-    if (!reproductor) return;
-    if (evento.pointerType === "mouse" && evento.button !== 0) return;
-    const enBoton = Boolean(evento.target.closest?.(".reproductor-audio-boton"));
-    const enPista = Boolean(evento.target.closest?.("[data-reproductor-pista], .reproductor-audio-ondas"));
-    audioPunteroPendiente = {
-        id: evento.pointerId,
-        contenedor: reproductor,
-        enBoton,
-        enPista,
-        x: evento.clientX
-    };
 }, true);
 
-document.addEventListener("pointerup", (evento) => {
-    if (!audioPunteroPendiente || evento.pointerId !== audioPunteroPendiente.id) return;
-    const { contenedor, enBoton, enPista, x } = audioPunteroPendiente;
-    audioPunteroPendiente = null;
-    // Boton, barra u ondas: play/pausa o salto al punto pulsado.
-    if (enBoton) {
-        gestoReproducirAudio(contenedor);
-        return;
-    }
-    if (enPista) {
-        saltarAudioEn(contenedor, x);
-        return;
-    }
-    // Tocado en el resto de la pastilla: tambien arranca (gesto mas comun).
-    gestoReproducirAudio(contenedor);
-}, true);
-
-document.addEventListener("pointercancel", (evento) => {
-    if (audioPunteroPendiente && evento.pointerId === audioPunteroPendiente.id) {
-        audioPunteroPendiente = null;
-    }
-}, true);
 
 // timeupdate/play/pause no burbujean, así que se escuchan en fase de captura.
 document.addEventListener("timeupdate", (e) => { if (e.target instanceof HTMLAudioElement) pintarProgresoReproductor(e.target); }, true);

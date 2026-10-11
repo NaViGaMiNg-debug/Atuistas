@@ -8253,3 +8253,5 @@ button.estadistica-perfil:hover {
 .contenido-historia-pantalla > .reproductor-audio {
     width: calc(100% - 32px);
 }
+/* reproductor: sin zoom de doble toque en Android */
+.reproductor-audio-boton,.reproductor-audio-pista,.reproductor-audio-ondas{touch-action:manipulation}
