@@ -96,6 +96,9 @@ await app.register(fastifyStatic, {
 });
 
 app.get("/", async (_request, reply) => {
+    // Sin cache: es la puerta de entrada y si se cachea, la app instalada
+    // no ve nunca el HTML nuevo (y con el, ni el JS nuevo).
+    reply.header("Cache-Control", "no-store");
     return reply.sendFile(
         "index.html",
         path.join(process.cwd(), "public")
