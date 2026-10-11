@@ -127,7 +127,7 @@ const ICONO_COMPOSER_MICROFONO = `
 
 // Versión de la app que se muestra arriba a la izquierda en tu propio perfil.
 // Se sube junto a VERSION en public/sw.js y a las ?v= de public/index.html.
-const VERSION_APP = "v32";
+const VERSION_APP = "v33";
 
 const ACEPTA_ADJUNTO = {
     imagen: "image/*",
@@ -1221,6 +1221,16 @@ function avisarActualizacion(registration) {
     botonActualizarApp.onclick = aplicar;
     botonActualizarApp.disabled = false;
     try { aplicar(); } catch { /* el boton manual sigue disponible */ }
+    // Si en 15 s no se aplico (el worker viejo no responde), se recarga a
+    // la fuerza: el HTML y el SW ya van en no-store, asi que la recarga
+    // trae la version nueva sin borrar nada a mano.
+    setTimeout(() => {
+        try {
+            if (!document.getElementById("aviso-actualizacion")?.hidden) {
+                window.location.reload();
+            }
+        } catch { /* el boton manual sigue disponible */ }
+    }, 15 * 1000);
 }
 
 function vigilarActualizaciones(registration) {
@@ -3959,24 +3969,9 @@ let gestionandoAtras = false;
 let backEnCurso = false;
 let backsPendientes = 0;
 
-// Diagnóstico temporal del botón atrás: cada paso manda un beacon cuya URL
-// queda registrada en el log del servidor (POST /__hist?...). Sirve para ver
-// desde el móvil qué historial real está manejando la app mientras se cierra
-// el fallo de la fuga a Google. Se quita cuando quede cerrado.
+// Marca de navegacion interna (sin red): solo para depurar en local.
 function trazaHistorial(accion, detalle) {
-    try {
-        const q = new URLSearchParams({
-            a: accion,
-            s: JSON.stringify(window.history?.state ?? null) ?? "null",
-            c: String(capasApiladas),
-            p: String(backsPendientes),
-            u: location.href
-        });
-        if (detalle) q.set("d", detalle);
-        navigator.sendBeacon?.(`/__hist?${q.toString()}`, "");
-    } catch {
-        // El diagnóstico nunca puede romper la app.
-    }
+    return;
 }
 
 function apilarCapa() {
@@ -7989,21 +7984,16 @@ function alternarReproductorAudio(destino) {
     }
 }
 
-// Gestos tactiles directos: en el movil el "click" puede llegar tarde o no
-// llegar (el gesto del mensaje lo captura); el pointerup directo al boton
-// es el gesto que el navegador si acepta para sonar. Se escucha sin captura
-// para no pelearse con el click delegado de abajo.
+// Un solo gesto para el play: el pointerup directo al boton. El click
+// delegado de abajo solo salta en la barra, para no sonar dos veces ni
+// anularse entre ellos (ese era el fallo: el click ponia la marca y el
+// pointerup la veia y se saltaba el play).
 document.addEventListener("pointerup", (evento) => {
     const boton = evento.target.closest?.(".reproductor-audio-boton");
     if (!boton) return;
     if (evento.pointerType === "mouse" && evento.button !== 0) return;
     const contenedor = boton.closest(".reproductor-audio");
     if (!contenedor) return;
-    // Si el click delegado ya lo manejo (llega despues), no sonar dos veces.
-    if (contenedor.dataset.sonado === "1") {
-        delete contenedor.dataset.sonado;
-        return;
-    }
     alternarReproductorAudio(contenedor);
 });
 
@@ -8035,14 +8025,9 @@ document.addEventListener("click", (evento) => {
         ?? bajoPuntero()?.closest?.(".reproductor-audio-boton");
     const pista = evento.target.closest?.("[data-reproductor-pista], .reproductor-audio-ondas")
         ?? bajoPuntero()?.closest?.("[data-reproductor-pista], .reproductor-audio-ondas");
-    // Parado: cualquier toque lo arranca (el gesto mas comun). Sonando:
-    // el boton pausa y la barra u ondas saltan al punto pulsado.
-    if (audio.paused || audio.ended || boton) {
-        contenedor.dataset.sonado = "1";
-        setTimeout(() => { delete contenedor.dataset.sonado; }, 500);
-        alternarReproductorAudio(contenedor);
-        return;
-    }
+    // El boton lo maneja el pointerup de arriba (no se toca aqui para no
+    // sonar dos veces). Este click solo salta en la barra o en las ondas.
+    if (boton) return;
     if (pista && Number.isFinite(audio.duration) && audio.duration > 0) {
         const rect = contenedor.getBoundingClientRect();
         const ratio = Math.min(1, Math.max(0, (evento.clientX - rect.left) / rect.width));
