@@ -8060,6 +8060,10 @@ button.estadistica-perfil:hover {
     border-radius: var(--radio-md);
     overflow: hidden;
     box-sizing: border-box;
+    /* Pan-y: el navegador se queda con el scroll vertical y yo con los
+       gestos horizontales y los toques al boton. Sin esto, un micro-
+       movimiento al tocar cancela el pointer y el play no llega nunca. */
+    touch-action: pan-y;
 }
 
 /* El <audio> real no se oculta con display:none: en iOS/Safari un elemento

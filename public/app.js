@@ -128,7 +128,7 @@ const ICONO_COMPOSER_MICROFONO = `
 // Versión de la app que se muestra arriba a la izquierda en tu propio perfil
 // y en la cabecera de Cuenta (dos sitios para que siempre se pueda ver).
 // Se sube junto a VERSION en public/sw.js y a las ?v= de public/index.html.
-const VERSION_APP = "v35";
+const VERSION_APP = "v36";
 
 // La de Cuenta no depende de petición ninguna: se escribe al cargar el script.
 document.getElementById("version-app-cuenta")?.replaceChildren(VERSION_APP);
@@ -8007,9 +8007,12 @@ function alternarReproductorAudio(destino) {
     }
 }
 
-// Un solo gesto para el play (con anti-duplicado): pointerup en movil y
-// click en escritorio. Si llegan los dos, el segundo se ignora. Este era el
-// fallo: los dos handlers se anulaban entre ellos y el play no sonaba nunca.
+// Cableado del reproductor: TODO en fase de captura y por identidad de
+// puntero, sin depender del click ni de elementFromPoint. El gesto del
+// mensaje (setPointerCapture) redirige los eventos al mensaje y el click
+// puede no llegar nunca al boton: el pointerdown si que llega siempre, asi
+// que ahi se guarda el puntero y en el pointerup se ejecuta el play.
+let audioPunteroPendiente = null;
 let ultimoGestoAudio = 0;
 function gestoReproducirAudio(contenedor) {
     const ahora = Date.now();
@@ -8018,54 +8021,50 @@ function gestoReproducirAudio(contenedor) {
     alternarReproductorAudio(contenedor);
 }
 
-document.addEventListener("pointerup", (evento) => {
-    const boton = evento.target.closest?.(".reproductor-audio-boton");
-    if (!boton) return;
-    if (evento.pointerType === "mouse" && evento.button !== 0) return;
-    const contenedor = boton.closest(".reproductor-audio");
-    if (!contenedor) return;
-    gestoReproducirAudio(contenedor);
-});
+function saltarAudioEn(contenedor, x) {
+    const audio = contenedor?.querySelector("audio");
+    if (!audio || !Number.isFinite(audio.duration) || audio.duration <= 0) return;
+    const rect = contenedor.getBoundingClientRect();
+    const ratio = Math.min(1, Math.max(0, (x - rect.left) / rect.width));
+    audio.currentTime = ratio * audio.duration;
+    pintarProgresoReproductor(audio);
+}
 
-// En fase de captura y resolviendo bajo el puntero: asi el play responde
-// aunque el gesto del mensaje capture el puntero o algun contenedor se coma
-// el clic. Con el audio parado basta con tocar cualquier parte del
-// reproductor; sonando, la barra y las ondas saltan y el boton pausa.
-document.addEventListener("click", (evento) => {
-    // La pulsacion larga de desarrollador se traga su propio clic: no jugar.
-    // Con try/catch por si este clic llega antes de que el script declare la
-    // marca (entonces vale false igualmente y el play no se rompe).
-    let clicTragado = false;
-    try { clicTragado = pulsacionConsumida; } catch { clicTragado = false; }
-    if (clicTragado) return;
-    const bajoPuntero = () => (
-        typeof document.elementFromPoint === "function"
-        && Number.isFinite(evento.clientX) && Number.isFinite(evento.clientY)
-            ? document.elementFromPoint(evento.clientX, evento.clientY)
-            : null
-    );
-    const contenedor = evento.target.closest?.(".reproductor-audio")
-        ?? bajoPuntero()?.closest?.(".reproductor-audio");
-    if (!contenedor) return;
-    evento.preventDefault();
-    evento.stopPropagation();
-    const audio = contenedor.querySelector("audio");
-    if (!audio) return;
-    const boton = evento.target.closest?.(".reproductor-audio-boton")
-        ?? bajoPuntero()?.closest?.(".reproductor-audio-boton");
-    const pista = evento.target.closest?.("[data-reproductor-pista], .reproductor-audio-ondas")
-        ?? bajoPuntero()?.closest?.("[data-reproductor-pista], .reproductor-audio-ondas");
-    // El boton pasa por la misma guarda anti-duplicado (pointerup y click
-    // pueden llegar los dos en el mismo toque).
-    if (boton) {
+document.addEventListener("pointerdown", (evento) => {
+    const reproductor = evento.target.closest?.(".reproductor-audio");
+    if (!reproductor) return;
+    if (evento.pointerType === "mouse" && evento.button !== 0) return;
+    const enBoton = Boolean(evento.target.closest?.(".reproductor-audio-boton"));
+    const enPista = Boolean(evento.target.closest?.("[data-reproductor-pista], .reproductor-audio-ondas"));
+    audioPunteroPendiente = {
+        id: evento.pointerId,
+        contenedor: reproductor,
+        enBoton,
+        enPista,
+        x: evento.clientX
+    };
+}, true);
+
+document.addEventListener("pointerup", (evento) => {
+    if (!audioPunteroPendiente || evento.pointerId !== audioPunteroPendiente.id) return;
+    const { contenedor, enBoton, enPista, x } = audioPunteroPendiente;
+    audioPunteroPendiente = null;
+    // Boton, barra u ondas: play/pausa o salto al punto pulsado.
+    if (enBoton) {
         gestoReproducirAudio(contenedor);
         return;
     }
-    if (pista && Number.isFinite(audio.duration) && audio.duration > 0) {
-        const rect = contenedor.getBoundingClientRect();
-        const ratio = Math.min(1, Math.max(0, (evento.clientX - rect.left) / rect.width));
-        audio.currentTime = ratio * audio.duration;
-        pintarProgresoReproductor(audio);
+    if (enPista) {
+        saltarAudioEn(contenedor, x);
+        return;
+    }
+    // Tocado en el resto de la pastilla: tambien arranca (gesto mas comun).
+    gestoReproducirAudio(contenedor);
+}, true);
+
+document.addEventListener("pointercancel", (evento) => {
+    if (audioPunteroPendiente && evento.pointerId === audioPunteroPendiente.id) {
+        audioPunteroPendiente = null;
     }
 }, true);
 
