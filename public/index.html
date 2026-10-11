@@ -14,7 +14,7 @@
 
     <link
         rel="stylesheet"
-        href="/style.css?v=33"
+        href="/style.css?v=34"
     >
 
     <link rel="icon" href="/icon.svg" type="image/svg+xml">
@@ -669,6 +669,10 @@
                         <h2 id="nombre-cuenta">
                             Mi cuenta
                         </h2>
+
+                        <!-- Versión de la app en uso: siempre visible en la
+                             cabecera de Cuenta para poder comprobarla. -->
+                        <span id="version-app-cuenta" class="version-app-cuenta" aria-label="Versión de la app"></span>
 
                     </div>
 
@@ -2550,7 +2554,7 @@
     <!-- ?v tiene que subir junto con VERSION en sw.js cada vez que cambie
          app.js: sin esa firma, la caché del navegador y la del service worker
          sirven el fichero viejo para siempre y los arreglos no llegan nunca. -->
-    <script src="/app.js?v=33"></script>
+    <script src="/app.js?v=34"></script>
 
 </body>
 

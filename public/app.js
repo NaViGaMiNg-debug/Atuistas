@@ -125,9 +125,13 @@ const ICONO_COMPOSER_MICROFONO = `
     </svg>
 `;
 
-// Versión de la app que se muestra arriba a la izquierda en tu propio perfil.
+// Versión de la app que se muestra arriba a la izquierda en tu propio perfil
+// y en la cabecera de Cuenta (dos sitios para que siempre se pueda ver).
 // Se sube junto a VERSION en public/sw.js y a las ?v= de public/index.html.
-const VERSION_APP = "v33";
+const VERSION_APP = "v34";
+
+// La de Cuenta no depende de petición ninguna: se escribe al cargar el script.
+document.getElementById("version-app-cuenta")?.replaceChildren(VERSION_APP);
 
 const ACEPTA_ADJUNTO = {
     imagen: "image/*",
@@ -7984,17 +7988,24 @@ function alternarReproductorAudio(destino) {
     }
 }
 
-// Un solo gesto para el play: el pointerup directo al boton. El click
-// delegado de abajo solo salta en la barra, para no sonar dos veces ni
-// anularse entre ellos (ese era el fallo: el click ponia la marca y el
-// pointerup la veia y se saltaba el play).
+// Un solo gesto para el play (con anti-duplicado): pointerup en movil y
+// click en escritorio. Si llegan los dos, el segundo se ignora. Este era el
+// fallo: los dos handlers se anulaban entre ellos y el play no sonaba nunca.
+let ultimoGestoAudio = 0;
+function gestoReproducirAudio(contenedor) {
+    const ahora = Date.now();
+    if (ahora - ultimoGestoAudio < 400) return;
+    ultimoGestoAudio = ahora;
+    alternarReproductorAudio(contenedor);
+}
+
 document.addEventListener("pointerup", (evento) => {
     const boton = evento.target.closest?.(".reproductor-audio-boton");
     if (!boton) return;
     if (evento.pointerType === "mouse" && evento.button !== 0) return;
     const contenedor = boton.closest(".reproductor-audio");
     if (!contenedor) return;
-    alternarReproductorAudio(contenedor);
+    gestoReproducirAudio(contenedor);
 });
 
 // En fase de captura y resolviendo bajo el puntero: asi el play responde
@@ -8025,9 +8036,12 @@ document.addEventListener("click", (evento) => {
         ?? bajoPuntero()?.closest?.(".reproductor-audio-boton");
     const pista = evento.target.closest?.("[data-reproductor-pista], .reproductor-audio-ondas")
         ?? bajoPuntero()?.closest?.("[data-reproductor-pista], .reproductor-audio-ondas");
-    // El boton lo maneja el pointerup de arriba (no se toca aqui para no
-    // sonar dos veces). Este click solo salta en la barra o en las ondas.
-    if (boton) return;
+    // El boton pasa por la misma guarda anti-duplicado (pointerup y click
+    // pueden llegar los dos en el mismo toque).
+    if (boton) {
+        gestoReproducirAudio(contenedor);
+        return;
+    }
     if (pista && Number.isFinite(audio.duration) && audio.duration > 0) {
         const rect = contenedor.getBoundingClientRect();
         const ratio = Math.min(1, Math.max(0, (evento.clientX - rect.left) / rect.width));

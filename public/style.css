@@ -3838,6 +3838,27 @@ button.servidor-tarjeta:focus-visible {
 }
 
 
+/* Versión de la app en uso: pastilla arriba a la izquierda de Cuenta (y la
+   misma en el perfil propio) para poder comprobarla siempre sin buscar. */
+.cabecera-cuenta {
+    position: relative;
+}
+
+.cabecera-cuenta .version-app-cuenta {
+    position: absolute;
+    top: 0;
+    left: 0;
+    padding: 3px 9px;
+    border-radius: var(--radio-full);
+    background: rgba(0, 0, 0, 0.55);
+    color: rgba(255, 255, 255, 0.82);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    pointer-events: none;
+}
+
+
 /* ==============================
    FOTO DE PERFIL
    ============================== */
@@ -8041,8 +8062,17 @@ button.estadistica-perfil:hover {
     box-sizing: border-box;
 }
 
+/* El <audio> real no se oculta con display:none: en iOS/Safari un elemento
+   con display:none no puede reproducir (play no da error y no suena). Se
+   pone fuera del flujo con tamano minimo e invisible para el ojo. */
 .reproductor-audio > audio {
-    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
 }
 
 .reproductor-audio-boton {
