@@ -1,6 +1,6 @@
-﻿/* ========================================
+/* ========================================
    SERVICE WORKER
-   Dos funciones: avisar de las notificaciones Push y mantener al dÃ­a la
+   Dos funciones: avisar de las notificaciones Push y mantener al día la
    instalacion de la PWA.
 
    La version se sube a mano (VERSION) al desplegar cambios: el navegador
@@ -8,7 +8,7 @@
    lo nuevo. Asi la app instalada se actualiza sola, sin reinstalarla.
    ======================================== */
 
-const VERSION = "v39";
+const VERSION = "v40";
 const CACHE = `atuistas-${VERSION}`;
 
 // Solo se cachean estos ficheros. Todo lo demas (API, subidas) va directo a
@@ -16,8 +16,8 @@ const CACHE = `atuistas-${VERSION}`;
 const RECURSOS = [
     "/",
     "/index.html",
-    "/style.css?v=39",
-    "/app.js?v=39",
+    "/style.css?v=40",
+    "/app.js?v=40",
     "/data/emojis.js",
     "/qratuistas.png",
     "/app.webmanifest",
@@ -30,7 +30,7 @@ const RECURSOS = [
 // cache.add falla entero si un recurso falla; se cachea uno a uno para que
 // un icono ausente no impida instalar el service worker entero. Escrito sin
 // Promise.allSettled (Chrome 76+) ni optional chaining para que los
-// Androides viejos puedan registrar este archivo y así instalar la PWA.
+// Androides viejos puedan registrar este archivo y as� instalar la PWA.
 function cachearTodo(cache) {
     return Promise.all(RECURSOS.map((recurso) =>
         cache.add(recurso).catch(() => null)
@@ -132,9 +132,9 @@ self.addEventListener("push", (event) => {
     }
 
     event.waitUntil(self.registration.showNotification(data.title || "Atuistas", {
-        body: data.body || "Tienes una notificaciÃ³n nueva.",
+        body: data.body || "Tienes una notificación nueva.",
         // El tag viene por persona: al llegar otro aviso del mismo chat se
-        // sustituye este en vez de apilar una notificaciÃ³n nueva.
+        // sustituye este en vez de apilar una notificación nueva.
         tag: data.tag || undefined,
         renotify: false,
         data: data.data || {},
@@ -146,7 +146,7 @@ self.addEventListener("push", (event) => {
 self.addEventListener("notificationclick", (event) => {
     event.notification.close();
     // data trae el tipo y los ids del aviso: un mensaje privado abre el chat
-    // de quien lo escribiÃ³, el resto lleva a la pantalla principal.
+    // de quien lo escribió, el resto lleva a la pantalla principal.
     const data = event.notification.data || {};
     const destino = data.type === "mensaje_privado" && data.usuarioId
         ? `/?chat=${encodeURIComponent(data.usuarioId)}`
@@ -156,7 +156,7 @@ self.addEventListener("notificationclick", (event) => {
         for (const client of clientsList) {
             if ("focus" in client) {
                 await client.focus();
-                // Con la app ya abierta le decimos a quÃ© chat saltar.
+                // Con la app ya abierta le decimos a qué chat saltar.
                 client.postMessage({ tipo: "abrir-notificacion", data, destino });
                 return;
             }
