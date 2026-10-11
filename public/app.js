@@ -127,7 +127,7 @@ const ICONO_COMPOSER_MICROFONO = `
 
 // Versión de la app que se muestra arriba a la izquierda en tu propio perfil.
 // Se sube junto a VERSION en public/sw.js y a las ?v= de public/index.html.
-const VERSION_APP = "v31";
+const VERSION_APP = "v32";
 
 const ACEPTA_ADJUNTO = {
     imagen: "image/*",
@@ -7991,17 +7991,21 @@ function alternarReproductorAudio(destino) {
 
 // Gestos tactiles directos: en el movil el "click" puede llegar tarde o no
 // llegar (el gesto del mensaje lo captura); el pointerup directo al boton
-// es el gesto que el navegador si acepta para sonar.
+// es el gesto que el navegador si acepta para sonar. Se escucha sin captura
+// para no pelearse con el click delegado de abajo.
 document.addEventListener("pointerup", (evento) => {
     const boton = evento.target.closest?.(".reproductor-audio-boton");
     if (!boton) return;
     if (evento.pointerType === "mouse" && evento.button !== 0) return;
     const contenedor = boton.closest(".reproductor-audio");
     if (!contenedor) return;
-    evento.preventDefault();
-    evento.stopPropagation();
+    // Si el click delegado ya lo manejo (llega despues), no sonar dos veces.
+    if (contenedor.dataset.sonado === "1") {
+        delete contenedor.dataset.sonado;
+        return;
+    }
     alternarReproductorAudio(contenedor);
-}, true);
+});
 
 // En fase de captura y resolviendo bajo el puntero: asi el play responde
 // aunque el gesto del mensaje capture el puntero o algun contenedor se coma
@@ -8034,6 +8038,8 @@ document.addEventListener("click", (evento) => {
     // Parado: cualquier toque lo arranca (el gesto mas comun). Sonando:
     // el boton pausa y la barra u ondas saltan al punto pulsado.
     if (audio.paused || audio.ended || boton) {
+        contenedor.dataset.sonado = "1";
+        setTimeout(() => { delete contenedor.dataset.sonado; }, 500);
         alternarReproductorAudio(contenedor);
         return;
     }

@@ -84,7 +84,15 @@ await app.register(fastifyStatic, {
         "public"
     ),
     prefix: "/",
-    decorateReply: false
+    decorateReply: false,
+    // El HTML y el service worker siempre frescos: si el navegador cachea el
+    // index o el sw viejos, la app instalada no ve nunca la version nueva.
+    // El JS/CSS con ?v= llevan su propia firma, esos si se pueden cachear.
+    setHeaders: (respuesta, ruta) => {
+        if (/(index\.html|sw\.js|app\.webmanifest)$/.test(ruta)) {
+            respuesta.header("Cache-Control", "no-store");
+        }
+    }
 });
 
 app.get("/", async (_request, reply) => {
