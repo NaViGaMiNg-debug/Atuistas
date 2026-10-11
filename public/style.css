@@ -8222,6 +8222,13 @@ button.estadistica-perfil:hover {
     opacity: 0;
 }
 
+/* El aviso de "NO SE PUEDE" dentro de la pastilla: rojo para que se lea
+   como fallo y no como un tiempo raro. */
+.reproductor-audio-tiempo.reproductor-audio-tiempo-error {
+    color: var(--peligro);
+    font-weight: 700;
+}
+
 @keyframes brillo-reproductor {
     from { transform: translateX(-60px); }
     to { transform: translateX(400px); }

@@ -128,7 +128,7 @@ const ICONO_COMPOSER_MICROFONO = `
 // Versión de la app que se muestra arriba a la izquierda en tu propio perfil
 // y en la cabecera de Cuenta (dos sitios para que siempre se pueda ver).
 // Se sube junto a VERSION en public/sw.js y a las ?v= de public/index.html.
-const VERSION_APP = "v34";
+const VERSION_APP = "v35";
 
 // La de Cuenta no depende de petición ninguna: se escribe al cargar el script.
 document.getElementById("version-app-cuenta")?.replaceChildren(VERSION_APP);
@@ -7973,16 +7973,35 @@ function alternarReproductorAudio(destino) {
     if (fuente && !fuente.startsWith("/") && !fuente.startsWith("http") && !fuente.startsWith("blob:") && !fuente.startsWith("data:")) {
         audio.src = `/${fuente}`;
     }
+    const avisarFallo = (motivo) => {
+        // En movil el error de consola no lo ve nadie: se enseña dentro de la
+        // propia pastilla para que se vea que paso y no parezca que no hace nada.
+        const tiempo = contenedor.querySelector(".reproductor-audio-tiempo");
+        if (tiempo) {
+            tiempo.textContent = "NO SE PUEDE";
+            tiempo.classList.add("reproductor-audio-tiempo-error");
+            setTimeout(() => {
+                tiempo.classList.remove("reproductor-audio-tiempo-error");
+                pintarProgresoReproductor(audio);
+            }, 2500);
+        }
+        if (motivo) console.error("No se pudo reproducir el audio:", motivo);
+    };
     if (audio.paused || audio.ended) {
         // Que solo suene uno a la vez.
         document.querySelectorAll(".reproductor-audio audio").forEach((otro) => { if (otro !== audio) otro.pause(); });
         const intento = audio.play();
-        if (intento?.catch) intento.catch(() => {
-            // En movil el play necesita gesto directo: se reintenta cargando
-            // primero el audio y sonando despues.
-            try { audio.load(); } catch {}
-            audio.play().catch((error) => console.error("No se pudo reproducir el audio:", error));
-        });
+        if (intento && typeof intento.catch === "function") {
+            intento.catch(() => {
+                // En movil el play necesita gesto directo: se reintenta cargando
+                // primero el audio y sonando despues.
+                try { audio.load(); } catch {}
+                const segundo = audio.play();
+                if (segundo && typeof segundo.catch === "function") {
+                    segundo.catch((error) => avisarFallo(error));
+                }
+            });
+        }
     } else {
         audio.pause();
     }
