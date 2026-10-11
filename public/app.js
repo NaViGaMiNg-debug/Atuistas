@@ -8007,11 +8007,61 @@ function alternarReproductorAudio(destino) {
     }
 }
 
-// El reproductor responde al click nativo (el único que funciona fiable en
-// Android sin depender de pointerdown/pointerup). El toque puede venir sobre
-// el boton, la barra, las ondas o cualquier otra parte de la pastilla; en
-// cualquier caso se arranca el audio. Con el audio parado: play. Sonando:
-// el click se suelta y se pausa (alternarReproductorAudio).
+// El reproductor responde a tocar (touchstart) y a soltar (touchend).
+// touchstart funciona siempre en Android; el click no, por el gesto del
+// mensaje que lo impide. Con el audio parado: tocar es play. Sonando y se
+// suelta el dedo sin desplazar: pausa. Si el dedo se desplazó, se deja
+// pasar (el usuario no soltó en el mismo punto).
+let tactoInicio = null;
+
+document.addEventListener("touchstart", (evento) => {
+    const sobre = evento.target.closest?.(".reproductor-audio");
+    if (!sobre) return;
+    const boton = evento.target.closest?.(".reproductor-audio-boton");
+    const pista = evento.target.closest?.("[data-reproductor-pista], .reproductor-audio-ondas");
+    const audio = sobre.querySelector("audio");
+    if (!audio) return;
+    const pp = evento.touches[0] ?? {};
+    tactoInicio = { contenedor: sobre, x: pp.clientX, y: pp.clientY, movido: false, audio, boton, pista };
+}, true);
+
+document.addEventListener("touchmove", (evento) => {
+    if (!tactoInicio) return;
+    const pp = evento.touches[0] ?? {};
+    const dx = (pp.clientX ?? tactoInicio.x) - tactoInicio.x;
+    const dy = (pp.clientY ?? tactoInicio.y) - tactoInicio.y;
+    if (Math.max(Math.abs(dx), Math.abs(dy)) > 10) tactoInicio.movido = true;
+}, true);
+
+document.addEventListener("touchend", (evento) => {
+    if (!tactoInicio) return;
+    const { contenedor, x, y, movido, audio, boton, pista } = tactoInicio;
+    tactoInicio = null;
+    if (movido) return;
+    if (boton) {
+        if (audio.paused) audio.play(); else audio.pause();
+        pintarProgresoReproductor(audio);
+        return;
+    }
+    if (pista) {
+        if (!Number.isFinite(audio.duration) || audio.duration <= 0) return;
+        const rect = contenedor.getBoundingClientRect();
+        const ratio = Math.min(1, Math.max(0, (x - rect.left) / rect.width));
+        audio.currentTime = ratio * audio.duration;
+        pintarProgresoReproductor(audio);
+        return;
+    }
+    alternarReproductorAudio(contenedor);
+}, true);
+
+document.addEventListener("touchcancel", (evento) => {
+    if (tactoInicio && (!evento.touches || evento.touches.length === 0)) {
+        tactoInicio = null;
+    }
+}, true);
+
+// En escritorio (y por si el navegador no envía touchend), el click es el
+// fallback: repite exactamente lo mismo que el toque.
 document.addEventListener("click", (evento) => {
     // La pulsacion larga de desarrollador se traga su propio clic:
     // no jugar.
@@ -8020,27 +8070,25 @@ document.addEventListener("click", (evento) => {
     if (clicTragado) return;
     const contenedor = evento.target.closest?.(".reproductor-audio");
     if (!contenedor) return;
-    // Si el toque se produjo fuera del boton (barra, ondas, texto), lo
-    // consideramos un toque en la pastilla: arranca o pausa.
     const boton = evento.target.closest?.(".reproductor-audio-boton");
     const pista = evento.target.closest?.("[data-reproductor-pista], .reproductor-audio-ondas");
+    const audio = contenedor.querySelector("audio");
+    if (!audio) return;
     if (boton) {
         alternarReproductorAudio(contenedor);
         return;
     }
     if (pista) {
-        const audio = contenedor.querySelector("audio");
-        if (!audio || !Number.isFinite(audio.duration) || audio.duration <= 0) return;
+        if (!Number.isFinite(audio.duration) || audio.duration <= 0) return;
         const rect = contenedor.getBoundingClientRect();
         const ratio = Math.min(1, Math.max(0, (evento.clientX - rect.left) / rect.width));
         audio.currentTime = ratio * audio.duration;
         pintarProgresoReproductor(audio);
         return;
     }
-    // Tocado en cualquier otra parte de la pastilla (lo mas comun):
-    // arranca o pausa.
     alternarReproductorAudio(contenedor);
 }, true);
+
 
 
 // timeupdate/play/pause no burbujean, así que se escuchan en fase de captura.
