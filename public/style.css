@@ -8060,6 +8060,13 @@ button.estadistica-perfil:hover {
     border-radius: var(--radio-md);
     overflow: hidden;
     box-sizing: border-box;
+    /* El reproductor vive dentro de .mensaje-chat-contenido, que pone
+       pointer-events:none a todo su contenido. Ese none se hereda y hacía que
+       ningún toque llegara al botón de play: el clic "no hacía nada" y no
+       salía nada en consola. Aquí se reactivan los eventos SOLO para el
+       reproductor; el gesto de deslizar la burbuja ya ignora este elemento,
+       así que deslizar para responder sigue funcionando fuera de la pastilla. */
+    pointer-events: auto;
     /* Pan-y: el navegador se queda con el scroll vertical y yo con los
        gestos horizontales y los toques al boton. Sin esto, un micro-
        movimiento al tocar cancela el pointer y el play no llega nunca. */

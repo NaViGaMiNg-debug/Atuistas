@@ -128,7 +128,7 @@ const ICONO_COMPOSER_MICROFONO = `
 // Versión de la app que se muestra arriba a la izquierda en tu propio perfil
 // y en la cabecera de Cuenta (dos sitios para que siempre se pueda ver).
 // Se sube junto a VERSION en public/sw.js y a las ?v= de public/index.html.
-const VERSION_APP = "v40";
+const VERSION_APP = "v41";
 
 // La de Cuenta no depende de petición ninguna: se escribe al cargar el script.
 document.getElementById("version-app-cuenta")?.replaceChildren(VERSION_APP);
@@ -7916,7 +7916,6 @@ function renderizarMedios(multimedia = []) {
    eventos en el documento para funcionar también con el contenido que se
    repinta (el <audio> real queda oculto dentro y es el que suena). */
 function reproductorAudioHTML(ruta) {
-    console.log("🎵 [audio] generando reproductor. ruta=", ruta);
     // 30 barras con altura fija variada (forma de onda): al sonar se van
     // encendiendo en color de acento según el avance. La tira entera ES el
     // audio y se rellena al terminar. El tiempo muestra la duración total.
@@ -7967,7 +7966,6 @@ function alternarReproductorAudio(destino) {
     // Acepta el boton o el contenedor: el toque puede venir de cualquier parte.
     const contenedor = destino?.closest?.(".reproductor-audio") ?? destino;
     const audio = contenedor?.querySelector("audio");
-    console.log("🎵 [audio] alternar invocado. contenedor?", Boolean(contenedor), "audio?", Boolean(audio), "paused?", audio?.paused);
     if (!audio) return;
     // El src va con / delante siempre: si llegara sin ella (datos viejos), el
     // navegador pediria una ruta relativa que no existe y el play no sonaria.
@@ -7992,9 +7990,7 @@ function alternarReproductorAudio(destino) {
     if (audio.paused || audio.ended) {
         // Que solo suene uno a la vez.
         document.querySelectorAll(".reproductor-audio audio").forEach((otro) => { if (otro !== audio) otro.pause(); });
-        console.log("🎵 [audio] play() invocado. src=", audio.getAttribute("src"));
         const intento = audio.play();
-        console.log("🎵 [audio] play() devolvió=", intento);
         if (intento && typeof intento.catch === "function") {
             intento.catch(() => {
                 // En movil el play necesita gesto directo: se reintenta cargando
@@ -8017,15 +8013,13 @@ function alternarReproductorAudio(destino) {
 // suelta el dedo sin desplazar: pausa. Si el dedo se desplazó, se deja
 // pasar (el usuario no soltó en el mismo punto).
 let tactoInicio = null;
+// Sello del último toque atendido por touchend. Sirve para ignorar el click
+// sintético que el navegador dispara justo después en móvil: sin esto, un toque
+// hacía play (touchend) y acto seguido pause (click), y no sonaba nada.
+let ultimoToqueReproductor = 0;
 
 document.addEventListener("touchstart", (evento) => {
     const sobre = evento.target.closest?.(".reproductor-audio");
-    const enZonaAudio = evento.target.closest?.(".mensaje-chat, .tarjeta-estado, .estado-texto-amigo, .publicacion-actual, .contenido-historia-pantalla, .carrusel-publicacion");
-    if (sobre || enZonaAudio) {
-        const t = evento.target;
-        const nombre = (typeof t?.className === "string" && t.className) ? t.className : (t?.tagName || "?");
-        console.log("🎵 [audio] TOUCHSTART target=", nombre, "→ reproductor:", sobre ? "SÍ" : "NO");
-    }
     if (!sobre) return;
     const boton = evento.target.closest?.(".reproductor-audio-boton");
     const pista = evento.target.closest?.("[data-reproductor-pista], .reproductor-audio-ondas");
@@ -8048,6 +8042,9 @@ document.addEventListener("touchend", (evento) => {
     const { contenedor, x, y, movido, audio, boton, pista } = tactoInicio;
     tactoInicio = null;
     if (movido) return;
+    // Toque atendido aquí: marca la hora para que el click sintético de después
+    // no vuelva a alternar (play y pause seguidos).
+    ultimoToqueReproductor = Date.now();
     if (boton) {
         // Reusa alternarReproductorAudio: si el play falla en el movil enseña
         // "NO SE PUEDE" en la propia pastilla en vez de quedarse en silencio.
@@ -8079,30 +8076,22 @@ document.addEventListener("click", (evento) => {
     let clicTragado = false;
     try { clicTragado = pulsacionConsumida; } catch { clicTragado = false; }
     if (clicTragado) return;
-    const contenedor = evento.target.closest?.(".reproductor-audio");
-    const enZonaAudio = evento.target.closest?.(".mensaje-chat, .tarjeta-estado, .estado-texto-amigo, .publicacion-actual, .contenido-historia-pantalla, .carrusel-publicacion");
-    if (contenedor || enZonaAudio) {
-        const t = evento.target;
-        const nombre = (typeof t?.className === "string" && t.className) ? t.className : (t?.tagName || "?");
-        console.log("🎵 [audio] CLICK target=", nombre, "→ reproductor:", contenedor ? "SÍ" : "NO");
-    }
-    if (!contenedor && enZonaAudio) {
-        const zona = evento.target.closest(".mensaje-chat, .tarjeta-estado, .publicacion-actual, .contenido-historia-pantalla");
-        const rep = zona?.querySelector?.(".reproductor-audio");
-        if (rep) {
-            let el = rep;
-            const bloqueantes = [];
-            while (el && el !== document.body) {
-                const pe = getComputedStyle(el).pointerEvents;
-                if (pe !== "auto") bloqueantes.push(((typeof el.className === "string" && el.className) ? el.className : el.tagName) + ":" + pe);
-                el = el.parentElement;
-            }
-            console.log("🎵 [audio] Hay reproductor en la zona pero el click NO llega. pointer-events bloqueantes:", bloqueantes.length ? bloqueantes : "ninguno");
-        }
+    // Si un toque se acaba de atender por touchend, este click es el sintético
+    // que genera el navegador en móvil: se ignora para no alternar dos veces.
+    if (Date.now() - ultimoToqueReproductor < 700) return;
+    // El reproductor suele venir ya como target del click. Si no (algún overlay
+    // encima o un ancestro con pointer-events distinto), se busca también bajo
+    // el puntero con elementFromPoint, igual que al abrir una foto del chat.
+    let destino = evento.target;
+    let contenedor = destino.closest?.(".reproductor-audio");
+    if (!contenedor && typeof document.elementFromPoint === "function"
+        && Number.isFinite(evento.clientX) && Number.isFinite(evento.clientY)) {
+        destino = document.elementFromPoint(evento.clientX, evento.clientY) ?? destino;
+        contenedor = destino?.closest?.(".reproductor-audio") ?? null;
     }
     if (!contenedor) return;
-    const boton = evento.target.closest?.(".reproductor-audio-boton");
-    const pista = evento.target.closest?.("[data-reproductor-pista], .reproductor-audio-ondas");
+    const boton = destino.closest?.(".reproductor-audio-boton");
+    const pista = destino.closest?.("[data-reproductor-pista], .reproductor-audio-ondas");
     const audio = contenedor.querySelector("audio");
     if (!audio) return;
     if (boton) {
@@ -8143,8 +8132,6 @@ document.addEventListener("ended", (e) => {
     // Al acabar, la tira entera queda encendida: se ve que se rellenó del todo.
     contenedor?.querySelectorAll(".reproductor-audio-ondas span").forEach((barra) => barra.classList.add("encendida"));
 }, true);
-
-console.log("🎵 [audio] listeners del reproductor enlazados. reproductores en DOM ahora:", document.querySelectorAll(".reproductor-audio").length);
 
 function renderizarMediosPublicacion(multimedia = []) {
     const medios = (multimedia || []).filter((medio) => medio?.url);
