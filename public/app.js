@@ -127,7 +127,7 @@ const ICONO_COMPOSER_MICROFONO = `
 
 // Versión de la app que se muestra arriba a la izquierda en tu propio perfil.
 // Se sube junto a VERSION en public/sw.js y a las ?v= de public/index.html.
-const VERSION_APP = "v30";
+const VERSION_APP = "v31";
 
 const ACEPTA_ADJUNTO = {
     imagen: "image/*",
@@ -1252,7 +1252,7 @@ function vigilarActualizaciones(registration) {
         } catch {
             // Sin conexion no hay nada que comprobar.
         }
-    }, 30 * 60 * 1000);
+    }, 60 * 1000);
     // El service worker avisa cuando ya esta sirviendo la version nueva: se
     // recarga una vez y la app queda al dia sin que haya que instalar nada.
     let recargando = false;
@@ -7968,14 +7968,40 @@ function alternarReproductorAudio(destino) {
     const contenedor = destino?.closest?.(".reproductor-audio") ?? destino;
     const audio = contenedor?.querySelector("audio");
     if (!audio) return;
+    // El src va con / delante siempre: si llegara sin ella (datos viejos), el
+    // navegador pediria una ruta relativa que no existe y el play no sonaria.
+    const fuente = audio.getAttribute("src") || "";
+    if (fuente && !fuente.startsWith("/") && !fuente.startsWith("http") && !fuente.startsWith("blob:") && !fuente.startsWith("data:")) {
+        audio.src = `/${fuente}`;
+    }
     if (audio.paused || audio.ended) {
         // Que solo suene uno a la vez.
         document.querySelectorAll(".reproductor-audio audio").forEach((otro) => { if (otro !== audio) otro.pause(); });
-        audio.play().catch((error) => console.error("No se pudo reproducir el audio:", error));
+        const intento = audio.play();
+        if (intento?.catch) intento.catch(() => {
+            // En movil el play necesita gesto directo: se reintenta cargando
+            // primero el audio y sonando despues.
+            try { audio.load(); } catch {}
+            audio.play().catch((error) => console.error("No se pudo reproducir el audio:", error));
+        });
     } else {
         audio.pause();
     }
 }
+
+// Gestos tactiles directos: en el movil el "click" puede llegar tarde o no
+// llegar (el gesto del mensaje lo captura); el pointerup directo al boton
+// es el gesto que el navegador si acepta para sonar.
+document.addEventListener("pointerup", (evento) => {
+    const boton = evento.target.closest?.(".reproductor-audio-boton");
+    if (!boton) return;
+    if (evento.pointerType === "mouse" && evento.button !== 0) return;
+    const contenedor = boton.closest(".reproductor-audio");
+    if (!contenedor) return;
+    evento.preventDefault();
+    evento.stopPropagation();
+    alternarReproductorAudio(contenedor);
+}, true);
 
 // En fase de captura y resolviendo bajo el puntero: asi el play responde
 // aunque el gesto del mensaje capture el puntero o algun contenedor se coma
