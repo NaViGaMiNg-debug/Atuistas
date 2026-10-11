@@ -317,8 +317,8 @@ ${process.argv.includes("modal") ? `
 `;
 
 const salida = html
-    .replace('<link rel="stylesheet" href="/style.css">', `<style>${css}</style>`)
-    .replace('<script src="/app.js?v=23"></script>', `<script>${app}</script>`)
+    .replace(/<link\s+rel="stylesheet"\s+href="\/style\.css(\?v=[^"]*)?"\s*>/, `<style>${css}</style>`)
+    .replace(/<script src="\/app\.js\?v=[^"]+"><\/script>/, `<script>${app}</script>`)
     .replace("</head>", `${arranque}</head>`);
 
 // Se escribe directamente en public para que el servidor lo sirva por HTTP:

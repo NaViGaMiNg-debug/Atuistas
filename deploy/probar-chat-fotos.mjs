@@ -161,9 +161,14 @@ comprobar(
     app.includes("document.elementFromPoint(evento.clientX, evento.clientY)"),
     "El toque abre la foto aunque el gesto del mensaje capture el puntero"
 );
+const versionHtml = html.match(/\/app\.js\?v=(v\d+)/)?.[1] ?? "";
+const versionSwRecursos = appSinVersion.match(/"\/app\.js\?v=(v\d+)"/)?.[1] ?? "";
+const versionSwBase = appSinVersion.match(/VERSION = "(v\d+)"/)?.[1] ?? "";
 comprobar(
-    html.includes("/app.js?v=26") && appSinVersion.includes('"/app.js?v=26"'),
-    "El HTML y el service worker sirven el JS nuevo y no la copia vieja"
+    Boolean(versionHtml)
+        && versionHtml === versionSwRecursos
+        && versionHtml === versionSwBase,
+    `El HTML y el service worker sirven el JS nuevo (${versionHtml || "sin version"}) y no la copia vieja`
 );
 
 console.log("");

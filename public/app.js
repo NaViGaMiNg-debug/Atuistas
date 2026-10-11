@@ -125,6 +125,10 @@ const ICONO_COMPOSER_MICROFONO = `
     </svg>
 `;
 
+// Versión de la app que se muestra arriba a la izquierda en tu propio perfil.
+// Se sube junto a VERSION en public/sw.js y a las ?v= de public/index.html.
+const VERSION_APP = "v30";
+
 const ACEPTA_ADJUNTO = {
     imagen: "image/*",
     video: "video/*",
@@ -222,7 +226,10 @@ function crearComposer(config) {
     let intervaloVoz = null;
     let nivelVoz = 0;
 
-    const grabando = () => Boolean(grabadora) && grabadora.state === "recording";
+    // Una sesión de grabación sigue "activa" también en pausa: así el botón de
+    // enviar, el de borrar y el de parar/reanudar siguen funcionando mientras
+    // está pausada (si solo contara "recording", al pausar se rompían).
+    const grabando = () => Boolean(grabadora) && grabadora.state !== "inactive";
     const hayTexto = () => Boolean(entrada.value.trim());
 
     function pintarChip() {
@@ -232,6 +239,14 @@ function crearComposer(config) {
             return;
         }
         chipAdjunto.hidden = false;
+        // El audio no enseña nunca el nombre del archivo: solo que está
+        // listo para enviar.
+        // El audio no muestra ningun texto: el chip se oculta del todo.
+        if (adjunto.tipo === "audio" && !adjunto.archivos) {
+            chipAdjunto.hidden = true;
+            chipAdjunto.textContent = "";
+            return;
+        }
         if (adjunto.archivos?.length > 1) {
             const etiqueta = ETIQUETA_ADJUNTO[adjunto.tipo] ?? "ARCHIVOS";
             chipAdjunto.textContent = `${etiqueta} (${adjunto.archivos.length}): ${adjunto.archivos.map((archivo) => archivo.name).join(", ")}`;
@@ -352,16 +367,36 @@ function crearComposer(config) {
     // punto y se reanuda desde ahí. No muestra el chip del nombre del archivo.
     function pausaGrabacion() {
         if (!grabadora || grabadora.state === "inactive") return;
+        try {
         if (grabadora.state === "paused") {
             grabadora.resume();
+            arrancarContador();
             pararMedidorVoz();
             arrancarMedidorVoz();
         } else {
-            grabadora.pause();
-            pararMedidorVoz();
+                grabadora.pause();
+                pausarContador();
+                pararMedidorVoz();
+            }
+        } catch {
+            try { detenerGrabacion(false); } catch {}
+            return;
         }
+        reflejarPausaBotonParar();
         pintarOndasGrabacion();
         actualizarBoton();
+    }
+
+    // El boton PARAR solo cambia su icono SVG: pausa (dos barras) mientras
+    // graba y play (triangulo) en pausa. La fila no cambia de interfaz.
+    function reflejarPausaBotonParar() {
+        if (!botonParar) return;
+        const enPausa = Boolean(grabadora) && grabadora.state === "paused";
+        botonParar.classList.toggle("en-pausa", enPausa);
+        botonParar.setAttribute(
+            "aria-label",
+            enPausa ? "Reanudar la grabacion" : "Pausar la grabacion"
+        );
     }
 
     function pararMedidorVoz() {
@@ -381,12 +416,46 @@ function crearComposer(config) {
         pararMedidorVoz();
         filaGrabacion.hidden = true;
         formulario.classList.remove("grabando");
+        botonParar?.classList.remove("en-pausa");
+    }
+
+    // Congela el reloj sin perder los segundos ya acumulados: se usa al
+    // pausar la grabación para que el tiempo y las ondas dejen de avanzar.
+    function pausarContador() {
+        if (intervalo) clearInterval(intervalo);
+        intervalo = null;
+    }
+
+    // Reanuda el conteo tras una pausa. Recrea el intervalo de un segundo que
+    // se había detenido, sin duplicarlo si ya estuviera corriendo.
+    function arrancarContador() {
+        if (intervalo) return;
+        intervalo = setInterval(() => {
+            segundos += 1;
+            pintarTiempo();
+            pintarOndasGrabacion();
+            // Al llegar al máximo del servidor se para sola: queda lista
+            // para enviar (no se tira).
+            if (segundos >= MAXIMO_GRABACION_SEG && grabando()) {
+                detenerGrabacion(false);
+            }
+        }, 1000);
     }
 
     function detenerGrabacion(descartar) {
         descartarGrabacion = descartar;
         if (grabando()) {
-            grabadora.stop();
+            // En pausa algunos navegadores no sueltan el audio al parar:
+            // se reanuda y se para en el mismo gesto.
+            if (grabadora.state === "paused") {
+                try { grabadora.resume(); } catch {}
+            }
+            try {
+                grabadora.stop();
+            } catch {
+                grabadora = null;
+                alDetenerGrabacion();
+            }
             return;
         }
         limpiarGrabacion();
@@ -557,22 +626,14 @@ function crearComposer(config) {
         });
 
         grabadora.start();
+        reflejarPausaBotonParar();
         pintarTiempo();
         prepararOndasGrabacion();
         pintarOndasGrabacion();
         arrancarMedidorVoz();
         filaGrabacion.hidden = false;
         formulario.classList.add("grabando");
-        intervalo = setInterval(() => {
-            segundos += 1;
-            pintarTiempo();
-            pintarOndasGrabacion();
-            // Al llegar al máximo del servidor se para sola: queda lista
-            // para enviar (no se tira).
-            if (segundos >= MAXIMO_GRABACION_SEG && grabando()) {
-                detenerGrabacion(false);
-            }
-        }, 1000);
+        arrancarContador();
         actualizarBoton();
     }
 
@@ -7252,12 +7313,19 @@ async function cargarCuenta() {
         // Anillo del avatar del mismo color que el nombre.
         aplicarAnilloAvatar(botonFotoPerfil, usuario.color_nombre);
 
-
-        /* ==============================
-   FONDO DEL PERFIL
-   ============================== */
-
-renderizarFondoPerfil(usuario);
+        // Fondo del perfil: se muestra en cuanto se carga la cuenta (antes
+        // el img se quedaba oculto y nunca se veia ni tras subirlo).
+        if (fondoPerfil) {
+            if (usuario.fondo_ruta) {
+                fondoPerfil.src = "/" + String(usuario.fondo_ruta).replace(/\\/g, "/");
+                fondoPerfil.hidden = false;
+            } else {
+                fondoPerfil.src = "";
+                fondoPerfil.hidden = true;
+            }
+            const bqf1 = document.getElementById("boton-quitar-fondo");
+            if (bqf1) bqf1.hidden = !usuario.fondo_ruta;
+        }
 
 
         /* ==============================
@@ -7895,40 +7963,61 @@ function pintarProgresoReproductor(audio) {
     }
 }
 
-function alternarReproductorAudio(boton) {
-    const contenedor = boton.closest(".reproductor-audio");
+function alternarReproductorAudio(destino) {
+    // Acepta el boton o el contenedor: el toque puede venir de cualquier parte.
+    const contenedor = destino?.closest?.(".reproductor-audio") ?? destino;
     const audio = contenedor?.querySelector("audio");
     if (!audio) return;
     if (audio.paused || audio.ended) {
         // Que solo suene uno a la vez.
         document.querySelectorAll(".reproductor-audio audio").forEach((otro) => { if (otro !== audio) otro.pause(); });
-        audio.play().catch(() => {});
+        audio.play().catch((error) => console.error("No se pudo reproducir el audio:", error));
     } else {
         audio.pause();
     }
 }
 
+// En fase de captura y resolviendo bajo el puntero: asi el play responde
+// aunque el gesto del mensaje capture el puntero o algun contenedor se coma
+// el clic. Con el audio parado basta con tocar cualquier parte del
+// reproductor; sonando, la barra y las ondas saltan y el boton pausa.
 document.addEventListener("click", (evento) => {
-    const boton = evento.target.closest?.(".reproductor-audio-boton");
-    if (boton) {
-        evento.preventDefault();
-        evento.stopPropagation();
-        alternarReproductorAudio(boton);
+    // La pulsacion larga de desarrollador se traga su propio clic: no jugar.
+    // Con try/catch por si este clic llega antes de que el script declare la
+    // marca (entonces vale false igualmente y el play no se rompe).
+    let clicTragado = false;
+    try { clicTragado = pulsacionConsumida; } catch { clicTragado = false; }
+    if (clicTragado) return;
+    const bajoPuntero = () => (
+        typeof document.elementFromPoint === "function"
+        && Number.isFinite(evento.clientX) && Number.isFinite(evento.clientY)
+            ? document.elementFromPoint(evento.clientX, evento.clientY)
+            : null
+    );
+    const contenedor = evento.target.closest?.(".reproductor-audio")
+        ?? bajoPuntero()?.closest?.(".reproductor-audio");
+    if (!contenedor) return;
+    evento.preventDefault();
+    evento.stopPropagation();
+    const audio = contenedor.querySelector("audio");
+    if (!audio) return;
+    const boton = evento.target.closest?.(".reproductor-audio-boton")
+        ?? bajoPuntero()?.closest?.(".reproductor-audio-boton");
+    const pista = evento.target.closest?.("[data-reproductor-pista], .reproductor-audio-ondas")
+        ?? bajoPuntero()?.closest?.("[data-reproductor-pista], .reproductor-audio-ondas");
+    // Parado: cualquier toque lo arranca (el gesto mas comun). Sonando:
+    // el boton pausa y la barra u ondas saltan al punto pulsado.
+    if (audio.paused || audio.ended || boton) {
+        alternarReproductorAudio(contenedor);
         return;
     }
-    // El salto funciona tocando la barra baja o las propias ondas.
-    const pista = evento.target.closest?.("[data-reproductor-pista], .reproductor-audio-ondas");
-    if (pista) {
-        const contenedor = pista.closest(".reproductor-audio");
-        const audio = contenedor?.querySelector("audio");
-        if (audio && Number.isFinite(audio.duration) && audio.duration > 0) {
-            const rect = contenedor.getBoundingClientRect();
-            const ratio = Math.min(1, Math.max(0, (evento.clientX - rect.left) / rect.width));
-            audio.currentTime = ratio * audio.duration;
-            pintarProgresoReproductor(audio);
-        }
+    if (pista && Number.isFinite(audio.duration) && audio.duration > 0) {
+        const rect = contenedor.getBoundingClientRect();
+        const ratio = Math.min(1, Math.max(0, (evento.clientX - rect.left) / rect.width));
+        audio.currentTime = ratio * audio.duration;
+        pintarProgresoReproductor(audio);
     }
-});
+}, true);
 
 // timeupdate/play/pause no burbujean, así que se escuchan en fase de captura.
 document.addEventListener("timeupdate", (e) => { if (e.target instanceof HTMLAudioElement) pintarProgresoReproductor(e.target); }, true);
@@ -10015,6 +10104,7 @@ contenidoPerfil.innerHTML = `
                 ? ` style="--fondo-perfil:url('/${escapeHtml(perfil.fondo_url)}')"`
                 : ""
         }>
+            ${perfil.es_mio ? `<span class="version-app-perfil">${VERSION_APP}</span>` : ""}
             <div class="portada-perfil" aria-hidden="true"></div>
             <div class="fila-cabecera">
                 <button class="avatar-perfil con-anillo-nombre" type="button" style="--anillo-avatar:${colorDeAnillo(perfil.color_nombre)}" data-acciones-perfil aria-label="Opciones de la foto de perfil">
@@ -10278,7 +10368,12 @@ async function subirFondoPerfil(archivo) {
     formulario.append("archivo", archivo);
     try {
         const datos = await solicitarGrupo("/api/auth/fondo", { method: "POST", body: formulario });
-        if (fondoPerfil) fondoPerfil.src = `/${datos.fondo_url}`;
+        if (fondoPerfil) {
+            fondoPerfil.src = `/${datos.fondo_url}`;
+            fondoPerfil.hidden = false;
+        }
+        const bqf2 = document.getElementById("boton-quitar-fondo");
+        if (bqf2) bqf2.hidden = false;
         const aviso = document.getElementById("estado-cuenta");
         if (aviso) aviso.textContent = "Fondo del perfil guardado.";
         await cargarCuenta();
@@ -10291,7 +10386,12 @@ async function subirFondoPerfil(archivo) {
 async function quitarFondoPerfil() {
     try {
         await solicitarGrupo("/api/auth/fondo", { method: "DELETE" });
-        if (fondoPerfil) fondoPerfil.src = "";
+        if (fondoPerfil) {
+            fondoPerfil.src = "";
+            fondoPerfil.hidden = true;
+        }
+        const bqf3 = document.getElementById("boton-quitar-fondo");
+        if (bqf3) bqf3.hidden = true;
         const aviso = document.getElementById("estado-cuenta");
         if (aviso) aviso.textContent = "Fondo del perfil quitado.";
         await cargarCuenta();
@@ -10303,7 +10403,17 @@ async function quitarFondoPerfil() {
 
 document.getElementById("entrada-fondo-cuenta")
     ?.addEventListener("change", (evento) => {
-        subirFondoPerfil(evento.target.files?.[0]);
+        const elegido = evento.target.files?.[0];
+        // Previsualizacion al instante: la imagen se ve mientras se sube.
+        if (elegido && fondoPerfil) {
+            const lector = new FileReader();
+            lector.onload = () => {
+                fondoPerfil.src = String(lector.result || "");
+                fondoPerfil.hidden = !fondoPerfil.src;
+            };
+            lector.readAsDataURL(elegido);
+        }
+        subirFondoPerfil(elegido);
         evento.target.value = "";
     });
 

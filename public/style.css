@@ -2967,30 +2967,32 @@ button.servidor-tarjeta:focus-visible {
     color: var(--peligro);
 }
 
-/* Botón PARAR de la fila de grabación: círculo con el acento de la web y el
-   icono de detener en blanco. Corta el audio y lo deja listo para enviar. */
+/* Botón PARAR de la fila: misma pastilla con borde que BORRAR, con icono
+   SVG que cambia de pausa (dos barras) a play (triángulo) sin cambiar la
+   interfaz: pausa la grabación y la reanuda desde donde estaba. */
 .boton-parar-grabacion {
     flex: 0 0 auto;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 30px;
-    height: 30px;
+    width: 32px;
+    height: 26px;
     min-height: 0;
     padding: 0;
 
-    border: 0;
+    border: 1px solid var(--borde-medio);
     border-radius: var(--radio-full);
 
-    background: var(--acento);
-    color: var(--acento-texto);
+    background: transparent;
+    color: var(--texto-secundario);
 
     cursor: pointer;
-    transition: transform var(--transicion-rapida), background var(--transicion-rapida);
+    transition: border-color var(--transicion-rapida), color var(--transicion-rapida), transform var(--transicion-rapida);
 }
 
 .boton-parar-grabacion:hover {
-    background: var(--acento-claro);
+    border-color: var(--acento);
+    color: var(--acento);
 }
 
 .boton-parar-grabacion:active {
@@ -2998,6 +3000,26 @@ button.servidor-tarjeta:focus-visible {
 }
 
 .boton-parar-grabacion svg {
+    display: block;
+    width: 12px;
+    height: 12px;
+    fill: currentColor;
+}
+
+.boton-parar-grabacion .icono-reanudar {
+    display: none;
+}
+
+.boton-parar-grabacion.en-pausa {
+    border-color: var(--acento);
+    color: var(--acento);
+}
+
+.boton-parar-grabacion.en-pausa .icono-pausa {
+    display: none;
+}
+
+.boton-parar-grabacion.en-pausa .icono-reanudar {
     display: block;
 }
 
@@ -3135,16 +3157,16 @@ button.servidor-tarjeta:focus-visible {
    ese mensaje. Las ondas y la barra de progreso usan el acento de la web. */
 .adjunto-mensaje .reproductor-audio {
     width: 100%;
-    min-width: 180px;
+    min-width: 230px;
     max-width: 100%;
-    padding: 10px 8px 12px;
+    padding: 12px 10px 14px;
     gap: 12px;
-    border: 0;
+    border: 1px solid rgba(0, 0, 0, 0.10);
     border-radius: var(--radio-md);
-    background: var(--fondo-burbuja-ajena);
+    background: #e6e6e6;
     display: flex;
     align-items: center;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     cursor: pointer;
 }
 
@@ -3167,7 +3189,7 @@ button.servidor-tarjeta:focus-visible {
 .adjunto-mensaje .reproductor-audio-ondas {
     flex: 1 1 auto;
     min-width: 50px;
-    height: 26px;
+    height: 34px;
     gap: 2px;
 }
 
@@ -3175,8 +3197,8 @@ button.servidor-tarjeta:focus-visible {
     min-width: 1px;
     max-width: 4px;
     border-radius: 2px;
-    background: var(--borde-medio);
-    opacity: 0.7;
+    background: #111111;
+    opacity: 1;
     transform-origin: center;
     transition: opacity 0.25s ease, background 0.25s ease;
 }
@@ -3210,9 +3232,15 @@ button.servidor-tarjeta:focus-visible {
     flex: 0 0 auto;
     font-size: 12px;
     font-variant-numeric: tabular-nums;
-    color: var(--texto-secundario);
+    color: #3a3a3a;
     min-width: 34px;
     text-align: right;
+}
+
+/* El mensaje con audio tiene ancho fijo: todos los audios se ven iguales,
+   sin depender de lo que duren. */
+.mensaje-chat:has(.reproductor-audio) {
+    width: min(320px, 100%);
 }
 
 .meta-mensaje-servidor {
@@ -6905,6 +6933,24 @@ button.servidor-tarjeta:focus-visible {
     display: none;
 }
 
+/* Versión de la app: solo en tu propio perfil, arriba a la izquierda. El
+   selector es específico para que la regla general de la cabecera (que pone
+   position:relative a todo) no lo posicione. */
+.cabecera-perfil > .version-app-perfil {
+    position: absolute;
+    top: 8px;
+    left: 10px;
+    z-index: 2;
+    padding: 3px 9px;
+    border-radius: var(--radio-full);
+    background: rgba(0, 0, 0, 0.55);
+    color: rgba(255, 255, 255, 0.82);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    pointer-events: none;
+}
+
 .cabecera-perfil.con-fondo {
     padding-top: var(--alto-portada);
 }
@@ -7988,8 +8034,8 @@ button.estadistica-perfil:hover {
     gap: 12px;
     width: 100%;
     padding: 13px 14px;
-    background: #101010;
-    border: 1px solid var(--borde-suave);
+    background: #e6e6e6;
+    border: 1px solid rgba(0, 0, 0, 0.10);
     border-radius: var(--radio-md);
     overflow: hidden;
     box-sizing: border-box;
@@ -8049,7 +8095,7 @@ button.estadistica-perfil:hover {
     display: flex;
     align-items: center;
     gap: 3px;
-    height: 32px;
+    height: 40px;
     min-width: 0;
     overflow: hidden;
     cursor: pointer;
@@ -8060,8 +8106,8 @@ button.estadistica-perfil:hover {
     min-width: 2px;
     max-width: 6px;
     border-radius: 3px;
-    background: var(--borde-medio);
-    opacity: 0.7;
+    background: #111111;
+    opacity: 1;
     transform-origin: center;
     transition: opacity 0.25s ease, background 0.25s ease;
 }
@@ -8101,7 +8147,7 @@ button.estadistica-perfil:hover {
     flex: 0 0 auto;
     font-size: 12px;
     font-variant-numeric: tabular-nums;
-    color: var(--texto-secundario);
+    color: #3a3a3a;
     min-width: 34px;
     text-align: right;
 }
@@ -8113,7 +8159,7 @@ button.estadistica-perfil:hover {
     right: 0;
     bottom: 0;
     height: 5px;
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.3);
     cursor: pointer;
     overflow: hidden;
 }
@@ -8160,7 +8206,7 @@ button.estadistica-perfil:hover {
     width: auto;
     border: 0;
     border-radius: 0;
-    background: rgba(0, 0, 0, 0.35);
+    background: #e6e6e6;
 }
 
 .contenido-historia-pantalla > .reproductor-audio {
