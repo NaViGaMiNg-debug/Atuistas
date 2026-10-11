@@ -128,7 +128,7 @@ const ICONO_COMPOSER_MICROFONO = `
 // Versión de la app que se muestra arriba a la izquierda en tu propio perfil
 // y en la cabecera de Cuenta (dos sitios para que siempre se pueda ver).
 // Se sube junto a VERSION en public/sw.js y a las ?v= de public/index.html.
-const VERSION_APP = "v37";
+const VERSION_APP = "v39";
 
 // La de Cuenta no depende de petición ninguna: se escribe al cargar el script.
 document.getElementById("version-app-cuenta")?.replaceChildren(VERSION_APP);
@@ -8039,8 +8039,9 @@ document.addEventListener("touchend", (evento) => {
     tactoInicio = null;
     if (movido) return;
     if (boton) {
-        if (audio.paused) audio.play(); else audio.pause();
-        pintarProgresoReproductor(audio);
+        // Reusa alternarReproductorAudio: si el play falla en el movil enseña
+        // "NO SE PUEDE" en la propia pastilla en vez de quedarse en silencio.
+        alternarReproductorAudio(contenedor);
         return;
     }
     if (pista) {
