@@ -347,6 +347,86 @@ CREATE TABLE bloqueos (
 
 
 -- ============================================================
+-- SILENCIOS
+-- Silencia los avisos de una persona sin romper la amistad ni
+-- el chat: sus mensajes siguen llegando, pero no molestan.
+-- ============================================================
+
+CREATE TABLE silencios (
+    usuario_id UUID NOT NULL
+        REFERENCES usuarios(id)
+        ON DELETE CASCADE,
+
+    silenciado_id UUID NOT NULL
+        REFERENCES usuarios(id)
+        ON DELETE CASCADE,
+
+    creado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    PRIMARY KEY (usuario_id, silenciado_id),
+
+    CONSTRAINT silencios_no_self
+        CHECK (usuario_id <> silenciado_id)
+);
+
+
+-- ============================================================
+-- DENUNCIAS DE CUENTAS
+-- Marca oculta para todos: solo existe en esta tabla para que en un
+-- futuro Creador/Admin vean las cuentas denunciadas. No toca la
+-- etiqueta visible del perfil.
+-- ============================================================
+
+CREATE TABLE denuncias_cuentas (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    denunciado_id UUID NOT NULL
+        REFERENCES usuarios(id)
+        ON DELETE CASCADE,
+
+    denunciante_id UUID NOT NULL
+        REFERENCES usuarios(id)
+        ON DELETE CASCADE,
+
+    motivo VARCHAR(500) NOT NULL,
+
+    creado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT denuncias_cuentas_no_self
+        CHECK (denunciado_id <> denunciante_id),
+
+    CONSTRAINT denuncias_cuentas_motivo_check
+        CHECK (length(trim(motivo)) BETWEEN 3 AND 500),
+
+    UNIQUE (denunciado_id, denunciante_id)
+);
+
+
+-- ============================================================
+-- TUMBAS DE CUENTAS ELIMINADAS
+-- Sobrevive al borrado CASCADE para poder decirle a la cuenta
+-- eliminada quién la borró y con qué rol si reentra con su
+-- sesión vieja antes de crearse otra cuenta.
+-- ============================================================
+
+CREATE TABLE tumbas_cuentas (
+    usuario_id UUID PRIMARY KEY,
+
+    nombre VARCHAR(25) NOT NULL,
+
+    borrado_por_nombre VARCHAR(25) NOT NULL,
+
+    borrado_por_rol VARCHAR(24) NOT NULL,
+
+    -- Hash del código de vinculación: si la cuenta eliminada vuelve a
+    -- entrar con su código viejo se le avisa quién la borró.
+    codigo_vinculacion_hash TEXT,
+
+    borrado_en TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+
+-- ============================================================
 -- CONVERSACIONES PRIVADAS
 -- ============================================================
 
@@ -1149,6 +1229,12 @@ CREATE INDEX idx_solicitudes_emisor_estado
 
 CREATE INDEX idx_bloqueos_bloqueado
     ON bloqueos(bloqueado_id);
+
+CREATE INDEX idx_denuncias_cuentas_denunciado
+    ON denuncias_cuentas(denunciado_id);
+
+CREATE INDEX idx_denuncias_cuentas_denunciante
+    ON denuncias_cuentas(denunciante_id);
 
 CREATE INDEX idx_conversaciones_usuario_a
     ON conversaciones_privadas(usuario_a_id);

@@ -630,6 +630,36 @@ h2 {
     cursor: pointer;
 }
 
+/* Chat fijado: chincheta arriba a la derecha de la tarjeta. */
+.chat-amigo-fijado {
+    position: relative;
+}
+
+.chat-amigo-pin {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    font-size: 14px;
+    pointer-events: none;
+}
+
+/* Chat silenciado: campanita tachada junto a la chincheta. */
+.chat-amigo-silencio {
+    position: absolute;
+    top: 6px;
+    right: 26px;
+    font-size: 14px;
+    pointer-events: none;
+}
+
+/* Mantener pulsado: que el navegador no seleccione texto ni abra menú. */
+.chat-amigo,
+.persona-resultado {
+    -webkit-touch-callout: none;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
 
 .chat-amigo:last-child {
     border-bottom: none;

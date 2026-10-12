@@ -97,6 +97,22 @@ export async function authRoutes(app: FastifyInstance) {
                 body.dispositivo_id
             );
 
+            // La cuenta de este código fue eliminada: se le dice quién
+            // la borró y con qué rol antes de poder crearse otra.
+            const cuentaEliminada = (usuario as {
+                cuenta_eliminada?: {
+                    nombre: string;
+                    borrado_por_nombre: string;
+                    borrado_por_rol: string;
+                }
+            }).cuenta_eliminada;
+
+            if (cuentaEliminada) {
+                return reply.status(401).send({
+                    error: "Tu cuenta ha sido eliminada",
+                    cuenta_eliminada: cuentaEliminada
+                });
+            }
 
             return reply.status(200).send({
                 mensaje: "Dispositivo vinculado correctamente",

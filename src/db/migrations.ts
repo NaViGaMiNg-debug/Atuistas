@@ -567,6 +567,59 @@ export async function migrarEsquema() {
                 ON mensajes_grupo (grupo_id, canal_id)
                 WHERE datos ? 'ubicacion';
 
+            -- Silencios: no rompen la amistad, solo los avisos.
+            CREATE TABLE IF NOT EXISTS silencios (
+                usuario_id UUID NOT NULL
+                    REFERENCES usuarios(id) ON DELETE CASCADE,
+                silenciado_id UUID NOT NULL
+                    REFERENCES usuarios(id) ON DELETE CASCADE,
+                creado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                PRIMARY KEY (usuario_id, silenciado_id),
+                CONSTRAINT silencios_no_self
+                    CHECK (usuario_id <> silenciado_id)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_silencios_silenciado
+                ON silencios(silenciado_id);
+
+            -- Denuncia oculta de cuentas: no toca la etiqueta visible.
+            CREATE TABLE IF NOT EXISTS denuncias_cuentas (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                denunciado_id UUID NOT NULL
+                    REFERENCES usuarios(id) ON DELETE CASCADE,
+                denunciante_id UUID NOT NULL
+                    REFERENCES usuarios(id) ON DELETE CASCADE,
+                motivo VARCHAR(500) NOT NULL,
+                creado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                CONSTRAINT denuncias_cuentas_no_self
+                    CHECK (denunciado_id <> denunciante_id),
+                CONSTRAINT denuncias_cuentas_motivo_check
+                    CHECK (length(trim(motivo)) BETWEEN 3 AND 500),
+                UNIQUE (denunciado_id, denunciante_id)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_denuncias_cuentas_denunciado
+                ON denuncias_cuentas(denunciado_id);
+
+            CREATE INDEX IF NOT EXISTS idx_denuncias_cuentas_denunciante
+                ON denuncias_cuentas(denunciante_id);
+
+            -- Tumba para avisar a la cuenta borrada si reentra.
+            CREATE TABLE IF NOT EXISTS tumbas_cuentas (
+                usuario_id UUID PRIMARY KEY,
+                nombre VARCHAR(25) NOT NULL,
+                borrado_por_nombre VARCHAR(25) NOT NULL,
+                borrado_por_rol VARCHAR(24) NOT NULL,
+                borrado_en TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            );
+
+            ALTER TABLE tumbas_cuentas
+                ADD COLUMN IF NOT EXISTS codigo_vinculacion_hash TEXT;
+
+            CREATE INDEX IF NOT EXISTS idx_tumbas_cuentas_codigo
+                ON tumbas_cuentas(codigo_vinculacion_hash)
+                WHERE codigo_vinculacion_hash IS NOT NULL;
+
 
         `);
         await client.query("COMMIT");

@@ -128,7 +128,7 @@ const ICONO_COMPOSER_MICROFONO = `
 // Versión de la app que se muestra arriba a la izquierda en tu propio perfil
 // y en la cabecera de Cuenta (dos sitios para que siempre se pueda ver).
 // Se sube junto a VERSION en public/sw.js y a las ?v= de public/index.html.
-const VERSION_APP = "v44";
+const VERSION_APP = "v45";
 
 // La de Cuenta no depende de petición ninguna: se escribe al cargar el script.
 document.getElementById("version-app-cuenta")?.replaceChildren(VERSION_APP);
@@ -3910,13 +3910,20 @@ async function cargarAmigos() {
             return 0;
         });
 
-        datos.amigos.forEach((amigo) => {
+        // Fijados arriba del todo por orden de fijado (último fijado arriba),
+        // sin seguir el orden por recencia; el resto conserva el orden anterior.
+        const amigosOrdenados = ordenarAmigosConFijados(datos.amigos);
+
+        amigosOrdenados.forEach((amigo) => {
 
             const elemento =
                 document.createElement("div");
 
+            const fijado = estaChatFijado(amigo.id);
             elemento.className =
-                "chat-amigo";
+                fijado ? "chat-amigo chat-amigo-fijado" : "chat-amigo";
+            elemento.dataset.cuentaId = amigo.id;
+            elemento.dataset.cuentaNombre = amigo.nombre ?? "";
 
             const sinLeer = Number(amigo.mensajes_sin_leer) || 0;
 
@@ -3949,11 +3956,19 @@ async function cargarAmigos() {
                         ? `<span class="chat-amigo-punto" aria-label="Mensajes sin leer"></span>`
                         : ""
                 }
+                ${fijado ? `<span class="chat-amigo-pin" aria-label="Chat fijado">📌</span>` : ""}
+                ${amigo.es_silenciado ? `<span class="chat-amigo-silencio" aria-label="Chat silenciado">🔕</span>` : ""}
             `;
 
             elemento.addEventListener("click", () => {
+                if (pulsacionCuentaConsumida) return;
                 abrirChat(amigo);
             });
+            engancharPulsacionCuenta(elemento, {
+                id: amigo.id,
+                nombre: amigo.nombre,
+                esSilenciado: amigo.es_silenciado === true
+            }, true);
 
             listaAmigos.appendChild(elemento);
 
@@ -6308,9 +6323,12 @@ async function buscarPersonas(texto) {
             // Pulsar la tarjeta abre el perfil (así el Creador puede meterse a
             // ver cualquier cuenta); el botón AGREGAR no abre nada.
             elemento.addEventListener("click", (evento) => {
+                if (pulsacionCuentaConsumida) return;
                 if (evento.target.closest(".boton-enviar-solicitud")) return;
                 abrirPerfil(usuario.id);
             });
+
+            engancharPulsacionCuenta(elemento, { id: usuario.id, nombre: usuario.nombre }, false);
 
             elemento.addEventListener("keydown", (evento) => {
                 if (evento.key !== "Enter" && evento.key !== " ") return;
@@ -6824,6 +6842,13 @@ formularioLogin.addEventListener(
 
 
             if (!respuesta.ok) {
+
+                // La cuenta de este código fue eliminada: se le enseña
+                // quién la borró y con qué rol, sin dejar entrar.
+                if (datos.cuenta_eliminada) {
+                    mostrarAvisoCuentaEliminada(datos.cuenta_eliminada);
+                    return;
+                }
 
                 throw new Error(
                     datos.error ||
@@ -7553,6 +7578,394 @@ function leerCacheCuenta() {
         return null;
     }
 }
+
+/* ==============================
+   CHATS FIJADOS + ACCIONES DE CUENTA
+   Fijados solo en el móvil (localStorage del móvil entero): varios
+   arriba del todo por orden de fijado (último fijado arriba), con
+   chincheta. Mantener pulsado abre opciones en chats y Buscar Amigos.
+   ============================== */
+
+const CLAVE_CHATS_FIJADOS = "atuistas_chats_fijados";
+
+function leerChatsFijados() {
+    try {
+        const lista = JSON.parse(localStorage.getItem(CLAVE_CHATS_FIJADOS) || "[]");
+        if (!Array.isArray(lista)) return [];
+        // [{id, fijado_en}] ordenado por fijado_en DESC (último arriba).
+        return lista
+            .filter((item) => item && typeof item.id === "string")
+            .map((item) => ({
+                id: item.id,
+                fijado_en: Number(item.fijado_en) || 0
+            }))
+            .sort((a, b) => b.fijado_en - a.fijado_en);
+    } catch {
+        return [];
+    }
+}
+
+function guardarChatsFijados(lista) {
+    try {
+        localStorage.setItem(CLAVE_CHATS_FIJADOS, JSON.stringify(lista));
+    } catch {
+        // Sin almacenamiento no se puede fijar: se sigue sin romper nada.
+    }
+}
+
+function estaChatFijado(usuarioId) {
+    return leerChatsFijados().some((item) => item.id === usuarioId);
+}
+
+function fijarChat(usuarioId) {
+    const lista = leerChatsFijados().filter((item) => item.id !== usuarioId);
+    lista.unshift({ id: usuarioId, fijado_en: Date.now() });
+    guardarChatsFijados(lista);
+    cargarAmigos();
+}
+
+function desfijarChat(usuarioId) {
+    guardarChatsFijados(leerChatsFijados().filter((item) => item.id !== usuarioId));
+    cargarAmigos();
+}
+
+function ordenarAmigosConFijados(amigos) {
+    const fijados = leerChatsFijados();
+    const posicion = new Map(fijados.map((item, indice) => [item.id, indice]));
+    const copia = [...amigos];
+    // Fijados primero por orden de fijado; el resto conserva su orden.
+    copia.sort((a, b) => {
+        const posA = posicion.has(a.id) ? posicion.get(a.id) : Number.MAX_SAFE_INTEGER;
+        const posB = posicion.has(b.id) ? posicion.get(b.id) : Number.MAX_SAFE_INTEGER;
+        return posA - posB;
+    });
+    return copia;
+}
+
+function miEtiquetaEsModeradora() {
+    const etiqueta = (leerCacheCuenta()?.etiqueta ?? "").trim();
+    return etiqueta === "Creador" || etiqueta === "Admin";
+}
+
+// Cuenta objetivo del menú de mantener pulsado.
+let cuentaAccionActual = null;
+
+function abrirAccionesCuenta(cuenta, desdeChats) {
+    cuentaAccionActual = { ...cuenta, desdeChats: desdeChats === true };
+    const modal = document.getElementById("modal-acciones-cuenta");
+    const nombre = document.getElementById("nombre-acciones-cuenta");
+    const botonFijar = document.getElementById("boton-cuenta-fijar");
+    const botonSilenciar = document.getElementById("boton-cuenta-silenciar");
+    const botonEliminar = document.getElementById("boton-cuenta-eliminar");
+    if (!modal || !nombre) return;
+    nombre.textContent = `Cuenta: ${cuenta.nombre ?? "Desconocida"}`;
+    if (botonFijar) {
+        if (cuentaAccionActual.desdeChats) {
+            botonFijar.hidden = false;
+            botonFijar.textContent = estaChatFijado(cuenta.id) ? "DESFIJAR" : "FIJAR";
+        } else {
+            botonFijar.hidden = true;
+        }
+    }
+    if (botonSilenciar) {
+        if (cuentaAccionActual.desdeChats) {
+            botonSilenciar.hidden = false;
+            botonSilenciar.textContent = cuenta.esSilenciado ? "QUITAR SILENCIO" : "SILENCIAR";
+        } else {
+            botonSilenciar.hidden = true;
+        }
+    }
+    if (botonEliminar) {
+        botonEliminar.hidden = !miEtiquetaEsModeradora();
+    }
+    modal.hidden = false;
+}
+
+function cerrarAccionesCuenta() {
+    const modal = document.getElementById("modal-acciones-cuenta");
+    if (modal) modal.hidden = true;
+    cuentaAccionActual = null;
+}
+
+/* Motor de mantener pulsado para cuentas (chats y Buscar Amigos):
+   550ms quieto abre el menú, vibrar, y el clic que viene detrás no abre
+   nada. Botón derecho en PC también abre el menú. */
+let pulsacionCuenta = null;
+let pulsacionCuentaConsumida = false;
+
+function terminarPulsacionCuenta() {
+    if (!pulsacionCuenta) return;
+    clearTimeout(pulsacionCuenta.temporizador);
+    pulsacionCuenta = null;
+}
+
+function engancharPulsacionCuenta(elemento, cuenta, desdeChats) {
+    elemento.addEventListener("pointerdown", (evento) => {
+        pulsacionCuentaConsumida = false;
+        if (evento.pointerType === "mouse" && evento.button !== 0) return;
+        if (evento.target.closest("input, textarea, select, button, [contenteditable]")) return;
+        terminarPulsacionCuenta();
+        const inicioX = evento.clientX;
+        const inicioY = evento.clientY;
+        const idPuntero = evento.pointerId;
+        pulsacionCuenta = {
+            temporizador: setTimeout(() => {
+                terminarPulsacionCuenta();
+                pulsacionCuentaConsumida = true;
+                setTimeout(() => { pulsacionCuentaConsumida = false; }, 1200);
+                if (navigator.vibrate) navigator.vibrate(20);
+                abrirAccionesCuenta(cuenta, desdeChats);
+            }, TIEMPO_PULSACION_LARGA),
+            inicioX,
+            inicioY,
+            idPuntero
+        };
+    });
+    elemento.addEventListener("pointermove", (evento) => {
+        if (!pulsacionCuenta || evento.pointerId !== pulsacionCuenta.idPuntero) return;
+        const movidoX = Math.abs(evento.clientX - pulsacionCuenta.inicioX);
+        const movidoY = Math.abs(evento.clientY - pulsacionCuenta.inicioY);
+        if (movidoX > MARGEN_MOVIMIENTO_PULSACION || movidoY > MARGEN_MOVIMIENTO_PULSACION) {
+            terminarPulsacionCuenta();
+        }
+    });
+    for (const fin of ["pointerup", "pointercancel", "pointerleave"]) {
+        elemento.addEventListener(fin, terminarPulsacionCuenta);
+    }
+    elemento.addEventListener("contextmenu", (evento) => {
+        evento.preventDefault();
+        terminarPulsacionCuenta();
+        abrirAccionesCuenta(cuenta, desdeChats);
+    });
+}
+
+document.addEventListener("scroll", terminarPulsacionCuenta, true);
+window.addEventListener("blur", terminarPulsacionCuenta);
+
+/* ---------- Botones del menú de acciones de la cuenta ---------- */
+
+function cerrarModalPorId(id) {
+    const modal = document.getElementById(id);
+    if (modal) modal.hidden = true;
+}
+
+document.getElementById("boton-cerrar-acciones-cuenta")?.addEventListener("click", cerrarAccionesCuenta);
+
+document.getElementById("boton-cuenta-fijar")?.addEventListener("click", () => {
+    if (!cuentaAccionActual) return;
+    const yaFijado = estaChatFijado(cuentaAccionActual.id);
+    if (yaFijado) desfijarChat(cuentaAccionActual.id);
+    else fijarChat(cuentaAccionActual.id);
+    cerrarAccionesCuenta();
+});
+
+document.getElementById("boton-cuenta-silenciar")?.addEventListener("click", async () => {
+    if (!cuentaAccionActual) return;
+    const silenciado = cuentaAccionActual.esSilenciado === true;
+    const token = localStorage.getItem("atuistas_token");
+    try {
+        const respuesta = silenciado
+            ? await fetch(
+                `/api/silencios/${encodeURIComponent(cuentaAccionActual.id)}`,
+                {
+                    method: "DELETE",
+                    headers: { Authorization: `Bearer ${token}` }
+                }
+            )
+            : await fetch("/api/silencios", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({ silenciadoId: cuentaAccionActual.id })
+            });
+        const datos = await respuesta.json().catch(() => ({}));
+        if (!respuesta.ok) {
+            alert(datos.error || (silenciado
+                ? "No se pudo quitar el silencio."
+                : "No se pudo silenciar el chat."));
+            return;
+        }
+        cerrarAccionesCuenta();
+        cargarAmigos();
+    } catch {
+        alert("No se ha podido conectar con el servidor.");
+    }
+});
+
+document.getElementById("boton-cuenta-denunciar")?.addEventListener("click", () => {
+    if (!cuentaAccionActual) return;
+    const modal = document.getElementById("modal-denunciar-cuenta");
+    const nombre = document.getElementById("nombre-denunciar-cuenta");
+    const estado = document.getElementById("estado-denunciar-cuenta");
+    if (nombre) nombre.textContent = `Denunciar a: ${cuentaAccionActual.nombre ?? ""}`;
+    if (estado) estado.textContent = "";
+    const motivo = document.getElementById("motivo-denuncia-cuenta");
+    if (motivo) motivo.value = "";
+    cerrarAccionesCuenta();
+    if (modal) modal.hidden = false;
+});
+
+document.getElementById("boton-cerrar-denunciar-cuenta")?.addEventListener("click", () => {
+    cerrarModalPorId("modal-denunciar-cuenta");
+    cuentaAccionActual = null;
+});
+
+document.getElementById("boton-confirmar-denuncia-cuenta")?.addEventListener("click", async () => {
+    const estado = document.getElementById("estado-denunciar-cuenta");
+    const motivo = document.getElementById("motivo-denuncia-cuenta")?.value?.trim() ?? "";
+    if (motivo.length < 3 || motivo.length > 500) {
+        if (estado) estado.textContent = "El motivo debe tener entre 3 y 500 caracteres.";
+        return;
+    }
+    if (!cuentaAccionActual) return;
+    const token = localStorage.getItem("atuistas_token");
+    try {
+        const respuesta = await fetch("/api/denuncias/cuentas", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                denunciadoId: cuentaAccionActual.id,
+                motivo
+            })
+        });
+        const datos = await respuesta.json().catch(() => ({}));
+        if (!respuesta.ok) {
+            if (estado) estado.textContent = datos.error || "No se pudo enviar la denuncia.";
+            return;
+        }
+        cerrarModalPorId("modal-denunciar-cuenta");
+        cuentaAccionActual = null;
+    } catch {
+        if (estado) estado.textContent = "No se ha podido conectar con el servidor.";
+    }
+});
+
+document.getElementById("boton-cuenta-bloquear")?.addEventListener("click", () => {
+    if (!cuentaAccionActual) return;
+    const modal = document.getElementById("modal-bloquear-cuenta");
+    const nombre = document.getElementById("nombre-bloquear-cuenta");
+    if (nombre) nombre.textContent = `¿Seguro de que quieres bloquear a ${cuentaAccionActual.nombre ?? "esta cuenta"}?`;
+    cerrarAccionesCuenta();
+    if (modal) modal.hidden = false;
+});
+
+document.getElementById("boton-cerrar-bloquear-cuenta")?.addEventListener("click", () => {
+    cerrarModalPorId("modal-bloquear-cuenta");
+    cuentaAccionActual = null;
+});
+
+document.getElementById("boton-confirmar-bloqueo-cuenta")?.addEventListener("click", async () => {
+    if (!cuentaAccionActual) return;
+    const token = localStorage.getItem("atuistas_token");
+    try {
+        const respuesta = await fetch("/api/bloqueos", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({ bloqueadoId: cuentaAccionActual.id })
+        });
+        const datos = await respuesta.json().catch(() => ({}));
+        if (!respuesta.ok) {
+            alert(datos.error || "No se pudo bloquear la cuenta.");
+            return;
+        }
+        cerrarModalPorId("modal-bloquear-cuenta");
+        const bloqueado = cuentaAccionActual;
+        cuentaAccionActual = null;
+        // El bloqueo rompe la amistad: el chat desaparece de la lista y
+        // también su fijado, para no dejar una tarjeta sin amigo.
+        if (bloqueado) {
+            guardarChatsFijados(
+                leerChatsFijados().filter((item) => item.id !== bloqueado.id)
+            );
+        }
+        cargarAmigos();
+        buscarPersonas(document.getElementById("buscador-personas")?.value ?? "");
+    } catch {
+        alert("No se ha podido conectar con el servidor.");
+    }
+});
+
+document.getElementById("boton-cuenta-eliminar")?.addEventListener("click", () => {
+    if (!cuentaAccionActual) return;
+    const modal = document.getElementById("modal-eliminar-cuenta");
+    const nombre = document.getElementById("nombre-eliminar-cuenta");
+    const estado = document.getElementById("estado-eliminar-cuenta");
+    const texto = document.getElementById("texto-confirmar-eliminar-cuenta");
+    if (nombre) nombre.textContent = `Eliminar a: ${cuentaAccionActual.nombre ?? ""}`;
+    if (estado) estado.textContent = "Se borrará la cuenta y todo lo suyo. No se puede deshacer.";
+    if (texto) texto.value = "";
+    cerrarAccionesCuenta();
+    if (modal) modal.hidden = false;
+});
+
+document.getElementById("boton-cerrar-eliminar-cuenta")?.addEventListener("click", () => {
+    cerrarModalPorId("modal-eliminar-cuenta");
+    cuentaAccionActual = null;
+});
+
+document.getElementById("boton-confirmar-eliminar-cuenta")?.addEventListener("click", async () => {
+    const estado = document.getElementById("estado-eliminar-cuenta");
+    const texto = (document.getElementById("texto-confirmar-eliminar-cuenta")?.value ?? "").trim();
+    if (texto !== "ELIMINAR") {
+        if (estado) estado.textContent = "Escribe ELIMINAR en mayúsculas para confirmar.";
+        return;
+    }
+    if (!cuentaAccionActual) return;
+    const token = localStorage.getItem("atuistas_token");
+    try {
+        const respuesta = await fetch(
+            `/api/admin/usuarios/${encodeURIComponent(cuentaAccionActual.id)}`,
+            {
+                method: "DELETE",
+                headers: { Authorization: `Bearer ${token}` }
+            }
+        );
+        const datos = await respuesta.json().catch(() => ({}));
+        if (!respuesta.ok) {
+            if (estado) estado.textContent = datos.error || "No se pudo eliminar la cuenta.";
+            return;
+        }
+        cerrarModalPorId("modal-eliminar-cuenta");
+        const eliminada = cuentaAccionActual;
+        cuentaAccionActual = null;
+        if (eliminada) {
+            guardarChatsFijados(
+                leerChatsFijados().filter((item) => item.id !== eliminada.id)
+            );
+        }
+        cargarAmigos();
+        buscarPersonas(document.getElementById("buscador-personas")?.value ?? "");
+    } catch {
+        if (estado) estado.textContent = "No se ha podido conectar con el servidor.";
+    }
+});
+
+/* ---------- Aviso al reentrar: la cuenta fue eliminada ---------- */
+
+function mostrarAvisoCuentaEliminada(tumba) {
+    const modal = document.getElementById("modal-cuenta-eliminada");
+    const texto = document.getElementById("texto-cuenta-eliminada");
+    if (!modal || !texto || !tumba) return;
+    texto.textContent =
+        `Tu cuenta "${tumba.nombre}" fue eliminada por ` +
+        `${tumba.borrado_por_nombre} con el rol ${tumba.borrado_por_rol}.`;
+    modal.hidden = false;
+}
+
+document.getElementById("boton-aceptar-cuenta-eliminada")?.addEventListener("click", () => {
+    cerrarModalPorId("modal-cuenta-eliminada");
+    // Se limpia el código para que no se repita el aviso al recargar.
+    codigoLogin.value = "";
+    codigoLogin.focus();
+});
 
 function pintarNombreCuenta(nombre, color) {
     if (nombreCuenta) {

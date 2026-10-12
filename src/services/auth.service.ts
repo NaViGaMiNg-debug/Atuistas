@@ -7,6 +7,7 @@ import {
     obtenerHashCodigo,
     descifrarCodigo
 } from "./codigo.service.js";
+import { obtenerTumbaPorCodigoHash } from "./moderacion.service.js";
 
 
 /* ==============================
@@ -245,6 +246,14 @@ export async function vincularDispositivo(
 
 
     if (resultado.rowCount === 0) {
+
+        // El código no existe: puede ser que la cuenta asociada se
+        // hubiera eliminado. En ese caso se le dice quién la borró y
+        // con qué rol, antes de que pueda crearse otra cuenta.
+        const tumba = await obtenerTumbaPorCodigoHash(codigoHash);
+        if (tumba) {
+            return { cuenta_eliminada: tumba };
+        }
 
         throw new Error(
             "Código de vinculación incorrecto"

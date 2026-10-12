@@ -2,6 +2,7 @@ import { db } from "../db/database.js";
 import { enviarPush } from "./push.service.js";
 import { estaViendoA, estaViendoServidor } from "./presencia.service.js";
 import { nombrePara } from "./apodos.service.js";
+import { estaSilenciado } from "./moderacion.service.js";
 
 // Ventana en la que se agrupan los avisos seguidos de la misma persona.
 const VENTANA_GRUPO_MINUTOS = 10;
@@ -84,6 +85,10 @@ export async function crearNotificacion(
     if (titulo.length > 150 || contenido.length > 500) return;
     const columna = preferencias[preferencia];
     const deAlguien = Boolean(autorId) && autorId !== usuarioId;
+
+    // Si quien provoca el aviso está silenciado por el destinatario, no
+    // se le molesta: ni aviso en la campanita ni Push.
+    if (deAlguien && autorId && await estaSilenciado(usuarioId, autorId)) return;
 
     // Si el destinatario tiene delante justo lo que le va a llegar, no se le
     // molesta: ya lo está viendo en el chat o en el servidor.

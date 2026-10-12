@@ -429,7 +429,13 @@ export async function obtenerAmigos(usuarioId: string) {
                 WHERE mp.autor_id = $1::uuid
                   AND cp.usuario_a_id = LEAST($1::uuid, u.id)
                   AND cp.usuario_b_id = GREATEST($1::uuid, u.id)
-            ) AS ultimo_enviado
+            ) AS ultimo_enviado,
+            -- Silenciado: sus avisos no llegan (el chat sigue funcionando).
+            EXISTS (
+                SELECT 1 FROM silencios s
+                WHERE s.usuario_id = $1::uuid
+                  AND s.silenciado_id = u.id
+            ) AS es_silenciado
         FROM amistades a
         INNER JOIN usuarios u
             ON (

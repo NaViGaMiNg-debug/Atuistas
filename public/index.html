@@ -14,7 +14,7 @@
 
     <link
         rel="stylesheet"
-        href="/style.css?v=44"
+        href="/style.css?v=45"
     >
 
     <link rel="icon" href="/icon.svg" type="image/svg+xml">
@@ -2628,11 +2628,290 @@
 
             </div>
 
+            <!-- MODAL CUENTA: mantener pulsado en chats/Buscar Amigos -->
+
+            <div
+                id="modal-acciones-cuenta"
+                class="modal modal-contenido-social"
+                hidden
+            >
+
+                <div
+                    class="modal-contenido"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="titulo-acciones-cuenta"
+                >
+
+                    <button
+                        id="boton-cerrar-acciones-cuenta"
+                        class="boton-cerrar-modal"
+                        type="button"
+                        aria-label="Cerrar"
+                    >
+                        ×
+                    </button>
+
+                    <h2 id="titulo-acciones-cuenta">
+                        Opciones de la cuenta
+                    </h2>
+
+                    <p
+                        id="nombre-acciones-cuenta"
+                        class="estado-amigos"
+                        aria-live="polite"
+                    ></p>
+
+                    <button
+                        id="boton-cuenta-fijar"
+                        type="button"
+                        hidden
+                    >
+                        FIJAR
+                    </button>
+
+                    <button
+                        id="boton-cuenta-denunciar"
+                        type="button"
+                    >
+                        DENUNCIAR
+                    </button>
+
+                    <button
+                        id="boton-cuenta-silenciar"
+                        type="button"
+                        hidden
+                    >
+                        SILENCIAR
+                    </button>
+
+                    <button
+                        id="boton-cuenta-bloquear"
+                        type="button"
+                    >
+                        BLOQUEAR
+                    </button>
+
+                    <button
+                        id="boton-cuenta-eliminar"
+                        class="peligro"
+                        type="button"
+                        hidden
+                    >
+                        ELIMINAR CUENTA
+                    </button>
+
+                </div>
+
+            </div>
+
+            <!-- MODAL DENUNCIAR: motivo obligatorio 3-500 -->
+
+            <div
+                id="modal-denunciar-cuenta"
+                class="modal modal-contenido-social"
+                hidden
+            >
+
+                <div
+                    class="modal-contenido"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="titulo-denunciar-cuenta"
+                >
+
+                    <button
+                        id="boton-cerrar-denunciar-cuenta"
+                        class="boton-cerrar-modal"
+                        type="button"
+                        aria-label="Cerrar"
+                    >
+                        ×
+                    </button>
+
+                    <h2 id="titulo-denunciar-cuenta">
+                        Denunciar cuenta
+                    </h2>
+
+                    <p
+                        id="nombre-denunciar-cuenta"
+                        class="estado-amigos"
+                        aria-live="polite"
+                    ></p>
+
+                    <label for="motivo-denuncia-cuenta">
+                        Motivo (obligatorio, 3-500 caracteres)
+                    </label>
+
+                    <textarea
+                        id="motivo-denuncia-cuenta"
+                        rows="4"
+                        maxlength="500"
+                    ></textarea>
+
+                    <p
+                        id="estado-denunciar-cuenta"
+                        class="estado-amigos"
+                        aria-live="polite"
+                    ></p>
+
+                    <button
+                        id="boton-confirmar-denuncia-cuenta"
+                        type="button"
+                    >
+                        ENVIAR DENUNCIA
+                    </button>
+
+                </div>
+
+            </div>
+
+            <!-- MODAL BLOQUEAR: pregunta si está seguro -->
+
+            <div
+                id="modal-bloquear-cuenta"
+                class="modal modal-contenido-social"
+                hidden
+            >
+
+                <div
+                    class="modal-contenido"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="titulo-bloquear-cuenta"
+                >
+
+                    <button
+                        id="boton-cerrar-bloquear-cuenta"
+                        class="boton-cerrar-modal"
+                        type="button"
+                        aria-label="Cerrar"
+                    >
+                        ×
+                    </button>
+
+                    <h2 id="titulo-bloquear-cuenta">
+                        Bloquear cuenta
+                    </h2>
+
+                    <p
+                        id="nombre-bloquear-cuenta"
+                        class="estado-amigos"
+                        aria-live="polite"
+                    ></p>
+
+                    <button
+                        id="boton-confirmar-bloqueo-cuenta"
+                        class="peligro"
+                        type="button"
+                    >
+                        SÍ, BLOQUEAR
+                    </button>
+
+                </div>
+
+            </div>
+
+            <!-- MODAL ELIMINAR: solo Creador/Admin, pide ELIMINAR -->
+
+            <div
+                id="modal-eliminar-cuenta"
+                class="modal modal-contenido-social"
+                hidden
+            >
+
+                <div
+                    class="modal-contenido"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="titulo-eliminar-cuenta"
+                >
+
+                    <button
+                        id="boton-cerrar-eliminar-cuenta"
+                        class="boton-cerrar-modal"
+                        type="button"
+                        aria-label="Cerrar"
+                    >
+                        ×
+                    </button>
+
+                    <h2 id="titulo-eliminar-cuenta">
+                        Eliminar cuenta
+                    </h2>
+
+                    <p
+                        id="nombre-eliminar-cuenta"
+                        class="estado-amigos"
+                        aria-live="polite"
+                    ></p>
+
+                    <input
+                        id="texto-confirmar-eliminar-cuenta"
+                        type="text"
+                        autocomplete="off"
+                        placeholder="Escribe ELIMINAR"
+                    >
+
+                    <p
+                        id="estado-eliminar-cuenta"
+                        class="estado-amigos"
+                        aria-live="polite"
+                    ></p>
+
+                    <button
+                        id="boton-confirmar-eliminar-cuenta"
+                        class="peligro"
+                        type="button"
+                    >
+                        ELIMINAR PARA SIEMPRE
+                    </button>
+
+                </div>
+
+            </div>
+
+            <!-- AVISO CUENTA ELIMINADA: quién y con qué rol -->
+
+            <div
+                id="modal-cuenta-eliminada"
+                class="modal modal-contenido-social"
+                hidden
+            >
+
+                <div
+                    class="modal-contenido"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="titulo-cuenta-eliminada"
+                >
+
+                    <h2 id="titulo-cuenta-eliminada">
+                        Tu cuenta ha sido eliminada
+                    </h2>
+
+                    <p
+                        id="texto-cuenta-eliminada"
+                        class="estado-amigos"
+                        aria-live="polite"
+                    ></p>
+
+                    <button
+                        id="boton-aceptar-cuenta-eliminada"
+                        type="button"
+                    >
+                        ENTENDIDO
+                    </button>
+
+                </div>
+
+            </div>
+
     <script src="/data/emojis.js"></script>
     <!-- ?v tiene que subir junto con VERSION en sw.js cada vez que cambie
          app.js: sin esa firma, la caché del navegador y la del service worker
          sirven el fichero viejo para siempre y los arreglos no llegan nunca. -->
-    <script src="/app.js?v=44"></script>
+    <script src="/app.js?v=45"></script>
 
 </body>
 
