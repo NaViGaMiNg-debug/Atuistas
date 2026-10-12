@@ -6394,21 +6394,11 @@ button.servidor-tarjeta:focus-visible {
    controla con el interruptor de Cuenta (activo por defecto).
    ============================================================ */
 
-/* Hora del mensaje (misma línea que el texto, sin estirar la burbuja). */
-.mensaje-chat-contenido p .hora-mensaje {
-    margin-left: 6px;
-    color: var(--texto-apagado);
-    font-size: 10px;
-    white-space: nowrap;
-    font-style: normal;
-}
-
-/* Hora suelta (mensajes sin texto: solo imagen, audio o vídeo): línea propia
-   y discreta, pegada a la esquina como la burbuja. */
-.mensaje-chat-contenido > .hora-mensaje {
+/* Hora del mensaje: línea propia, muy pegada a la esquina y sin márgenes, para
+   que no parezca continuación del texto y ocupe lo mínimo. */
+.hora-mensaje {
     display: block;
     align-self: flex-end;
-    margin-top: 2px;
     padding: 0 2px;
     color: var(--texto-apagado);
     font-size: 10px;
@@ -6416,8 +6406,8 @@ button.servidor-tarjeta:focus-visible {
     white-space: nowrap;
 }
 
-/* En los mensajes recibidos la hora suelta se alinea a la izquierda. */
-.mensaje-chat-recibido .mensaje-chat-contenido > .hora-mensaje {
+/* En los mensajes recibidos la hora se alinea a la izquierda. */
+.mensaje-chat-recibido .hora-mensaje {
     align-self: flex-start;
 }
 

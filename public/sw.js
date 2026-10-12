@@ -8,7 +8,7 @@
    lo nuevo. Asi la app instalada se actualiza sola, sin reinstalarla.
    ======================================== */
 
-const VERSION = "v43";
+const VERSION = "v44";
 const CACHE = `atuistas-${VERSION}`;
 
 // Solo se cachean estos ficheros. Todo lo demas (API, subidas) va directo a
@@ -16,8 +16,8 @@ const CACHE = `atuistas-${VERSION}`;
 const RECURSOS = [
     "/",
     "/index.html",
-    "/style.css?v=43",
-    "/app.js?v=43",
+    "/style.css?v=44",
+    "/app.js?v=44",
     "/data/emojis.js",
     "/qratuistas.png",
     "/app.webmanifest",
