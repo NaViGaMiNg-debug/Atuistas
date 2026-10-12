@@ -8,7 +8,7 @@
    lo nuevo. Asi la app instalada se actualiza sola, sin reinstalarla.
    ======================================== */
 
-const VERSION = "v41";
+const VERSION = "v42";
 const CACHE = `atuistas-${VERSION}`;
 
 // Solo se cachean estos ficheros. Todo lo demas (API, subidas) va directo a
@@ -16,8 +16,8 @@ const CACHE = `atuistas-${VERSION}`;
 const RECURSOS = [
     "/",
     "/index.html",
-    "/style.css?v=41",
-    "/app.js?v=41",
+    "/style.css?v=42",
+    "/app.js?v=42",
     "/data/emojis.js",
     "/qratuistas.png",
     "/app.webmanifest",
@@ -30,7 +30,7 @@ const RECURSOS = [
 // cache.add falla entero si un recurso falla; se cachea uno a uno para que
 // un icono ausente no impida instalar el service worker entero. Escrito sin
 // Promise.allSettled (Chrome 76+) ni optional chaining para que los
-// Androides viejos puedan registrar este archivo y así instalar la PWA.
+// Androides viejos puedan registrar este archivo y asï¿½ instalar la PWA.
 function cachearTodo(cache) {
     return Promise.all(RECURSOS.map((recurso) =>
         cache.add(recurso).catch(() => null)

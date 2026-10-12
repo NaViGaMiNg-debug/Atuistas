@@ -14,7 +14,7 @@
 
     <link
         rel="stylesheet"
-        href="/style.css?v=41"
+        href="/style.css?v=42"
     >
 
     <link rel="icon" href="/icon.svg" type="image/svg+xml">
@@ -733,6 +733,33 @@
 
 
                         <p id="estado-cuenta"></p>
+
+                    </div>
+
+
+                    <!-- ==============================
+                         HORA EN LOS MENSAJES
+                         Interruptor de vista personal: la hora bajo cada
+                         mensaje y el separador con el día cuando cambia la
+                         fecha. Está activado por defecto.
+                         ============================== -->
+
+                    <div class="fila-switch-cuenta">
+
+                        <div class="texto-switch-cuenta">
+                            <strong>Hora en los mensajes</strong>
+                            <span>
+                                Muestra la hora bajo cada mensaje y un
+                                separador con el día cuando cambia la fecha.
+                            </span>
+                        </div>
+
+                        <label class="switch" for="switch-ver-hora">
+                            <input type="checkbox" id="switch-ver-hora">
+                            <span class="switch-pista" aria-hidden="true">
+                                <span class="switch-boton"></span>
+                            </span>
+                        </label>
 
                     </div>
 
@@ -1742,10 +1769,61 @@
             </div>
 
             <!-- ==============================
+                 CONFIRMAR DESACTIVAR HORA
+                 Aviso antes de apagar la hora de los mensajes: es un ajuste
+                 solo para esta persona y, si se reactiva, las horas antiguas
+                 no vuelven.
+                 ============================== -->
+
+            <div id="modal-confirmar-hora" class="modal modal-contenido-social" hidden>
+
+                <section
+                    class="dialogo-social dialogo-confirmar-hora"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="titulo-confirmar-hora"
+                >
+
+                    <header class="cabecera-dialogo-social">
+                        <h2 id="titulo-confirmar-hora">¿Desactivar la hora de los mensajes?</h2>
+                    </header>
+
+                    <p class="texto-confirmar-hora">
+                        Este ajuste solo se desactiva <strong>para ti</strong>:
+                        las demás personas siguen viendo la hora con normalidad.
+                    </p>
+
+                    <p class="texto-confirmar-hora">
+                        Ten en cuenta que, si más adelante lo vuelves a activar,
+                        <strong>no podrás recuperar</strong> la hora de los
+                        mensajes anteriores: solo verás la hora de los mensajes
+                        nuevos que se envíen mientras lo tengas activado.
+                    </p>
+
+                    <div class="acciones-confirmar-hora">
+                        <button
+                            id="boton-cancelar-hora"
+                            class="boton-secundario-confirmar"
+                            type="button"
+                        >CANCELAR</button>
+                        <button
+                            id="boton-desactivar-hora"
+                            class="boton-peligro"
+                            type="button"
+                        >DESACTIVAR</button>
+                    </div>
+
+                </section>
+
+            </div>
+
+
+            <!-- ==============================
                  MENÚ CREAR (botón central)
                  Tres tipos: reels, historias y
                  publicaciones.
                  ============================== -->
+
 
             <div id="modal-crear" class="modal modal-contenido-social" hidden>
 
@@ -2554,7 +2632,7 @@
     <!-- ?v tiene que subir junto con VERSION en sw.js cada vez que cambie
          app.js: sin esa firma, la caché del navegador y la del service worker
          sirven el fichero viejo para siempre y los arreglos no llegan nunca. -->
-    <script src="/app.js?v=41"></script>
+    <script src="/app.js?v=42"></script>
 
 </body>
 

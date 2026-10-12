@@ -6386,6 +6386,193 @@ button.servidor-tarjeta:focus-visible {
     object-fit: cover;
 }
 
+
+/* ============================================================
+   HORA EN LOS MENSAJES Y SEPARADOR DE DÍA
+   La hora va muy pequeña debajo de cada mensaje; el separador es
+   un cuadradito centrado que aparece cuando cambia la fecha. Se
+   controla con el interruptor de Cuenta (activo por defecto).
+   ============================================================ */
+
+/* Hora bajo el mensaje: discreta, pegada al borde inferior. */
+.hora-mensaje {
+    display: block;
+    /* Alineada a la derecha en los propios y a la izquierda en los ajenos,
+       igual que la burbuja, mediante el margen automático del eje cruzado. */
+    align-self: flex-end;
+    margin-top: 2px;
+    padding: 0 2px;
+    color: var(--texto-apagado);
+    font-size: 10px;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+/* En los mensajes recibidos la hora se alinea a la izquierda. */
+.mensaje-chat-recibido .hora-mensaje {
+    align-self: flex-start;
+}
+
+/* Separador de día: cápsula centrada en el ancho del chat. */
+.separador-dia {
+    align-self: center;
+    margin: 12px 0 6px;
+    padding: 3px 12px;
+    border-radius: var(--radio-full);
+    background: var(--fondo-hover);
+    color: var(--texto-tenue);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    text-align: center;
+    user-select: none;
+}
+
+
+/* ============================================================
+   INTERRUPTOR DE CUENTA (HORA EN LOS MENSAJES)
+   Fila con texto a la izquierda y un interruptor bonito a la
+   derecha, más elegante que una casilla cuadrada.
+   ============================================================ */
+
+.fila-switch-cuenta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    width: 100%;
+    margin: 4px 0 22px;
+    padding: 12px 14px;
+    border: 1px solid var(--borde-medio);
+    border-radius: var(--radio-md);
+    background: var(--fondo-elevado);
+}
+
+.texto-switch-cuenta {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
+
+.texto-switch-cuenta strong {
+    font-size: 15px;
+}
+
+.texto-switch-cuenta span {
+    color: var(--texto-tenue);
+    font-size: 12px;
+    line-height: 1.35;
+}
+
+/* El input real se oculta: lo visible es la pista con su botón. */
+.switch input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.switch {
+    position: relative;
+    flex-shrink: 0;
+    display: inline-block;
+}
+
+.switch-pista {
+    display: block;
+    width: 50px;
+    height: 28px;
+    padding: 3px;
+    border-radius: var(--radio-full);
+    background: var(--fondo-activo);
+    box-shadow: inset 0 0 0 1px var(--borde-fuerte);
+    cursor: pointer;
+    transition: background var(--transicion-base, 0.18s), box-shadow var(--transicion-base, 0.18s);
+}
+
+.switch-boton {
+    display: block;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--texto-principal);
+    transition: transform var(--transicion-base, 0.18s);
+}
+
+.switch input:checked + .switch-pista {
+    background: var(--acento);
+    box-shadow: inset 0 0 0 1px var(--acento-claro);
+}
+
+.switch input:checked + .switch-pista .switch-boton {
+    transform: translateX(22px);
+}
+
+/* El foco de teclado se ve en la pista, no en el input invisible. */
+.switch input:focus-visible + .switch-pista {
+    outline: 2px solid var(--acento-claro);
+    outline-offset: 2px;
+}
+
+
+/* ============================================================
+   MODAL DE CONFIRMACIÓN (DESACTIVAR HORA)
+   ============================================================ */
+
+.dialogo-confirmar-hora h2 {
+    font-size: 19px;
+    line-height: 1.3;
+}
+
+.texto-confirmar-hora {
+    margin: 0 0 12px;
+    color: var(--texto-secundario);
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.texto-confirmar-hora strong {
+    color: var(--texto-principal);
+}
+
+.acciones-confirmar-hora {
+    display: flex;
+    gap: 10px;
+    margin-top: 18px;
+}
+
+.acciones-confirmar-hora button {
+    flex: 1;
+    min-height: 44px;
+    padding: 10px 14px;
+    border: 1px solid var(--borde-medio);
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.boton-secundario-confirmar {
+    background: var(--fondo-hover);
+    color: var(--texto-principal);
+}
+
+.boton-secundario-confirmar:hover {
+    background: var(--fondo-activo);
+}
+
+.acciones-confirmar-hora .boton-peligro {
+    background: #451d1d;
+    border-color: #662929;
+    color: #ff9d9d;
+}
+
+.acciones-confirmar-hora .boton-peligro:hover {
+    background: #5a2727;
+}
+
+
 .cabecera-historia-pantalla button {
     position: absolute;
     top: 0;

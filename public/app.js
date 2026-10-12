@@ -128,7 +128,7 @@ const ICONO_COMPOSER_MICROFONO = `
 // Versión de la app que se muestra arriba a la izquierda en tu propio perfil
 // y en la cabecera de Cuenta (dos sitios para que siempre se pueda ver).
 // Se sube junto a VERSION en public/sw.js y a las ?v= de public/index.html.
-const VERSION_APP = "v41";
+const VERSION_APP = "v42";
 
 // La de Cuenta no depende de petición ninguna: se escribe al cargar el script.
 document.getElementById("version-app-cuenta")?.replaceChildren(VERSION_APP);
@@ -1006,6 +1006,12 @@ const botonCerrarSesion =
 
 const guardadoCuenta =
     document.getElementById("guardado-cuenta");
+
+const switchVerHora =
+    document.getElementById("switch-ver-hora");
+
+const modalConfirmarHora =
+    document.getElementById("modal-confirmar-hora");
 
 const vistaNombreCuenta =
     document.getElementById("nombre-color-cuenta");
@@ -2981,6 +2987,97 @@ async function abrirChat(amigo) {
     }
 }
 
+/* ==============================
+   HORA EN LOS MENSAJES (vista personal)
+   Cada persona decide si ve, bajo cada mensaje, la hora a la que se envió, y
+   si aparece el separador centrado con el día cuando la fecha cambia. Es un
+   ajuste suyo y solo suyo: no cambia lo que ven las demás personas.
+
+   La clave "atuistas_ver_hora" dice si está activo ("1") o no ("0"). Si no
+   existe nada guardado se considera activo, que es el estado por defecto.
+
+   La clave "atuistas_hora_desde" guarda la fecha y hora exactas del momento
+   en que se reactivó. Gracias a ella, al volver a activar NO reaparecen las
+   horas de los mensajes viejos (los anteriores a ese instante se quedan sin
+   hora para siempre); solo los mensajes nuevos enviados a partir de entonces
+   vuelven a mostrar su hora.
+   ============================== */
+
+const CLAVE_VER_HORA = "atuistas_ver_hora";
+const CLAVE_HORA_DESDE = "atuistas_hora_desde";
+
+// ¿Está la vista de hora activada para esta persona?
+function verHoraActivado() {
+    return localStorage.getItem(CLAVE_VER_HORA) !== "0";
+}
+
+// Fecha (en ms) a partir de la cual se permite mostrar la hora. Si no hay
+// corte guardado, se muestra siempre (nunca se ha desactivado).
+function horaVisibleDesde() {
+    const guardado = localStorage.getItem(CLAVE_HORA_DESDE);
+    if (!guardado) return null;
+    const fecha = new Date(guardado).getTime();
+    return Number.isNaN(fecha) ? null : fecha;
+}
+
+// ¿Debe este mensaje concreto enseñar su hora? Solo si la vista está activa y
+// el mensaje se envió después del último corte (o nunca hubo corte).
+function debeMostrarHora(mensaje) {
+    if (!verHoraActivado()) return false;
+    const desde = horaVisibleDesde();
+    if (desde === null) return true;
+    const creado = new Date(mensaje.creado_en).getTime();
+    if (Number.isNaN(creado)) return false;
+    return creado >= desde;
+}
+
+// Clave de día (año-mes-día) en la zona local, para agrupar por fecha.
+function claveDia(iso) {
+    const fecha = new Date(iso);
+    if (Number.isNaN(fecha.getTime())) return "";
+    const mes = String(fecha.getMonth() + 1).padStart(2, "0");
+    const dia = String(fecha.getDate()).padStart(2, "0");
+    return `${fecha.getFullYear()}-${mes}-${dia}`;
+}
+
+// "5 de noviembre de 2025"
+function textoDia(iso) {
+    const fecha = new Date(iso);
+    if (Number.isNaN(fecha.getTime())) return "";
+    return fecha.toLocaleDateString(undefined, {
+        day: "numeric",
+        month: "long",
+        year: "numeric"
+    });
+}
+
+// "14:35"
+function textoHora(iso) {
+    const fecha = new Date(iso);
+    if (Number.isNaN(fecha.getTime())) return "";
+    return fecha.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
+// El separador solo tiene sentido mientras la vista de hora esté activa: si no,
+// se enseña siempre, porque entonces no hay horas que contextualizar.
+function separadorDiaVisible(mensaje) {
+    return verHoraActivado() && debeMostrarHora(mensaje);
+}
+
+// Nodo DOM del separador de día (chat privado).
+function crearNodoSeparadorDia(iso) {
+    const separador = document.createElement("div");
+    separador.className = "separador-dia";
+    separador.dataset.separador = claveDia(iso);
+    separador.textContent = textoDia(iso);
+    return separador;
+}
+
+// Igual, pero como cadena de HTML (servidor).
+function htmlSeparadorDia(iso) {
+    return `<div class="separador-dia" data-separador="${claveDia(iso)}">${textoDia(iso)}</div>`;
+}
+
 /* ---------- Pintar los mensajes del chat privado ----------
 
    Antes la lista se borraba entera y se volvía a construir en cada refresco
@@ -2999,6 +3096,9 @@ function firmaMensaje(mensaje) {
         mensaje.editado_en ?? null,
         mensaje.archivo_ruta ?? null,
         mensaje.mensaje_respuesta_contenido ?? null,
+        // Si se activa o desactiva la hora hay que rehacer el nodo, así que el
+        // estado de "¿se ve la hora?" entra en la firma.
+        debeMostrarHora(mensaje) ? textoHora(mensaje.creado_en) : "",
         ubicacion
             ? [Number(ubicacion.lat), Number(ubicacion.lon), ubicacion.enVivo === true]
             : null
@@ -3079,6 +3179,16 @@ function crearNodoMensajeChat(mensaje) {
         envoltura.appendChild(contenido);
     }
 
+    // Hora del envío, muy pequeña y debajo de todo (si la vista está activa y
+    // el mensaje es posterior al último corte).
+    if (debeMostrarHora(mensaje)) {
+        const hora = document.createElement("time");
+        hora.className = "hora-mensaje";
+        hora.dateTime = mensaje.creado_en;
+        hora.textContent = textoHora(mensaje.creado_en);
+        envoltura.appendChild(hora);
+    }
+
     elemento.appendChild(envoltura);
     elemento.dataset.firma = firmaMensaje(mensaje);
 
@@ -3086,35 +3196,72 @@ function crearNodoMensajeChat(mensaje) {
 }
 
 function pintarMensajesChat(listaMensajes, mensajes) {
-    // Los nodos que ya están en pantalla, indexados por id de mensaje.
-    const existentes = new Map();
+    // Nodos ya en pantalla: los mensajes por su id y los separadores por su
+    // clave de día. Reutilizando también los separadores, en un chat estable no
+    // se mueve ni un solo nodo (así no se reinicia ningún audio ni vídeo).
+    const porMensajeId = new Map();
+    const porSeparador = new Map();
     for (const nodo of listaMensajes.children) {
-        if (nodo.dataset?.mensajeId) existentes.set(nodo.dataset.mensajeId, nodo);
+        if (nodo.dataset?.mensajeId) porMensajeId.set(nodo.dataset.mensajeId, nodo);
+        else if (nodo.dataset?.separador) porSeparador.set(nodo.dataset.separador, nodo);
     }
 
+    // Secuencia de nodos que debe quedar en pantalla, ya en orden.
+    const deseados = [];
+    let diaPrevio = null;
+
     mensajes.forEach((mensaje) => {
-        const previo = existentes.get(mensaje.id);
-        existentes.delete(mensaje.id);
         // Ficha para la barra de selección: decide si la papelera se enseña.
         mensajesChatPorId.set(mensaje.id, mensaje);
 
+        // Separador de día: aparece cuando la fecha cambia respecto al mensaje
+        // anterior que sí lleva hora.
+        const conHora = separadorDiaVisible(mensaje);
+        const dia = conHora ? claveDia(mensaje.creado_en) : null;
+        if (dia !== null && dia !== diaPrevio) {
+            const sepPrevio = porSeparador.get(dia);
+            if (sepPrevio) {
+                porSeparador.delete(dia);
+                deseados.push(sepPrevio);
+            } else {
+                deseados.push(crearNodoSeparadorDia(mensaje.creado_en));
+            }
+        }
+        if (dia !== null) diaPrevio = dia;
+
+        const previo = porMensajeId.get(mensaje.id);
+        porMensajeId.delete(mensaje.id);
+
         // Mismo mensaje y mismo contenido: no se toca el nodo, y con él se
         // quedan intactos la foto, el audio en marcha y el mapa ya descargado.
-        if (previo && previo.dataset.firma === firmaMensaje(mensaje)) return;
+        if (previo && previo.dataset.firma === firmaMensaje(mensaje)) {
+            deseados.push(previo);
+            return;
+        }
 
         const nodo = crearNodoMensajeChat(mensaje);
         configurarGestoMensajeChat(nodo, mensaje);
-
-        if (previo) {
-            listaMensajes.replaceChild(nodo, previo);
-        } else {
-            listaMensajes.appendChild(nodo);
-        }
+        deseados.push(nodo);
     });
 
-    // Los que quedan sin usar son mensajes que ya no existen (borrados).
-    for (const sobra of existentes.values()) {
-        sobra.remove();
+    // Se recoloca cada nodo en su sitio sin destruir los reutilizados: se
+    // recorre la secuencia deseada y se inserta delante del nodo de referencia.
+    // Si el nodo ya está donde toca, no se mueve (así no parpadea nada).
+    let referencia = listaMensajes.firstChild;
+    for (const nodo of deseados) {
+        if (referencia === nodo) {
+            referencia = nodo.nextSibling;
+            continue;
+        }
+        listaMensajes.insertBefore(nodo, referencia);
+    }
+
+    // Lo que quede por delante de la referencia sobra: mensajes borrados o
+    // separadores viejos que ya no tocan.
+    while (referencia) {
+        const sobrante = referencia;
+        referencia = referencia.nextSibling;
+        sobrante.remove();
     }
 }
 
@@ -4534,12 +4681,22 @@ const autorId = mensaje.autor_id;
         ? `<p>${escapeHtml(mensaje.contenido)}</p>`
         : "";
 
+    // La hora bajo el mensaje respeta el ajuste personal: solo se pinta si la
+    // vista está activa y el mensaje es posterior al último corte. El data-con-hora
+    // sirve para saber, al llegar un mensaje nuevo en caliente, si hay que abrir
+    // un separador de día.
+    const conHora = separadorDiaVisible(mensaje);
+    const horaHtml = conHora
+        ? `<time class="hora-mensaje" datetime="${escapeHtml(mensaje.creado_en)}">${textoHora(mensaje.creado_en)}</time>`
+        : "";
+
     return `
         <article class="mensaje-chat mensaje-chat-${mensaje.es_mio ? "enviado" : "recibido"}
                     ${mensaje.oculto ? "es-oculto" : ""} ${ocultoAjeno ? "oculto-ajeno" : ""}
                     ${mensajesSeleccionadosServidor.has(mensaje.id) ? "mensaje-chat-seleccionado" : ""}"
                  data-mensaje-id="${escapeHtml(mensaje.id)}" data-es-mio="${mensaje.es_mio ? "1" : "0"}"
                  data-autor-id="${escapeHtml(mensaje.autor_id ?? "")}"
+                 data-creado="${escapeHtml(mensaje.creado_en)}" data-con-hora="${conHora ? "1" : "0"}"
                  data-tipo-mensaje="${escapeHtml(mensaje.tipo || "texto")}">
             ${cabecera}
             ${cita}
@@ -4547,23 +4704,35 @@ const autorId = mensaje.autor_id;
                 ${adjunto}
                 ${htmlTarjetaUbicacion(mensaje)}
                 ${cuerpo}
-                <span class="meta-mensaje-servidor">${insignias.join("")}
-                    <time>${new Date(mensaje.creado_en).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</time>
-                </span>
+                <span class="meta-mensaje-servidor">${insignias.join("")}</span>
+                ${horaHtml}
             </div>
         </article>
     `;
 }
 
-// Agrupa por autor para decidir quién necesita cabecera.
+// Agrupa por autor para decidir quién necesita cabecera, e intercala el
+// separador de día cada vez que cambia la fecha entre mensajes que llevan hora.
 function plantillasMensajesGrupo(mensajes) {
     let autorPrevio = null;
-    return mensajes.map((mensaje) => {
+    let diaPrevio = null;
+    const salida = [];
+    mensajes.forEach((mensaje) => {
         // Los adjuntos y los ocultos rompen el agrupado: siempre llevan cabecera.
         const conCabecera = autorPrevio !== mensaje.autor_id || mensaje.tipo !== "texto";
         autorPrevio = mensaje.autor_id;
-        return plantillaMensaje(mensaje, { mostrarAutor: conCabecera });
+
+        // Separador de día cuando la fecha cambia respecto al mensaje anterior.
+        const conHora = separadorDiaVisible(mensaje);
+        const dia = conHora ? claveDia(mensaje.creado_en) : null;
+        if (dia !== null && dia !== diaPrevio) {
+            salida.push(htmlSeparadorDia(mensaje.creado_en));
+        }
+        if (dia !== null) diaPrevio = dia;
+
+        salida.push(plantillaMensaje(mensaje, { mostrarAutor: conCabecera }));
     });
+    return salida;
 }
 
 async function cargarMensajesServidor() {
@@ -5898,6 +6067,16 @@ function agregarMensajeServidor(mensaje) {
     const elemento = contenedor.firstElementChild;
     if (!elemento) return;
     elemento.dataset.autorId = mensaje.autor_id ?? "";
+
+    // Separador de día: si este mensaje lleva hora y su día difiere del último
+    // mensaje con hora que ya está en pantalla, se abre el separador antes.
+    if (elemento.dataset.conHora === "1") {
+        const ultimoConHora = [...mensajesServidor.querySelectorAll(".mensaje-chat[data-con-hora='1']")].pop();
+        const diaUltimo = ultimoConHora?.dataset.creado ? claveDia(ultimoConHora.dataset.creado) : null;
+        if (claveDia(mensaje.creado_en) !== diaUltimo) {
+            mensajesServidor.insertAdjacentHTML("beforeend", htmlSeparadorDia(mensaje.creado_en));
+        }
+    }
 
     mensajesServidor.appendChild(elemento);
     configurarGestoMensajeServidor(elemento, mensaje);
@@ -7273,6 +7452,9 @@ async function cargarCuenta() {
 
         mostrarGuardadoCuenta("");
 
+        // El interruptor de la hora refleja el ajuste personal guardado.
+        if (switchVerHora) switchVerHora.checked = verHoraActivado();
+
         nombreCuentaEditar.value =
             usuario.nombre;
 
@@ -7391,6 +7573,62 @@ function mostrarGuardadoCuenta(mensaje, esError = false) {
     guardadoCuenta.textContent = mensaje;
     guardadoCuenta.classList.toggle("error", esError);
 }
+
+/* ==============================
+   INTERRUPTOR DE LA HORA EN MENSAJES
+   Ajuste de vista personal guardado en el navegador. Está activado por
+   defecto. Al desactivar se avisa (es solo para esta persona) y, al reactivar,
+   se fija un corte para que las horas antiguas no vuelvan: solo los mensajes
+   nuevos enviados a partir de entonces muestran su hora.
+   ============================== */
+
+// Repinta lo que esté abierto para que el cambio se vea al instante. Desde
+// Cuenta no suele haber nada abierto, así que el ajuste se aplicará al entrar
+// de nuevo en un chat o un servidor.
+function repintarConversacionesVisibles() {
+    if (amigoChatActual) cargarMensajesChat();
+    if (grupoActual) cargarMensajesServidor();
+}
+
+// Reactivar fija el corte: desde este instante solo los mensajes nuevos
+// muestran hora; los anteriores se quedan sin ella.
+function activarVerHora() {
+    localStorage.setItem(CLAVE_HORA_DESDE, new Date().toISOString());
+    localStorage.setItem(CLAVE_VER_HORA, "1");
+}
+
+// Desactivar solo apaga la vista. El corte se fija al reactivar.
+function desactivarVerHora() {
+    localStorage.setItem(CLAVE_VER_HORA, "0");
+}
+
+switchVerHora?.addEventListener("change", () => {
+    if (switchVerHora.checked) {
+        activarVerHora();
+        repintarConversacionesVisibles();
+        return;
+    }
+
+    // Quiere desactivar: se avisa antes. Mientras se decide, el interruptor
+    // vuelve a su estado activo para no reflejar un cambio aún no confirmado.
+    switchVerHora.checked = true;
+    if (modalConfirmarHora) modalConfirmarHora.hidden = false;
+});
+
+document.getElementById("boton-cancelar-hora")?.addEventListener("click", () => {
+    if (modalConfirmarHora) modalConfirmarHora.hidden = true;
+});
+
+document.getElementById("boton-desactivar-hora")?.addEventListener("click", () => {
+    desactivarVerHora();
+    if (modalConfirmarHora) modalConfirmarHora.hidden = true;
+    if (switchVerHora) switchVerHora.checked = false;
+    repintarConversacionesVisibles();
+});
+
+modalConfirmarHora?.addEventListener("click", (evento) => {
+    if (evento.target === modalConfirmarHora) modalConfirmarHora.hidden = true;
+});
 
 async function guardarCuenta() {
 
