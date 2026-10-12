@@ -128,7 +128,7 @@ const ICONO_COMPOSER_MICROFONO = `
 // Versión de la app que se muestra arriba a la izquierda en tu propio perfil
 // y en la cabecera de Cuenta (dos sitios para que siempre se pueda ver).
 // Se sube junto a VERSION en public/sw.js y a las ?v= de public/index.html.
-const VERSION_APP = "v42";
+const VERSION_APP = "v43";
 
 // La de Cuenta no depende de petición ninguna: se escribe al cargar el script.
 document.getElementById("version-app-cuenta")?.replaceChildren(VERSION_APP);
@@ -3175,18 +3175,25 @@ function crearNodoMensajeChat(mensaje) {
     // Un mensaje solo con archivo no necesita un párrafo vacío debajo. La
     // ubicación tampoco: el texto ("📍 ...") solo haría ruido bajo el mapa.
     const conUbicacion = Boolean(mensaje.datos?.ubicacion);
-    if ((mensaje.contenido || mensaje.editado_en) && !conUbicacion) {
+    const hayTexto = (mensaje.contenido || mensaje.editado_en) && !conUbicacion;
+    if (hayTexto) {
         envoltura.appendChild(contenido);
     }
 
-    // Hora del envío, muy pequeña y debajo de todo (si la vista está activa y
-    // el mensaje es posterior al último corte).
+    // Hora del envío (si la vista está activa y el mensaje es posterior al
+    // último corte). Va al final del propio texto, en la misma línea, para no
+    // estirar la burbuja. Si el mensaje no lleva texto (solo foto, audio o
+    // vídeo), baja como línea propia y discreta pegada a la esquina.
     if (debeMostrarHora(mensaje)) {
         const hora = document.createElement("time");
         hora.className = "hora-mensaje";
         hora.dateTime = mensaje.creado_en;
         hora.textContent = textoHora(mensaje.creado_en);
-        envoltura.appendChild(hora);
+        if (hayTexto) {
+            contenido.appendChild(hora);
+        } else {
+            envoltura.appendChild(hora);
+        }
     }
 
     elemento.appendChild(envoltura);
@@ -4677,18 +4684,25 @@ const autorId = mensaje.autor_id;
            </div>`
         : "";
 
-    const cuerpo = mensaje.contenido && !mensaje.datos?.ubicacion
-        ? `<p>${escapeHtml(mensaje.contenido)}</p>`
-        : "";
+    // Texto del mensaje (si no es una ubicación en vivo, que se pinta como mapa).
+    const tieneTexto = Boolean(mensaje.contenido) && !mensaje.datos?.ubicacion;
 
-    // La hora bajo el mensaje respeta el ajuste personal: solo se pinta si la
-    // vista está activa y el mensaje es posterior al último corte. El data-con-hora
-    // sirve para saber, al llegar un mensaje nuevo en caliente, si hay que abrir
-    // un separador de día.
+    // La hora respeta el ajuste personal: solo se pinta si la vista está activa
+    // y el mensaje es posterior al último corte. El data-con-hora sirve para
+    // saber, al llegar un mensaje nuevo en caliente, si hay que abrir un
+    // separador de día.
     const conHora = separadorDiaVisible(mensaje);
     const horaHtml = conHora
         ? `<time class="hora-mensaje" datetime="${escapeHtml(mensaje.creado_en)}">${textoHora(mensaje.creado_en)}</time>`
         : "";
+
+    // Con texto, la hora va al final del propio párrafo (misma línea) para no
+    // estirar la burbuja. Sin texto (solo imagen, audio o vídeo) baja como
+    // línea propia y discreta pegada a la esquina.
+    const cuerpo = tieneTexto
+        ? `<p>${escapeHtml(mensaje.contenido)}${horaHtml}</p>`
+        : "";
+    const horaSuelta = tieneTexto ? "" : horaHtml;
 
     return `
         <article class="mensaje-chat mensaje-chat-${mensaje.es_mio ? "enviado" : "recibido"}
@@ -4705,7 +4719,7 @@ const autorId = mensaje.autor_id;
                 ${htmlTarjetaUbicacion(mensaje)}
                 ${cuerpo}
                 <span class="meta-mensaje-servidor">${insignias.join("")}</span>
-                ${horaHtml}
+                ${horaSuelta}
             </div>
         </article>
     `;
