@@ -166,7 +166,12 @@ export async function listarDenuncias(usuarioId: string, tipo: TipoDenuncia) {
         const out = [];
         for (const fila of lista.rows as Array<{ id: string }>) {
             const p = await db.query(
-                `SELECT u.id, u.nombre, u.etiqueta, u.color_nombre FROM usuarios u WHERE u.id = $1`,
+                `SELECT u.id, u.nombre, u.etiqueta, u.color_nombre,
+                        CASE WHEN ar.ruta IS NULL THEN NULL
+                             ELSE REPLACE(ar.ruta, '\\', '/') END AS avatar_url
+                   FROM usuarios u
+                   LEFT JOIN archivos ar ON ar.id = u.avatar_archivo_id
+                  WHERE u.id = $1`,
                 [fila.id]
             );
             if (p.rowCount !== 1) continue;
@@ -188,7 +193,17 @@ export async function listarDenuncias(usuarioId: string, tipo: TipoDenuncia) {
         for (const fila of lista.rows as Array<{ id: string }>) {
             const pub = await db.query(
                 `SELECT p.id, p.texto, p.visibilidad, p.creada_en, p.autor_id,
-                        u.nombre AS autor_nombre FROM publicaciones p
+                        u.nombre AS autor_nombre,
+                        COALESCE((
+                            SELECT json_agg(json_build_object(
+                                'tipo', mp.tipo,
+                                'url', REPLACE(a.ruta, '\\', '/')
+                            ) ORDER BY mp.orden)
+                            FROM multimedia_publicacion mp
+                            INNER JOIN archivos a ON a.id = mp.archivo_id
+                            WHERE mp.publicacion_id = p.id
+                        ), '[]'::json) AS multimedia
+                   FROM publicaciones p
                    INNER JOIN usuarios u ON u.id = p.autor_id WHERE p.id = $1`,
                 [fila.id]
             );
@@ -211,8 +226,11 @@ export async function listarDenuncias(usuarioId: string, tipo: TipoDenuncia) {
         for (const fila of lista.rows as Array<{ id: string }>) {
             const reel = await db.query(
                 `SELECT r.id, r.titulo, r.visibilidad, r.creado_en, r.autor_id,
-                        u.nombre AS autor_nombre FROM reels r
-                   INNER JOIN usuarios u ON u.id = r.autor_id WHERE r.id = $1`,
+                        u.nombre AS autor_nombre,
+                        REPLACE(a.ruta, '\\', '/') AS video_url
+                   FROM reels r
+                   INNER JOIN usuarios u ON u.id = r.autor_id
+                   INNER JOIN archivos a ON a.id = r.archivo_id WHERE r.id = $1`,
                 [fila.id]
             );
             if (reel.rowCount !== 1) continue;
@@ -233,7 +251,17 @@ export async function listarDenuncias(usuarioId: string, tipo: TipoDenuncia) {
     for (const fila of lista.rows as Array<{ id: string }>) {
         const est = await db.query(
             `SELECT s.id, s.texto, s.visibilidad, s.creado_en, s.autor_id,
-                    u.nombre AS autor_nombre FROM estados s
+                    u.nombre AS autor_nombre,
+                    COALESCE((
+                        SELECT json_agg(json_build_object(
+                            'tipo', me.tipo,
+                            'url', REPLACE(a.ruta, '\\', '/')
+                        ) ORDER BY me.orden)
+                        FROM multimedia_estado me
+                        INNER JOIN archivos a ON a.id = me.archivo_id
+                        WHERE me.estado_id = s.id
+                    ), '[]'::json) AS multimedia
+               FROM estados s
                INNER JOIN usuarios u ON u.id = s.autor_id WHERE s.id = $1`,
             [fila.id]
         );

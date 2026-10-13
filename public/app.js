@@ -6809,6 +6809,25 @@ modalFotoGrande.addEventListener(
 
 /* CARGAR CUENTA */
 
+/* La etiqueta propia, igual que la ven los demás en el perfil */
+function pintarEtiquetaCuenta(usuario) {
+    const insignia = document.getElementById("etiqueta-cuenta");
+    if (!insignia) return;
+    const etiqueta = String(usuario?.etiqueta ?? "").trim();
+    if (!etiqueta) {
+        insignia.hidden = true;
+        insignia.textContent = "";
+        return;
+    }
+    insignia.hidden = false;
+    insignia.textContent = etiqueta;
+    const esCreador = etiqueta === "Creador";
+    insignia.classList.toggle("etiqueta-perfil-creador", esCreador);
+    const color = String(usuario?.etiqueta_color ?? "#e8d9a0");
+    insignia.style.borderColor = esCreador ? "" : color;
+    insignia.style.color = esCreador ? "" : color;
+}
+
 async function cargarCuenta() {
 
     const token =
@@ -6872,6 +6891,7 @@ async function cargarCuenta() {
             usuario.nombre;
 
         pintarNombreCuenta(usuario.nombre, usuario.color_nombre);
+        pintarEtiquetaCuenta(usuario);
 
         descripcionCuenta.value =
             usuario.descripcion || "";
@@ -11133,9 +11153,29 @@ function mostrarPestanaModeracion(nombre) {
     cargarDenuncias(nombre);
 }
 
+function enlacePerfilDenuncia(id, nombre, estilo) {
+    const texto = escapeHtml(nombre ?? "Desconocido");
+    if (!id) return `<strong>${texto}</strong>`;
+    return `<button type="button" class="enlace-denuncia" data-abrir-perfil="${escapeHtml(id)}"${estilo ? ` style="${estilo}"` : ""}>${texto}</button>`;
+}
+
+function previsualizacionMultimedia(items) {
+    const lista = Array.isArray(items) ? items : [];
+    return lista.map((m) => {
+        const url = "/" + String(m.url ?? "").replace(/\\/g, "/");
+        if (m.tipo === "video") {
+            return `<video class="previa-denuncia" src="${escapeHtml(url)}" controls preload="metadata" playsinline></video>`;
+        }
+        if (m.tipo === "audio") {
+            return `<audio class="previa-denuncia-audio" src="${escapeHtml(url)}" controls preload="metadata"></audio>`;
+        }
+        return `<img class="previa-denuncia" src="${escapeHtml(url)}" alt="">`;
+    }).join("");
+}
+
 function tarjetaMotivos(denuncias) {
     if (!denuncias || denuncias.length === 0) return "<p>Sin motivos.</p>";
-    const items = denuncias.map((d) => `<li><strong>${escapeHtml(d.denunciante)}</strong>: ${escapeHtml(d.motivo)}</li>`).join("");
+    const items = denuncias.map((d) => `<li>${enlacePerfilDenuncia(d.denunciante_id, d.denunciante)}: ${escapeHtml(d.motivo)}</li>`).join("");
     return `<ul class="lista-motivos-denuncia">${items}</ul>`;
 }
 
@@ -11161,13 +11201,23 @@ async function cargarDenuncias(tipo) {
             tarjeta.className = "tarjeta-denuncia" + (el.revisado ? " revisada" : "");
             let cuerpo = "";
             if (tipo === "cuentas" && el.cuenta) {
-                cuerpo = `<strong style="${estiloNombre(el.cuenta.color_nombre)}">${escapeHtml(el.cuenta.nombre)}</strong>`;
+                const c = el.cuenta;
+                const avatar = c.avatar_url
+                    ? `<img class="avatar-denuncia" src="/${escapeHtml(String(c.avatar_url).replace(/\\/g, "/"))}" alt="">`
+                    : "";
+                cuerpo = `<div class="linea-denunciado">${avatar}${enlacePerfilDenuncia(c.id, c.nombre, estiloNombre(c.color_nombre))}</div>`;
             } else if (tipo === "publicaciones" && el.publicacion) {
-                cuerpo = `<strong>${escapeHtml(el.publicacion.autor_nombre ?? "")}</strong><p>${escapeHtml(el.publicacion.texto ?? "")}</p>`;
+                const p = el.publicacion;
+                cuerpo = `<div class="linea-denunciado">${enlacePerfilDenuncia(p.autor_id, p.autor_nombre)}</div><p>${escapeHtml(p.texto ?? "")}</p>${previsualizacionMultimedia(p.multimedia)}`;
             } else if (tipo === "reels" && el.reel) {
-                cuerpo = `<strong>${escapeHtml(el.reel.autor_nombre ?? "")}</strong><p>${escapeHtml(el.reel.titulo ?? "")}</p>`;
+                const r = el.reel;
+                const video = r.video_url
+                    ? `<video class="previa-denuncia" src="/${escapeHtml(String(r.video_url).replace(/\\/g, "/"))}" controls preload="metadata" playsinline></video>`
+                    : "";
+                cuerpo = `<div class="linea-denunciado">${enlacePerfilDenuncia(r.autor_id, r.autor_nombre)}</div><p>${escapeHtml(r.titulo ?? "")}</p>${video}`;
             } else if (tipo === "estados" && el.estado) {
-                cuerpo = `<strong>${escapeHtml(el.estado.autor_nombre ?? "")}</strong><p>${escapeHtml(el.estado.texto ?? "")}</p>`;
+                const s = el.estado;
+                cuerpo = `<div class="linea-denunciado">${enlacePerfilDenuncia(s.autor_id, s.autor_nombre)}</div><p>${escapeHtml(s.texto ?? "")}</p>${previsualizacionMultimedia(s.multimedia)}`;
             }
             tarjeta.innerHTML = `<div class="cabecera-denuncia"><button type="button" class="boton-revisado${el.revisado ? " activo" : ""}" data-revisar="${el.id}" data-tipo="${tipo}">${el.revisado ? "REVISADO ✓" : "MARCAR REVISADO"}</button></div><div class="cuerpo-denuncia">${cuerpo}${tarjetaMotivos(el.denuncias)}</div><button type="button" class="boton-borrar-denunciado" data-borrar="${el.id}" data-tipo="${tipo}">BORRAR</button>`;
             lista.appendChild(tarjeta);
@@ -11212,6 +11262,11 @@ document.getElementById("boton-mod-estados")?.addEventListener("click", () => mo
 document.getElementById("boton-mod-pubs")?.addEventListener("click", () => mostrarPestanaModeracion("publicaciones"));
 
 document.getElementById("contenido-moderacion")?.addEventListener("click", async (evento) => {
+    const perfil = evento.target.closest("[data-abrir-perfil]");
+    if (perfil?.dataset.abrirPerfil) {
+        abrirPerfil(perfil.dataset.abrirPerfil);
+        return;
+    }
     const revisar = evento.target.closest("[data-revisar]");
     if (revisar) {
         const tarjeta = revisar.closest(".tarjeta-denuncia");

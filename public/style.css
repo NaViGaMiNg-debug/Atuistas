@@ -3529,21 +3529,29 @@ button.servidor-tarjeta:focus-visible {
 .cabecera-denuncia {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end;
     gap: 8px;
     margin-bottom: 8px;
 }
 
-.boton-revisado {
+/* Mismo estilo de boton que el resto de la app (casilla #242424, borde #383838) */
+.boton-revisado,
+#panel-etiquetas-admin button {
     min-height: 34px;
-    padding: 6px 12px;
-    border: 1px solid #333;
-    border-radius: 999px;
+    padding: 7px 12px;
+    border: 1px solid #383838;
+    border-radius: 8px;
     background: #242424;
-    color: #bbb;
+    color: #fff;
+    font-family: inherit;
     font-size: 12px;
     font-weight: 700;
     cursor: pointer;
+}
+
+.boton-revisado:hover,
+#panel-etiquetas-admin button:hover {
+    background: #2b2b2b;
 }
 
 .boton-revisado.activo {
@@ -3557,6 +3565,53 @@ button.servidor-tarjeta:focus-visible {
     color: #eee;
 }
 
+.linea-denunciado {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.avatar-denuncia {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: #242424;
+}
+
+.enlace-denuncia {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: underline;
+    text-decoration-color: #555;
+    text-underline-offset: 3px;
+}
+
+.enlace-denuncia:hover {
+    text-decoration-color: currentColor;
+}
+
+.previa-denuncia {
+    display: block;
+    max-width: 100%;
+    max-height: 220px;
+    margin-top: 8px;
+    border-radius: 10px;
+    background: #000;
+}
+
+.previa-denuncia-audio {
+    display: block;
+    width: 100%;
+    margin-top: 8px;
+}
+
 .lista-motivos-denuncia {
     margin: 8px 0;
     padding-left: 18px;
@@ -3566,26 +3621,53 @@ button.servidor-tarjeta:focus-visible {
 
 .boton-borrar-denunciado {
     margin-top: 8px;
-    min-height: 40px;
     width: 100%;
+    min-height: 40px;
+    padding: 9px 14px;
     border: 1px solid #662929;
-    border-radius: 10px;
+    border-radius: 8px;
     background: #451d1d;
-    color: #ffa9a9;
+    color: #fff;
+    font-family: inherit;
+    font-size: 12px;
     font-weight: 700;
     cursor: pointer;
 }
 
+.boton-borrar-denunciado:hover {
+    background: #522222;
+}
+
+/* Hueco para que la barra inferior no tape el contenido del panel */
+#contenido-moderacion {
+    padding-bottom: 84px;
+}
+
+/* Fijado abajo en el centro (mismo aire que el fab de servidores) */
 #boton-etiquetas-admin {
-    margin: 18px 0;
+    position: fixed;
+    left: 50%;
+    bottom: 92px;
+    transform: translateX(-50%);
+    z-index: 40;
     min-height: 44px;
-    width: 100%;
-    border: 1px solid #333;
-    border-radius: 10px;
-    background: #242424;
-    color: #fff;
+    padding: 10px 22px;
+    border: none;
+    border-radius: var(--radio-full);
+    background: var(--acento);
+    color: var(--acento-texto);
+    box-shadow: var(--sombra-fab);
+    font-family: inherit;
+    font-size: 12px;
     font-weight: 700;
+    white-space: nowrap;
     cursor: pointer;
+    transition: background var(--transicion-media), transform var(--transicion-media);
+}
+
+#boton-etiquetas-admin:hover {
+    background: var(--acento-claro);
+    transform: translateX(-50%) translateY(-2px);
 }
 
 #panel-etiquetas-admin {
@@ -3593,7 +3675,7 @@ button.servidor-tarjeta:focus-visible {
     border-radius: 12px;
     background: #181818;
     padding: 12px;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
 }
 
 .fila-etiqueta-admin {
@@ -3611,7 +3693,25 @@ button.servidor-tarjeta:focus-visible {
     background: #111;
     color: #fff;
     padding: 8px 10px;
+    font-family: inherit;
 }
+
+.fila-etiqueta-admin input[type="color"] {
+    width: 40px;
+    height: 40px;
+    padding: 2px;
+    border: 1px solid #383838;
+    border-radius: 8px;
+    background: #242424;
+    cursor: pointer;
+}
+
+/* La etiqueta propia en Cuenta, centrada bajo el nombre */
+.etiqueta-cuenta {
+    align-self: center;
+    margin-top: 6px;
+}
+
 
     color: #ede9fe;
 }

@@ -300,6 +300,11 @@ export async function obtenerCuenta(
                 u.descripcion,
                 u.color_nombre,
                 u.etiqueta,
+                COALESCE(
+                    CASE WHEN TRIM(COALESCE(u.etiqueta, '')) = 'Creador' THEN '#a855f7' END,
+                    (SELECT c.color FROM config_admin_etiquetas c WHERE c.nombre = u.etiqueta),
+                    '#e8d9a0'
+                ) AS etiqueta_color,
                 u.es_desarrollador,
                 u.avatar_archivo_id,
                 u.fondo_archivo_id,
@@ -343,6 +348,7 @@ export async function obtenerCuenta(
         descripcion: usuario.descripcion,
         color_nombre: usuario.color_nombre,
         etiqueta: usuario.etiqueta,
+        etiqueta_color: usuario.etiqueta_color ?? "#e8d9a0",
         es_desarrollador: usuario.es_desarrollador === true,
         avatar_archivo_id:
             usuario.avatar_archivo_id,
