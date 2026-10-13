@@ -6657,10 +6657,15 @@ button.servidor-tarjeta:focus-visible {
 }
 
 .menu-opciones-historia button {
+    /* mueve estos botones a flujo normal: sin esto heredan el
+       position:absolute de .cabecera-historia-pantalla button y se solapan. */
+    position: static;
     width: 100%;
+    height: auto;
     text-align: left;
     padding: 11px 16px;
     border: 0;
+    border-radius: 8px;
     background: transparent;
     color: #fff;
     font-size: 14px;
@@ -8313,6 +8318,16 @@ button.estadistica-perfil:hover {
 .visor-historias-pantalla.historia-despejada .progreso-historias,
 .visor-historias-pantalla.historia-despejada .cabecera-historia-pantalla,
 .visor-historias-pantalla.historia-despejada .barra-comentario-estado {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* ============================== MODO CINE DEL MENÚ "DESPEJAR PANTALLA"
+   A diferencia de la pulsación larga (historia-despejada), aquí solo se
+   ocultan la cabecera y la barra de comentarios: la barra de avance sigue a
+   la vista y el estado NO se para. ============================== */
+.visor-historias-pantalla.historia-limpia .cabecera-historia-pantalla,
+.visor-historias-pantalla.historia-limpia .barra-comentario-estado {
     opacity: 0;
     pointer-events: none;
 }

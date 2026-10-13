@@ -8958,6 +8958,9 @@ function mostrarHistoriaActual() {
     if (temporizadorHistoria) clearTimeout(temporizadorHistoria);
     temporizadorHistoria = null;
     const visor = document.getElementById("visor-historias-pantalla");
+    // Cada estado arranca con la interfaz visible (por si venía despejado por
+    // una pulsación larga). El modo cine del menú se respeta entre estados.
+    visor.classList.remove("historia-despejada");
     const estado = secuenciaHistoriaActual[indiceHistoriaActual];
     if (!estado) {
         cerrarVisorHistorias();
@@ -9066,29 +9069,28 @@ document.addEventListener("keydown", (evento) => {
    audio; al soltar, vuelve todo como estaba. Si la persona es desarrolladora,
    esta pulsación anula la de borrar: en el centro manda despejar. */
 let temporizadorDespejeHistoria = null;
-let mediosDespejados = [];
+let toqueSimplePendiente = false;
 
 function despejarHistoria() {
     temporizadorDespejeHistoria = null;
+    toqueSimplePendiente = false;
     if (typeof soyDesarrollador !== "undefined" && soyDesarrollador) terminarPulsacionLarga();
     const visor = document.getElementById("visor-historias-pantalla");
+    visor.classList.remove("historia-limpia");
     visor.classList.add("historia-despejada");
     // Se para del todo la reproducción: el vídeo o el audio, y también la
     // cuenta atrás del texto o la foto, para que nada avance mientras está
     // despejada la pantalla.
-    mediosDespejados = [];
-    visor.querySelectorAll("#contenido-historia-pantalla video, #contenido-historia-pantalla audio").forEach((medio) => {
-        if (!medio.paused) {
-            mediosDespejados.push(medio);
-            medio.pause();
-        }
-    });
-    if (temporizadorHistoria) {
-        clearTimeout(temporizadorHistoria);
-        temporizadorHistoria = null;
-    }
-    const fill = document.querySelector("#progreso-historias .progreso-historia i.activo");
-    if (fill) fill.style.animationPlayState = "paused";
+    pausarReproduccionHistorias();
+}
+
+// "Despejar pantalla" del menú (modo cine): oculta solo la cabecera y la barra
+// de comentarios, MANTIENE la barra de avance a la vista y NO para la
+// reproducción. Es un interruptor: otra pulsación devuelve la interfaz.
+function despejarPantallaMenu() {
+    const visor = document.getElementById("visor-historias-pantalla");
+    visor.classList.remove("historia-despejada");
+    visor.classList.toggle("historia-limpia");
 }
 
 function pausarReproduccionHistorias() {
@@ -9107,6 +9109,28 @@ function pausarReproduccionHistorias() {
     if (fill) fill.style.animationPlayState = "paused";
 }
 
+// Inverso de pausarReproduccionHistorias: reanuda el vídeo o el audio y, en el
+// caso del texto o la foto, vuelve a poner en marcha la barra de progreso y
+// reprograma el avance con el tiempo que le quedaba a la cuenta atrás.
+function reanudarReproduccionHistorias() {
+    const visor = document.getElementById("visor-historias-pantalla");
+    if (!visor || visor.hidden) return;
+    // Vídeo o audio: se reanuda el medio desde donde se había quedado.
+    visor.querySelectorAll("#contenido-historia-pantalla video, #contenido-historia-pantalla audio").forEach((medio) => {
+        if (medio.paused) medio.play().catch(() => {});
+    });
+    // Texto o foto: se reanuda la barra de progreso y se reprograma el avance
+    // con el tiempo restante de la cuenta atrás (aproximado por la animación).
+    const fill = document.querySelector("#progreso-historias .progreso-historia i.activo");
+    if (fill && fill.classList.contains("avanzar") && !temporizadorHistoria) {
+        fill.style.animationPlayState = "running";
+        const duracionMs = parseFloat(fill.style.animationDuration) || 5000;
+        const animacion = typeof fill.getAnimations === "function" ? fill.getAnimations()[0] : null;
+        const transcurrido = animacion && Number.isFinite(animacion.currentTime) ? animacion.currentTime : 0;
+        temporizadorHistoria = setTimeout(pasarHistoriaSiguiente, Math.max(300, duracionMs - transcurrido));
+    }
+}
+
 function cerrarMenuOpcionesHistoria() {
     menuOpcionesHistoriaAbierto = false;
     botonOpcionesHistoria?.setAttribute("aria-expanded", "false");
@@ -9119,11 +9143,16 @@ function restaurarHistoria() {
         clearTimeout(temporizadorDespejeHistoria);
         temporizadorDespejeHistoria = null;
     }
+    toqueSimplePendiente = false;
     const visor = document.getElementById("visor-historias-pantalla");
-    if (!visor.classList.contains("historia-despejada")) return;
-    visor.classList.remove("historia-despejada");
-    mediosDespejados.forEach((medio) => medio.play().catch(() => {}));
-    mediosDespejados = [];
+    // Venía de una pulsación larga (despejarHistoria): se recupera la interfaz y
+    // se reanuda la reproducción (vídeo/audio y la cuenta atrás del texto o la
+    // foto). Un toque simple no cambia nada: el modo cine solo se maneja desde
+    // el menú de opciones para que sea predecible.
+    if (visor.classList.contains("historia-despejada")) {
+        visor.classList.remove("historia-despejada");
+        reanudarReproduccionHistorias();
+    }
 }
 
 const contenidoVisorHistorias = document.getElementById("contenido-historia-pantalla");
@@ -9141,10 +9170,13 @@ contenidoVisorHistorias.addEventListener("pointerdown", (evento) => {
     // 450 ms: es una pulsación sostenida a propósito, no un toque normal, y
     // sigue por debajo de la de borrar (550 ms) para que en el centro mande
     // despejar cuando la persona es desarrolladora.
+    toqueSimplePendiente = true;
     temporizadorDespejeHistoria = setTimeout(despejarHistoria, 450);
 });
+// Al soltar (o cancelar, o sacar el puntero) se recupera la interfaz de la
+// pulsación larga y se reanuda la reproducción; un toque simple no hace nada.
 for (const tipoFinal of ["pointerup", "pointercancel", "pointerleave"]) {
-    contenidoVisorHistorias.addEventListener(tipoFinal, restaurarHistoria);
+    contenidoVisorHistorias.addEventListener(tipoFinal, () => restaurarHistoria());
 }
 
 function actualizarTarjetaMiEstado() {
@@ -9945,7 +9977,7 @@ document.addEventListener("click", (evento) => {
 
 document.getElementById("opcion-denunciar-estado")?.addEventListener("click", abrirDenunciaEstado);
 document.getElementById("opcion-despejar-pantalla")?.addEventListener("click", () => {
-    despejarHistoria();
+    despejarPantallaMenu();
     cerrarMenuOpcionesHistoria();
 });
 
@@ -9960,8 +9992,12 @@ document.getElementById("boton-ver-comentarios-estado")?.addEventListener("click
 const entradaComentarioBarra = document.getElementById("entrada-comentario-estado");
 const botonEnviarBarra = document.getElementById("boton-enviar-comentario-estado");
 entradaComentarioBarra?.addEventListener("input", () => {
-    pausarReproduccionHistorias();
-    if (botonEnviarBarra) botonEnviarBarra.disabled = entradaComentarioBarra.value.trim().length === 0;
+    // Mientras haya texto se para la reproducción; al vaciar la caja (porque
+    // se ha borrado lo escrito) el estado vuelve a reproducirse.
+    const vacio = entradaComentarioBarra.value.trim().length === 0;
+    if (botonEnviarBarra) botonEnviarBarra.disabled = vacio;
+    if (vacio) reanudarReproduccionHistorias();
+    else pausarReproduccionHistorias();
 });
 
 // Enviar el comentario desde la barra de abajo del visor de estados.
@@ -9977,6 +10013,10 @@ document.getElementById("barra-comentario-estado")?.addEventListener("submit", a
             body: JSON.stringify({ texto })
         });
         if (entradaComentarioBarra) entradaComentarioBarra.value = "";
+        // Vaciar la caja por código no dispara "input", así que hay que reanudar
+        // la reproducción a mano: el comentario ya se ha enviado.
+        if (botonEnviarBarra) botonEnviarBarra.disabled = true;
+        reanudarReproduccionHistorias();
         // Refresca el contador de comentarios del estado que se está viendo.
         estado.comentarios = (estado.comentarios || 0) + 1;
         pintarCantidadComentariosEstado(estado.comentarios);
