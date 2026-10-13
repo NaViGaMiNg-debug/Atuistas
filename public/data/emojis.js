@@ -1,11 +1,4 @@
-/* ========================================
-   EMOJIS DE ATUISTAS
-
-   Lista corta y usable: unas 240 piezas en seis grupos con su
-   nombre en español, para poder buscarlas escribiendo. Cada entrada
-   es [emoji, nombre]. Se carga antes que app.js y entra en la caché
-   del service worker como el resto de ficheros estáticos.
-   ======================================== */
+/* EMOJIS DE ATUISTAS */
 
 const EMOJIS_ATUISTAS = [
     {

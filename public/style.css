@@ -1,28 +1,16 @@
 * {
     box-sizing: border-box;
-    /* Al tocar no se pinta el recuadro azul de resaltado del navegador. */
     -webkit-tap-highlight-color: transparent;
 }
 
-/*
-   El atributo `hidden` siempre debe ocultar.
-   Varias reglas usan `display: flex`, que de otro modo anula
-   el ocultado nativo y deja bloques visibles donde no toca.
-*/
 [hidden] {
     display: none !important;
 }
 
 
-/* ==============================
-   VARIABLES GLOBALES
-   Todo el color, la sombra y el radio
-   salen de aquí para que el rediseño
-   sea coherente y fácil de mantener.
-   ============================== */
+/* VARIABLES GLOBALES */
 
 :root {
-    /* Fondos, del más profundo al más elevado */
     --fondo-base: #111;
     --fondo-panel: #181818;
     --fondo-elevado: #1f1f1f;
@@ -44,7 +32,6 @@
 
     --fuente-app: system-ui, -apple-system, "Segoe UI", "Segoe UI Variable", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Segoe UI Symbol", "Noto Sans Symbols2", "Apple Symbols", "Segoe UI Emoji", "Noto Color Emoji", "Apple Color Emoji", sans-serif;
 
-    /* Acento: único color de la interfaz */
     --acento: #5865f2;
     --acento-claro: #4752c4;
     --acento-suave: rgba(88, 101, 242, 0.16);
@@ -76,31 +63,19 @@
     --transicion-rapida: 0.12s ease-out;
     --transicion-media: 0.2s ease;
 
-    /* Medidas del layout de servidores */
     --ancho-columna-canales: 240px;
     --alto-barra-contexto: 52px;
 
-    /* Alturas del armazón de la aplicación. Se usan para calcular el alto de
-       la zona del chat del servidor: el composer queda pegado al borde
-       inferior de la pantalla, como en el chat privado. */
     --alto-cabecera-app: 73px;
     --alto-rejilla-app: 50px;
 
-    /* Hueco que deja body en su parte inferior (padding-bottom) para que la
-       barra de navegación no tape el composer. */
     --holura-navegacion: 80px;
 
-    /* Reparto de la ventana que ocupa la zona del chat del servidor: lo que
-       queda tras descontar cabecera, barra de contexto, márgenes de la
-       rejilla y barra de navegación. */
     --alto-zona-chat-servidor: calc(
         100vh - var(--alto-cabecera-app) - var(--alto-barra-contexto)
         - var(--alto-rejilla-app) - var(--holura-navegacion)
     );
 
-    /* dvh ignora la barra de direcciones del móvil, así que el composer no
-       queda tapado al abrirla. El navegador que no lo soporta usa el vvh
-       de arriba. */
     --alto-zona-chat-servidor: calc(
         100dvh - var(--alto-cabecera-app) - var(--alto-barra-contexto)
         - var(--alto-rejilla-app) - var(--holura-navegacion)
@@ -125,9 +100,7 @@ body {
 }
 
 
-/* ==============================
-   BARRA SUPERIOR
-   ============================== */
+/* BARRA SUPERIOR */
 
 .barra-superior {
     position: relative;
@@ -136,8 +109,6 @@ body {
     border-bottom: 1px solid #2b2b2b;
 }
 
-/* La campanita va pegada a la esquina sin mover el titulo: el titulo sigue
-   centrado porque el boton se saca del flujo. */
 .boton-campana {
     position: absolute;
     top: 50%;
@@ -171,8 +142,6 @@ body {
     right: 7px;
 }
 
-/* El botón del QR va al lado de la campanita, y solo en móvil: en escritorio
-   está el atajo de teclado. */
 .boton-qr-cuenta {
     right: 62px;
 }
@@ -183,12 +152,8 @@ body {
     }
 }
 
-/* ========================================
-   VENTANA DEL CÓDIGO QR
-   ======================================== */
+/* VENTANA DEL CÓDIGO QR */
 
-/* Por encima del panel del chat (3000) y del resto de ventanas, que se puede
-   abrir desde un chat sin cerrarlo antes. */
 .modal-codigo {
     z-index: 3600;
 }
@@ -251,9 +216,7 @@ body {
 }
 
 
-/* ==============================
-   CONTENIDO
-   ============================== */
+/* CONTENIDO */
 
 main {
     width: 100%;
@@ -269,20 +232,13 @@ h2 {
 }
 
 
-/* ==============================
-   ENTRAR
-   ============================== */
+/* ENTRAR */
 
 #contenedor-horizontal-entrar {
     width: 100%;
     display: flex;
     transition: transform 0.22s ease;
 
-    /*
-       Público existe a la derecha, pero no puede
-       aparecer asomándose mientras estamos en
-       "Mis amigos".
-    */
     overflow: hidden;
 }
 
@@ -294,9 +250,7 @@ h2 {
 }
 
 
-/* ==============================
-   ESTADOS
-   ============================== */
+/* ESTADOS */
 
 .seccion-estados {
     width: 100%;
@@ -310,9 +264,7 @@ h2 {
 }
 
 
-/*
-   Fila horizontal de estados.
-*/
+/* Fila horizontal de estados. */
 
 .lista-estados {
     width: 100%;
@@ -326,10 +278,6 @@ h2 {
 
     scrollbar-width: none;
 
-    /*
-       Permite deslizar las tarjetas cómodamente
-       en móvil.
-    */
     -webkit-overflow-scrolling: touch;
 }
 
@@ -402,9 +350,7 @@ h2 {
 }
 
 
-/*
-   TARJETA DEL ESTADO
-*/
+/* TARJETA DEL ESTADO */
 
 .estado-amigo {
     position: relative;
@@ -424,9 +370,7 @@ h2 {
 }
 
 
-/*
-   Imagen principal del estado.
-*/
+/* Imagen principal del estado. */
 
 .estado-imagen {
     position: relative;
@@ -452,11 +396,6 @@ h2 {
 }
 
 
-/*
-   Oscurecemos ligeramente la parte inferior
-   para que el nombre se pueda leer encima
-   de cualquier imagen.
-*/
 
 .estado-imagen::after {
     content: "";
@@ -478,10 +417,6 @@ h2 {
 }
 
 
-/*
-   FOTO DE PERFIL PEQUEÑA
-   Arriba a la izquierda.
-*/
 
 .estado-avatar {
     position: absolute;
@@ -519,10 +454,6 @@ h2 {
 }
 
 
-/*
-   NOMBRE DEL USUARIO
-   Abajo dentro de la tarjeta.
-*/
 
 .estado-amigo span {
     position: absolute;
@@ -552,9 +483,6 @@ h2 {
 }
 
 
-/*
-   Efecto visual al pasar el ratón.
-*/
 
 .estado-amigo:hover {
     transform: translateY(-2px);
@@ -566,9 +494,7 @@ h2 {
 }
 
 
-/* ==============================
-   RECUADRO DE CHATS
-   ============================== */
+/* RECUADRO DE CHATS */
 
 .seccion-chats {
     width: 100%;
@@ -603,9 +529,7 @@ h2 {
 }
 
 
-/* ==============================
-   LISTA DE CHATS
-   ============================== */
+/* LISTA DE CHATS */
 
 .lista-chats {
     width: 100%;
@@ -630,7 +554,6 @@ h2 {
     cursor: pointer;
 }
 
-/* Chat fijado: chincheta arriba a la derecha de la tarjeta. */
 .chat-amigo-fijado {
     position: relative;
 }
@@ -643,7 +566,6 @@ h2 {
     pointer-events: none;
 }
 
-/* Chat silenciado: campanita tachada junto a la chincheta. */
 .chat-amigo-silencio {
     position: absolute;
     top: 6px;
@@ -652,7 +574,6 @@ h2 {
     pointer-events: none;
 }
 
-/* Mantener pulsado: que el navegador no seleccione texto ni abra menú. */
 .chat-amigo,
 .persona-resultado {
     -webkit-touch-callout: none;
@@ -823,9 +744,7 @@ h2 {
 }
 
 
-/* ==============================
-   VER MÁS CHATS
-   ============================== */
+/* VER MÁS CHATS */
 
 .boton-ver-mas {
     width: 100%;
@@ -853,9 +772,7 @@ h2 {
 }
 
 
-/* ==============================
-   PUBLICACIONES
-   ============================== */
+/* PUBLICACIONES */
 
 .seccion-publicaciones {
     width: 100%;
@@ -879,9 +796,7 @@ h2 {
 }
 
 
-/* ==============================
-   PUBLICACIÓN
-   ============================== */
+/* PUBLICACIÓN */
 
 .publicacion {
     width: 100%;
@@ -964,9 +879,7 @@ h2 {
 }
 
 
-/* ==============================
-   INTERACCIONES
-   ============================== */
+/* INTERACCIONES */
 
 .publicacion-interacciones {
     display: flex;
@@ -1002,16 +915,8 @@ h2 {
 }
 
 
-/* ==============================
-   PÚBLICO
-   ============================== */
+/* PÚBLICO */
 
-/*
-   Público está preparado para estar a la derecha
-   de Mis amigos.
-
-   No debe aparecer nunca asomándose por el lateral.
-*/
 
 .pagina-publico {
     width: 100%;
@@ -1031,26 +936,18 @@ h2 {
 }
 
 
-/*
-   Los estados públicos utilizan exactamente
-   el mismo formato visual que los de amigos.
-*/
 
 .estado-publico .estado-avatar {
     border-color: #aaa;
 }
 
-/* ==============================
-   AGREGAR AMIGOS
-   ============================== */
+/* AGREGAR AMIGOS */
 
 #contenido-amigos {
     width: 100%;
 }
 
-/*
-   CABECERA
-*/
+/* CABECERA */
 
 .cabecera-amigos {
     width: 100%;
@@ -1064,9 +961,7 @@ h2 {
     letter-spacing: -0.3px;
 }
 
-/*
-   PESTAÑAS
-*/
+/* PESTAÑAS */
 
 .pestanas-amigos {
     width: 100%;
@@ -1116,9 +1011,7 @@ h2 {
     color: #fff;
 }
 
-/*
-   SECCIONES
-*/
+/* SECCIONES */
 
 .seccion-amigos {
     width: 100%;
@@ -1128,9 +1021,7 @@ h2 {
     display: none;
 }
 
-/*
-   BUSCADOR
-*/
+/* BUSCADOR */
 
 .buscador-amigos {
     width: 100%;
@@ -1177,9 +1068,7 @@ h2 {
     box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.04);
 }
 
-/*
-   MENSAJES DE ESTADO
-*/
+/* MENSAJES DE ESTADO */
 
 .estado-amigos {
     margin: 18px 0;
@@ -1192,9 +1081,7 @@ h2 {
     text-align: center;
 }
 
-/*
-   LISTAS
-*/
+/* LISTAS */
 
 .lista-personas,
 .lista-solicitudes {
@@ -1206,10 +1093,6 @@ h2 {
     gap: 10px;
 }
 
-/*
-   RESULTADO DE PERSONA
-   Estas son las clases que realmente genera app.js
-*/
 
 .persona-resultado {
     box-sizing: border-box;
@@ -1243,9 +1126,7 @@ h2 {
     transform: scale(0.995);
 }
 
-/*
-   INFORMACIÓN DEL RESULTADO
-*/
+/* INFORMACIÓN DEL RESULTADO */
 
 .persona-resultado-info {
     min-width: 0;
@@ -1257,9 +1138,7 @@ h2 {
     gap: 12px;
 }
 
-/*
-   AVATAR
-*/
+/* AVATAR */
 
 .persona-resultado-avatar {
     flex: 0 0 auto;
@@ -1286,9 +1165,7 @@ h2 {
     object-fit: cover;
 }
 
-/*
-   DATOS
-*/
+/* DATOS */
 
 .persona-resultado-datos {
     min-width: 0;
@@ -1306,9 +1183,7 @@ h2 {
     font-weight: 700;
 }
 
-/*
-   BOTÓN AGREGAR
-*/
+/* BOTÓN AGREGAR */
 
 .boton-enviar-solicitud {
     flex: 0 0 auto;
@@ -1356,10 +1231,6 @@ h2 {
     border-color: #333;
 }
 
-/*
-   SOLICITUD DE AMISTAD
-   Estas son las clases que realmente genera app.js
-*/
 
 .solicitud-amistad {
     box-sizing: border-box;
@@ -1388,9 +1259,7 @@ h2 {
     border-color: #383838;
 }
 
-/*
-   INFORMACIÓN DE LA SOLICITUD
-*/
+/* INFORMACIÓN DE LA SOLICITUD */
 
 .solicitud-amistad-info {
     min-width: 0;
@@ -1402,9 +1271,7 @@ h2 {
     gap: 12px;
 }
 
-/*
-   AVATAR DE LA SOLICITUD
-*/
+/* AVATAR DE LA SOLICITUD */
 
 .solicitud-amistad-avatar {
     flex: 0 0 auto;
@@ -1431,9 +1298,7 @@ h2 {
     object-fit: cover;
 }
 
-/*
-   DATOS DE LA SOLICITUD
-*/
+/* DATOS DE LA SOLICITUD */
 
 .solicitud-amistad-datos {
     min-width: 0;
@@ -1456,9 +1321,7 @@ h2 {
     font-weight: 700;
 }
 
-/*
-   BOTONES DE SOLICITUD
-*/
+/* BOTONES DE SOLICITUD */
 
 .solicitud-amistad-acciones {
     flex: 0 0 auto;
@@ -1494,9 +1357,7 @@ h2 {
     transform: scale(0.97);
 }
 
-/*
-   ACEPTAR
-*/
+/* ACEPTAR */
 
 .boton-aceptar-solicitud {
     background: #242424;
@@ -1509,9 +1370,7 @@ h2 {
     border-color: #454545 !important;
 }
 
-/*
-   RECHAZAR
-*/
+/* RECHAZAR */
 
 .boton-rechazar-solicitud {
     background: #1b1b1b;
@@ -1525,9 +1384,7 @@ h2 {
     color: #fff !important;
 }
 
-/* ==============================
-   AMIGOS — COMPATIBILIDAD
-   ============================== */
+/* AMIGOS — COMPATIBILIDAD */
 
 #lista-amigos {
     display: flex;
@@ -1558,9 +1415,7 @@ h2 {
 }
 
 
-/* ==============================
-   NAVEGACIÓN
-   ============================== */
+/* NAVEGACIÓN */
 
 .barra-navegacion {
     position: fixed;
@@ -1583,8 +1438,6 @@ h2 {
 }
 
 
-/* La barra lleva iconos: cada botón es un cuadrado con el dibujo centrado.
-   El texto vive en aria-label y en el title del botón. */
 .barra-navegacion button {
     position: relative;
 
@@ -1612,7 +1465,6 @@ h2 {
 }
 
 
-/* Sección abierta: con iconos es la única señal de dónde se está. */
 .barra-navegacion button.activa {
     background: #333;
     color: #fff;
@@ -1633,7 +1485,6 @@ h2 {
 }
 
 
-/* El punto de avisos se pega a la esquina del botón de Cuenta. */
 #boton-cuenta .punto-notificaciones {
     position: absolute;
 
@@ -1646,9 +1497,7 @@ h2 {
     font-weight: bold;
 }
 
-/* ==============================
-   PANTALLA DE ACCESO
-   ============================== */
+/* PANTALLA DE ACCESO */
 
 #pantalla-acceso {
     min-height: 100vh;
@@ -1668,9 +1517,7 @@ h2 {
 }
 
 
-/* ==============================
-   PANTALLA INICIAL
-   ============================== */
+/* PANTALLA INICIAL */
 
 #acceso-inicial {
     width: 100%;
@@ -1726,9 +1573,7 @@ h2 {
 }
 
 
-/* ==============================
-   LOGIN Y REGISTRO
-   ============================== */
+/* LOGIN Y REGISTRO */
 
 #acceso-login,
 #acceso-registro {
@@ -1756,9 +1601,7 @@ h2 {
 }
 
 
-/* ==============================
-   BOTÓN VOLVER
-   ============================== */
+/* BOTÓN VOLVER */
 
 .boton-volver {
     align-self: flex-start !important;
@@ -1787,9 +1630,7 @@ h2 {
 }
 
 
-/* ==============================
-   FORMULARIOS
-   ============================== */
+/* FORMULARIOS */
 
 #formulario-login,
 #formulario-registro {
@@ -1866,9 +1707,7 @@ h2 {
 }
 
 
-/* ==============================
-   ERRORES
-   ============================== */
+/* ERRORES */
 
 #error-login,
 #error-registro {
@@ -1882,9 +1721,7 @@ h2 {
 }
 
 
-/* ==============================
-   CÓDIGO DE VINCULACIÓN
-   ============================== */
+/* CÓDIGO DE VINCULACIÓN */
 
 #codigo-generado {
     width: 100%;
@@ -2002,9 +1839,7 @@ h2 {
 }
 
 
-/* ==============================
-   CUENTA
-   ============================== */
+/* CUENTA */
 
 #contenido-cuenta {
     width: 100%;
@@ -2133,8 +1968,6 @@ button.servidor-item {
     margin-top: 5px;
 }
 
-/* Los mensajes ocupan todo el espacio sobrante y llevan su propio scroll:
-   el composer deja de depender del scroll de la página y se queda abajo. */
 .mensajes-servidor {
     flex: 1;
 
@@ -2187,15 +2020,12 @@ button.servidor-item {
     cursor: pointer;
 }
 
-/* El composer ya no se pega con "sticky" porque la zona del chat tiene alto
-   propio: basta con ser el último hijo del flex y no encoger. */
 .formulario-mensaje-servidor {
     display: flex;
     align-items: center;
     gap: 8px;
     flex-shrink: 0;
 
-    /* Respeta el borde inferior del móvil y deja hueco a la navegación. */
     padding-top: 8px;
     padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
     background: #111;
@@ -2222,10 +2052,7 @@ button.servidor-item {
     }
 }
 
-/* ========================================
-   SERVIDORES: BARRA DE CONTEXTO, TARJETAS,
-   COLUMNA DE CANALES Y BOTÓN FLOTANTE
-   ======================================== */
+/* SERVIDORES: BARRA DE CONTEXTO, TARJETAS, */
 
 .barra-contexto-servidor {
     position: sticky;
@@ -2240,13 +2067,10 @@ button.servidor-item {
     border-bottom: 1px solid var(--borde-suave);
 }
 
-/* Sin servidor abierto la barra no hace falta y empujaba las pestañas hacia
-   abajo: se esconde para que queden a la misma altura que en Entrar. */
 #barra-contexto-servidor[hidden] {
     display: none;
 }
 
-/* Las pestañas de Servidores respiran menos que las de Entrar. */
 #contenido-servidores > .pestanas-amigos {
     margin-bottom: 12px;
     padding-bottom: 8px;
@@ -2279,8 +2103,6 @@ button.servidor-item {
     min-width: 0;
 }
 
-/* El nombre del grupo abre su propia pantalla de acciones, igual que el
-   nombre de una persona abre la suya. */
 .boton-datos-contexto-servidor {
     min-width: 0;
 
@@ -2303,7 +2125,6 @@ button.servidor-item {
     color: var(--texto-principal);
 }
 
-/* La foto también es pulsable: quien gestiona el servidor la cambia desde ahí. */
 .boton-foto-contexto-servidor {
     display: inline-flex;
     align-items: center;
@@ -2335,8 +2156,6 @@ button.servidor-item {
     gap: 1px;
 }
 
-/* Foto del servidor en la barra de contexto. Sin foto se ve la inicial.
-   El selector es específico para no heredar el estilo de los subtítulos. */
 
 .barra-contexto-datos .avatar-contexto-servidor {
     display: inline-flex;
@@ -2386,7 +2205,6 @@ button.servidor-item {
     flex-shrink: 0;
 }
 
-/* Botones de acción de la barra (Miembros, Ajustes, Salir, Eliminar). */
 .barra-contexto-acciones button {
     min-height: 34px;
     padding: 0 12px;
@@ -2452,8 +2270,6 @@ button.servidor-item {
     transition: background var(--transicion-media), border-color var(--transicion-media);
 }
 
-/* Las tarjetas de "mis servidores" son un botón entero:
-   se entra al servidor pulsando cualquier punto de la tarjeta. */
 button.servidor-tarjeta {
     width: 100%;
     font: inherit;
@@ -2566,7 +2382,6 @@ button.servidor-tarjeta:focus-visible {
     border-color: var(--acento);
 }
 
-/* ---------- Botón flotante ---------- */
 
 .boton-flotante-crear {
     position: fixed;
@@ -2596,7 +2411,6 @@ button.servidor-tarjeta:focus-visible {
     transform: translateY(0);
 }
 
-/* ---------- Columna de canales + chat ---------- */
 
 .panel-servidor {
     display: flex;
@@ -2686,9 +2500,6 @@ button.servidor-tarjeta:focus-visible {
     min-width: 0;
     min-height: 0;
 
-    /* El alto se mide contra la ventana para que la zona del chat use
-       justo lo que queda entre la cabecera de la aplicación y la barra de
-       navegación. Así el composer puede quedar siempre pegado abajo. */
     height: var(--alto-zona-chat-servidor);
 }
 
@@ -2696,7 +2507,6 @@ button.servidor-tarjeta:focus-visible {
     display: none;
 }
 
-/* ---------- Escritorio: dos columnas ---------- */
 
 @media (min-width: 1000px) {
     .panel-servidor {
@@ -2713,21 +2523,12 @@ button.servidor-tarjeta:focus-visible {
         grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     }
 
-    /* La sección de servidores aprovecha el ancho útil de la pantalla:
-       la lista se reparte en varias columnas (y una sola tarjeta se
-       estira a todo el ancho) en vez de quedarse en la franja de 700px. */
     body.vista-servidores #app,
     body.vista-servidores #contenido-principal {
         max-width: 100%;
     }
 }
 
-/* ---------- Composer: micrófono, adjuntos y grabación ----------
-
-   Los dos composers (chat privado y servidor) comparten estas clases.
-   El chip del adjunto y la fila de grabación ocupan una línea propia,
-   por eso el formulario envuelve con flex-wrap y el botón de acción
-   se mantiene en la primera línea. */
 
 .formulario-mensaje,
 .formulario-mensaje-servidor {
@@ -2772,8 +2573,6 @@ button.servidor-tarjeta:focus-visible {
     color: var(--texto-principal);
 }
 
-/* El menú de fotos, vídeos y audios se abre hacia arriba para no salirse
-   de la pantalla en el composer de abajo. */
 
 .menu-adjuntar {
     position: absolute;
@@ -2822,7 +2621,6 @@ button.servidor-tarjeta:focus-visible {
     background: var(--fondo-hover);
 }
 
-/* Botón que hace de micrófono, de enviar y de parar la grabación. */
 
 .boton-accion-composer {
     display: inline-flex;
@@ -2858,14 +2656,12 @@ button.servidor-tarjeta:focus-visible {
     cursor: progress;
 }
 
-/* Con texto o adjunto listo el botón ya envía. */
 
 .boton-accion-composer.activo {
     background: var(--acento);
     color: var(--acento-texto);
 }
 
-/* Grabando: el botón para la grabación y parpadea en rojo. */
 
 .boton-accion-composer.grabando {
     background: var(--peligro);
@@ -2891,7 +2687,6 @@ button.servidor-tarjeta:focus-visible {
     }
 }
 
-/* Nombre del archivo adjunto y avisos de error, sobre la caja. */
 
 .chip-adjunto {
     order: 10;
@@ -2930,7 +2725,6 @@ button.servidor-tarjeta:focus-visible {
     color: var(--peligro);
 }
 
-/* Fila de grabación: punto rojo, tiempo y botón de borrar. */
 
 .fila-grabacion {
     order: 20;
@@ -2997,9 +2791,6 @@ button.servidor-tarjeta:focus-visible {
     color: var(--peligro);
 }
 
-/* Botón PARAR de la fila: misma pastilla con borde que BORRAR, con icono
-   SVG que cambia de pausa (dos barras) a play (triángulo) sin cambiar la
-   interfaz: pausa la grabación y la reanuda desde donde estaba. */
 .boton-parar-grabacion {
     flex: 0 0 auto;
     display: inline-flex;
@@ -3053,9 +2844,6 @@ button.servidor-tarjeta:focus-visible {
     display: block;
 }
 
-/* Tira de ondas de la grabación en vivo: 24 barras con altura fija que se
-   van encendiendo según pasa el tiempo (al llenarse del todo se para sola).
-   La barra "viva" late con el volumen de tu voz. */
 .grabacion-ondas {
     flex: 1 1 auto;
     display: flex;
@@ -3090,7 +2878,6 @@ button.servidor-tarjeta:focus-visible {
     to { transform: scaleY(var(--latido-voz, 0.6)); }
 }
 
-/* Pestaña de "oculto" junto al botón de enviar, solo en servidores. */
 
 .pastilla-oculto {
     display: inline-flex;
@@ -3129,7 +2916,6 @@ button.servidor-tarjeta:focus-visible {
     color: var(--acento-claro);
 }
 
-/* ---------- Burbujas con lenguaje de chat privado ---------- */
 
 .mensajes-servidor {
     display: flex;
@@ -3182,9 +2968,6 @@ button.servidor-tarjeta:focus-visible {
     min-width: 220px;
 }
 
-/* El reproductor propio dentro de un mensaje se funde con la burbuja: sin
-   borde propio, hereda la burbuja (propia o ajena) y el color de texto de
-   ese mensaje. Las ondas y la barra de progreso usan el acento de la web. */
 .adjunto-mensaje .reproductor-audio {
     width: 100%;
     min-width: 230px;
@@ -3267,8 +3050,6 @@ button.servidor-tarjeta:focus-visible {
     text-align: right;
 }
 
-/* El mensaje con audio tiene ancho fijo: todos los audios se ven iguales,
-   sin depender de lo que duren. */
 .mensaje-chat:has(.reproductor-audio) {
     width: min(320px, 100%);
 }
@@ -3320,11 +3101,7 @@ button.servidor-tarjeta:focus-visible {
     min-width: 0;
 }
 
-/* ========================================
-   ACCIONES DEL SERVIDOR
-   El resumen y los botones del modal que se
-   abre al pulsar el nombre del grupo.
-   ======================================== */
+/* ACCIONES DEL SERVIDOR */
 
 .resumen-servidor {
     display: flex;
@@ -3456,9 +3233,7 @@ button.servidor-tarjeta:focus-visible {
     display: none;
 }
 
-/* ========================================
-   SERVIDORES: CANALES, OCULTOS Y PANELES
-   ======================================== */
+/* SERVIDORES: CANALES, OCULTOS Y PANELES */
 
 .barra-canales-servidor {
     display: flex;
@@ -3727,7 +3502,6 @@ button.servidor-tarjeta:focus-visible {
     font-size: 12px;
 }
 
-/* Previa de la foto del servidor en los ajustes del servidor. */
 
 .fila-imagen-servidor {
     display: flex;
@@ -3845,9 +3619,7 @@ button.servidor-tarjeta:focus-visible {
 }
 
 
-/* ==============================
-   CABECERA DE CUENTA
-   ============================== */
+/* CABECERA DE CUENTA */
 
 .cabecera-cuenta {
     display: flex;
@@ -3868,8 +3640,6 @@ button.servidor-tarjeta:focus-visible {
 }
 
 
-/* Versión de la app en uso: pastilla arriba a la izquierda de Cuenta (y la
-   misma en el perfil propio) para poder comprobarla siempre sin buscar. */
 .cabecera-cuenta {
     position: relative;
 }
@@ -3889,9 +3659,7 @@ button.servidor-tarjeta:focus-visible {
 }
 
 
-/* ==============================
-   FOTO DE PERFIL
-   ============================== */
+/* FOTO DE PERFIL */
 
 .boton-foto-perfil {
     width: 120px;
@@ -3925,9 +3693,7 @@ button.servidor-tarjeta:focus-visible {
 }
 
 
-/* ==============================
-   INFORMACIÓN DE CUENTA
-   ============================== */
+/* INFORMACIÓN DE CUENTA */
 
 .informacion-cuenta {
     width: 100%;
@@ -3975,8 +3741,6 @@ button.servidor-tarjeta:focus-visible {
 }
 
 
-/* Selector del color del nombre: un cuadro redondo que hace de botón y, al
-   lado, tu nombre de verdad con ese color, para ver cómo queda sin salir. */
 .color-nombre-cuenta {
     display: flex;
     align-items: center;
@@ -4021,7 +3785,6 @@ button.servidor-tarjeta:focus-visible {
 }
 
 
-/* Chrome pinta el color dentro de un cuadro propio: se redondea también. */
 #color-nombre-cuenta::-webkit-color-swatch-wrapper {
     padding: 0;
 }
@@ -4052,7 +3815,6 @@ button.servidor-tarjeta:focus-visible {
 }
 
 
-/* Aviso del guardado automático: aparece un momento y se va solo. */
 #guardado-cuenta {
     min-height: 18px;
 
@@ -4078,15 +3840,9 @@ button.servidor-tarjeta:focus-visible {
 }
 
 
-/* ==============================
-   CÓDIGO EN CUENTA
-   ============================== */
+/* CÓDIGO EN CUENTA */
 
-/* ========================================
-   UBICACIÓN EN DIRECTO
-   La tarjeta del mapa dentro del mensaje y la ventanita para elegir
-   cuánto tiempo compartirla.
-   ======================================== */
+/* UBICACIÓN EN DIRECTO */
 
 .tarjeta-ubicacion {
     display: flex;
@@ -4115,8 +3871,6 @@ button.servidor-tarjeta:focus-visible {
     border-bottom: 1px solid var(--borde-suave);
 }
 
-/* La chincheta va centrada: la tesela de arriba a la izquierda se coloca por
-   su desfase, así que el punto exacto cae justo en el medio de la caja. */
 .ubicacion-chincheta {
     position: absolute;
     top: 50%;
@@ -4315,10 +4069,7 @@ button.servidor-tarjeta:focus-visible {
     display: none;
 }
 
-/* ========================================
-   SELECTOR DE EMOJIS, GIF Y STICKERS
-   Panel flotante que se abre justo encima del campo de escritura.
-   ======================================== */
+/* SELECTOR DE EMOJIS, GIF Y STICKERS */
 
 .boton-emoji {
     display: inline-flex;
@@ -4346,9 +4097,6 @@ button.servidor-tarjeta:focus-visible {
 .selector-medio {
     position: fixed;
 
-    /* Por encima del panel del chat (3000) y del editor de foto (3400): el
-       botón está en el composer, dentro del chat, y por debajo se quedaba
-       escondido detrás. */
     z-index: 3500;
 
     display: flex;
@@ -4502,9 +4250,6 @@ button.servidor-tarjeta:focus-visible {
 }
 
 .selector-medio-medios {
-    /* La rejilla pasa a columnas de 38px cuando busca GIF o stickers (no hay
-       titulos de grupo): sin abarcar todas las columnas, el contenedor quedaba
-       en una sola columna, apilado y diminuto a la izquierda. */
     grid-column: 1 / -1;
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
@@ -4530,9 +4275,6 @@ button.servidor-tarjeta:focus-visible {
 }
 
 .selector-medio-vacio {
-    /* La rejilla pasa a grid cuando no hay títulos, así que este texto tenía que
-       ocupar todas las columnas: si no, salía partido en una columna estrecha,
-       una palabra por línea. */
     grid-column: 1 / -1;
 
     margin: 10px 4px;
@@ -4639,9 +4381,7 @@ button.servidor-tarjeta:focus-visible {
 }
 
 
-/* ==============================
-   CERRAR SESIÓN
-   ============================== */
+/* CERRAR SESIÓN */
 
 #boton-cerrar-sesion {
     width: 100%;
@@ -4667,9 +4407,7 @@ button.servidor-tarjeta:focus-visible {
 }
 
 
-/* ==============================
-   MODALES
-   ============================== */
+/* MODALES */
 
 .modal {
     position: fixed;
@@ -4694,9 +4432,7 @@ button.servidor-tarjeta:focus-visible {
 }
 
 
-/* ==============================
-   MODAL OPCIONES FOTO
-   ============================== */
+/* MODAL OPCIONES FOTO */
 
 .modal-contenido {
     position: relative;
@@ -4724,8 +4460,6 @@ button.servidor-tarjeta:focus-visible {
 }
 
 .modal-contenido-social {
-    /* Por encima del visor de reels (1100): si no, los comentarios del reel se
-       abren detrás del vídeo y parece que el botón no hace nada. */
     z-index: 1400;
 }
 
@@ -4890,8 +4624,6 @@ button.servidor-tarjeta:focus-visible {
     text-align: center;
 }
 
-/* Vista previa de fotos antes de publicar: miniaturas en vez de solo el
-   nombre del archivo. Pulsar una miniatura abre el editor. */
 .vista-previa-social {
     display: flex;
     flex-wrap: wrap;
@@ -4936,7 +4668,6 @@ button.servidor-tarjeta:focus-visible {
     font-size: 12px;
 }
 
-/* Editor de foto: recortar, pintar encima y añadir texto. */
 .dialogo-editor-foto {
     width: min(560px, 94vw);
 }
@@ -5029,9 +4760,7 @@ button.servidor-tarjeta:focus-visible {
 }
 
 
-/* ==============================
-   BOTÓN CERRAR MODAL
-   ============================== */
+/* BOTÓN CERRAR MODAL */
 
 .boton-cerrar-modal {
     position: absolute;
@@ -5065,9 +4794,7 @@ button.servidor-tarjeta:focus-visible {
 }
 
 
-/* ==============================
-   MODAL FOTO GRANDE
-   ============================== */
+/* MODAL FOTO GRANDE */
 
 .modal-foto-contenido {
     position: relative;
@@ -5096,9 +4823,7 @@ button.servidor-tarjeta:focus-visible {
 }
 
 
-/* ==============================
-   MÓVIL
-   ============================== */
+/* MÓVIL */
 
 @media (max-width: 600px) {
 
@@ -5134,10 +4859,6 @@ button.servidor-tarjeta:focus-visible {
     }
 
 
-    /*
-       Estados un poco más estrechos
-       para que entren varios en móvil.
-    */
 
     .lista-estados {
         gap: 10px;
@@ -5182,9 +4903,7 @@ button.servidor-tarjeta:focus-visible {
     }
 
 
-    /*
-       AGREGAR AMIGOS EN MÓVIL
-    */
+    /* AGREGAR AMIGOS EN MÓVIL */
 
     .cabecera-amigos h2 {
         font-size: 22px;
@@ -5264,9 +4983,7 @@ button.servidor-tarjeta:focus-visible {
 
 }
 
-/* ========================================
-   AVATAR DE LOS CHATS
-   ======================================== */
+/* AVATAR DE LOS CHATS */
 
 .chat-amigo-avatar {
     width: 50px;
@@ -5283,9 +5000,7 @@ button.servidor-tarjeta:focus-visible {
     display: block;
 }
 
-/* ========================================
-   PANEL DE CHAT
-   ======================================== */
+/* PANEL DE CHAT */
 
 .panel-chat {
     position: fixed;
@@ -5489,8 +5204,6 @@ button.servidor-tarjeta:focus-visible {
 
     min-width: 0;
 
-    /* Crece con el texto hasta tres lineas; a partir de ahi hace scroll
-       vertical dentro del propio campo (nunca hacia los lados). */
     height: auto;
     min-height: 44px;
     max-height: 92px;
@@ -5523,8 +5236,6 @@ button.servidor-tarjeta:focus-visible {
     border-color: #555555;
 }
 
-/* El campo del servidor crece igual que el del chat privado: hasta tres
-   lineas y despues solo scroll hacia abajo dentro del propio cuadro. */
 #entrada-mensaje-servidor {
     height: auto;
     min-height: 44px;
@@ -5876,9 +5587,6 @@ button.servidor-tarjeta:focus-visible {
     cursor: pointer;
 }
 
-/* Botones de icono (papelera y reenviar): cuadraditos, con el SVG centrado.
-   CANCELAR se empuja a la derecha del contador para que los iconos queden
-   pegados a la derecha de la barra. */
 .boton-icono-seleccion {
     display: inline-flex;
     align-items: center;
@@ -5975,15 +5683,9 @@ button.servidor-tarjeta:focus-visible {
 }
 
 
-/* =============================
-   NOTIFICACIONES
-   La ventanita se abre desde la campanita de la cabecera (ver
-   .boton-campana). El botón que había dentro de Cuenta ya no existe.
-   ============================== */
+/* NOTIFICACIONES */
 
 
-/* Punto rojo compartido: avisos sin leer en la campanita y mensajes sin
-   leer en la lista de amigos. */
 .punto-notificaciones,
 .chat-amigo-punto {
     display: inline-block;
@@ -6017,7 +5719,6 @@ button.servidor-tarjeta:focus-visible {
 }
 
 
-/* Cabecera de los avisos: título a la izquierda, marcar todo a la derecha. */
 .cabecera-lista-notificaciones {
     display: flex;
     align-items: center;
@@ -6103,7 +5804,6 @@ button.servidor-tarjeta:focus-visible {
     gap: 6px;
 }
 
-/* Cuántos avisos lleva juntados la persona: solo aparece si hay más de uno. */
 .contador-aviso {
     font-style: normal;
     font-size: 11px;
@@ -6211,8 +5911,6 @@ button.servidor-tarjeta:focus-visible {
     object-fit: contain;
 }
 
-/* Las fotos conservan su proporción: ocupan todo el ancho cuando son horizontales
-   y, si son verticales, se limitan por la altura máxima y quedan centradas. */
 .publicacion-actual > img.contenido-multimedia-social {
     width: auto;
     max-width: 100%;
@@ -6220,10 +5918,7 @@ button.servidor-tarjeta:focus-visible {
     margin: 8px auto;
 }
 
-/* ========================================
-   CARRUSEL DE FOTOS DE LAS PUBLICACIONES
-   Solo se usa cuando la publicación lleva más de un medio.
-   ======================================== */
+/* CARRUSEL DE FOTOS DE LAS PUBLICACIONES */
 
 .carrusel-publicacion {
     margin: 8px 0;
@@ -6271,9 +5966,6 @@ button.servidor-tarjeta:focus-visible {
     margin: 0;
 }
 
-/* Cada foto mantiene su proporción dentro de su diapositiva: las horizontales llenan
-   el ancho y las verticales se ajustan a la altura máxima, así la pista toma la altura
-   de la más alta y las demás quedan centradas. */
 .carrusel-diapositiva img.contenido-multimedia-social {
     width: auto;
     max-width: 100%;
@@ -6403,7 +6095,6 @@ button.servidor-tarjeta:focus-visible {
     align-items: center;
     gap: 10px;
     min-height: 44px;
-    /* Hueco para los dos botones de la derecha: comentarios y cerrar. */
     padding-right: 96px;
     text-shadow: 0 1px 5px #000;
 }
@@ -6417,15 +6108,8 @@ button.servidor-tarjeta:focus-visible {
 }
 
 
-/* ============================================================
-   HORA EN LOS MENSAJES Y SEPARADOR DE DÍA
-   La hora va muy pequeña debajo de cada mensaje; el separador es
-   un cuadradito centrado que aparece cuando cambia la fecha. Se
-   controla con el interruptor de Cuenta (activo por defecto).
-   ============================================================ */
+/* HORA EN LOS MENSAJES Y SEPARADOR DE DÍA */
 
-/* Hora del mensaje: línea propia, muy pegada a la esquina y sin márgenes, para
-   que no parezca continuación del texto y ocupe lo mínimo. */
 .hora-mensaje {
     display: block;
     align-self: flex-end;
@@ -6436,12 +6120,10 @@ button.servidor-tarjeta:focus-visible {
     white-space: nowrap;
 }
 
-/* En los mensajes recibidos la hora se alinea a la izquierda. */
 .mensaje-chat-recibido .hora-mensaje {
     align-self: flex-start;
 }
 
-/* Separador de día: cápsula centrada en el ancho del chat. */
 .separador-dia {
     align-self: center;
     margin: 12px 0 6px;
@@ -6457,11 +6139,7 @@ button.servidor-tarjeta:focus-visible {
 }
 
 
-/* ============================================================
-   INTERRUPTOR DE CUENTA (HORA EN LOS MENSAJES)
-   Fila con texto a la izquierda y un interruptor bonito a la
-   derecha, más elegante que una casilla cuadrada.
-   ============================================================ */
+/* INTERRUPTOR DE CUENTA (HORA EN LOS MENSAJES) */
 
 .fila-switch-cuenta {
     display: flex;
@@ -6493,7 +6171,6 @@ button.servidor-tarjeta:focus-visible {
     line-height: 1.35;
 }
 
-/* El input real se oculta: lo visible es la pista con su botón. */
 .switch input {
     position: absolute;
     width: 1px;
@@ -6538,16 +6215,13 @@ button.servidor-tarjeta:focus-visible {
     transform: translateX(22px);
 }
 
-/* El foco de teclado se ve en la pista, no en el input invisible. */
 .switch input:focus-visible + .switch-pista {
     outline: 2px solid var(--acento-claro);
     outline-offset: 2px;
 }
 
 
-/* ============================================================
-   MODAL DE CONFIRMACIÓN (DESACTIVAR HORA)
-   ============================================================ */
+/* MODAL DE CONFIRMACIÓN (DESACTIVAR HORA) */
 
 .dialogo-confirmar-hora h2 {
     font-size: 19px;
@@ -6615,7 +6289,6 @@ button.servidor-tarjeta:focus-visible {
     cursor: pointer;
 }
 
-/* Botón de opciones del estado: tres puntos verticales. */
 .cabecera-historia-pantalla #boton-opciones-historia {
     right: 48px;
     width: 40px;
@@ -6634,7 +6307,6 @@ button.servidor-tarjeta:focus-visible {
     fill: currentColor;
 }
 
-/* Menú emergente con las opciones del estado (denunciar / despejar). */
 .menu-opciones-historia {
     position: absolute;
     top: 48px;
@@ -6657,8 +6329,6 @@ button.servidor-tarjeta:focus-visible {
 }
 
 .menu-opciones-historia button {
-    /* mueve estos botones a flujo normal: sin esto heredan el
-       position:absolute de .cabecera-historia-pantalla button y se solapan. */
     position: static;
     width: 100%;
     height: auto;
@@ -6695,8 +6365,6 @@ button.servidor-tarjeta:focus-visible {
     place-items: center;
     overflow: hidden;
     background: #161616;
-    /* Al dejar pulsado NO debe salir el menú de copiar/descargar imagen:
-       se desactiva la llamada táctil, la selección y el arrastre. */
     -webkit-touch-callout: none;
     user-select: none;
     -webkit-user-select: none;
@@ -6754,12 +6422,7 @@ button.servidor-tarjeta:focus-visible {
     right: 0;
 }
 
-/* ==============================
-   BARRA DE COMENTARIO DEL VISOR DE ESTADOS
-   Corazón y campo para comentar directamente desde el
-   estado, sin abrir nada. Está por encima de las zonas
-   de toque (z-index 4) para que el campo se pueda usar.
-   ============================== */
+/* BARRA DE COMENTARIO DEL VISOR DE ESTADOS */
 
 .barra-comentario-estado {
     position: absolute;
@@ -6801,7 +6464,6 @@ button.servidor-tarjeta:focus-visible {
     cursor: pointer;
 }
 
-/* El corazón se rellena en rojo cuando está puesto. */
 .boton-like-estado.activo {
     color: #ff4d67;
 }
@@ -6863,9 +6525,7 @@ button.servidor-tarjeta:focus-visible {
 
 
 
-/* ==============================
-   BOTÓN DE PERFIL EN PUBLICACIONES
-   ============================== */
+/* BOTÓN DE PERFIL EN PUBLICACIONES */
 
 .cabecera-publicacion-actual > .boton-perfil-publicacion {
     min-width: 0;
@@ -6906,9 +6566,7 @@ button.servidor-tarjeta:focus-visible {
 }
 
 
-/* ==============================
-   MODAL PERFIL
-   ============================== */
+/* MODAL PERFIL */
 
 #modal-perfil {
     z-index: 3100;
@@ -6923,20 +6581,14 @@ button.servidor-tarjeta:focus-visible {
     z-index: 3300;
 }
 
-/* Los comentarios del estado se abren desde el visor de estados (2000):
-   tienen que ir por encima para que se lean y se pueda escribir. */
 #modal-comentarios-estado {
     z-index: 2100;
 }
 
-/* Las fotos del chat se abren desde el propio chat y encima de todo lo
-   demas, incluido el codigo QR (3600) por si se dejan ambos abiertos. */
 #modal-fotos-chat {
     z-index: 3700;
 }
 
-/* El reenvio de mensajes sale desde el chat (3000), por encima del codigo
-   QR y por debajo del visor de fotos (3700): no pueden estar los dos. */
 #modal-reenviar-mensaje {
     z-index: 3650;
 }
@@ -6949,7 +6601,6 @@ button.servidor-tarjeta:focus-visible {
     align-items: center;
     justify-content: center;
     overflow: hidden;
-    /* Negro puro de base: al salir deslizando se atenúa a transparente. */
     background: rgba(0, 0, 0, 1);
 }
 
@@ -6962,7 +6613,6 @@ button.servidor-tarjeta:focus-visible {
     background: rgba(0, 0, 0, 0.5);
 }
 
-/* La X del visor va arriba a la izquierda, como en los estados. */
 .boton-cerrar-fotos-chat {
     left: max(12px, env(safe-area-inset-left));
     right: auto;
@@ -6975,7 +6625,6 @@ button.servidor-tarjeta:focus-visible {
     align-items: center;
     justify-content: center;
     overflow: hidden;
-    /* El dedo mueve la foto (arrastre y pellizco), no hace scroll de pagina. */
     touch-action: none;
     cursor: grab;
 }
@@ -7030,17 +6679,10 @@ button.servidor-tarjeta:focus-visible {
     font-size: 13px;
 }
 
-/* El editor de foto se abre desde el compositor del chat, y el panel del chat
-   ocupa toda la pantalla con z-index 3000. Con el peldaño de los modales
-   normales (1400) el editor se quedaba detrás del chat: no se veía hasta
-   cerrarlo y la foto no llegaba a adjuntarse. Aquí va el peldaño más alto. */
 #modal-editor-foto {
     z-index: 3400;
 }
 
-/* La ubicación se abre desde el mismo composer, así que le pasa lo mismo que
-   al editor: por debajo de 3000 se quedaba escondida detrás del chat y solo
-   se veía al cerrarlo. */
 #modal-ubicacion {
     z-index: 3400;
 }
@@ -7110,12 +6752,6 @@ button.servidor-tarjeta:focus-visible {
     font-style: italic;
 }
 
-/* -----------------------------
-   ETIQUETA DEL PERFIL
-   Texto corto que sale entre el
-   nombre y la descripción ("Creador"
-   y lo que el desarrollador escriba).
-   ----------------------------- */
 
 .etiqueta-perfil {
     align-self: flex-start;
@@ -7132,19 +6768,12 @@ button.servidor-tarjeta:focus-visible {
     overflow-wrap: anywhere;
 }
 
-/* Sin etiqueta: solo se ve para quien puede escribirla. */
 .etiqueta-perfil.vacia {
     border-style: dashed;
     background: transparent;
     color: #7d7d7d;
 }
 
-/* -----------------------------
-   EDICIÓN EN EL SITIO
-   Solo la cuenta de desarrollador ve
-   estos campos pulsables: al tocarlos
-   se escribe encima, sin ventanas.
-   ----------------------------- */
 
 .campo-perfil.editable {
     display: block;
@@ -7164,7 +6793,6 @@ button.servidor-tarjeta:focus-visible {
     text-underline-offset: 3px;
 }
 
-/* El texto que hay dentro se conserva tal cual (hereda el estilo). */
 .campo-nombre-perfil.editable .nombre-perfil,
 .campo-descripcion-perfil.editable .descripcion-perfil {
     display: block;
@@ -7200,21 +6828,7 @@ button.servidor-tarjeta:focus-visible {
     font-size: 12px;
 }
 
-/* -----------------------------
-   FONDO DEL PERFIL
-   La imagen que eligió esa persona
-   sale detrás de la cabecera, tanto
-   en su perfil como en el de los
-   demás.
-   ----------------------------- */
 
-/* -----------------------------
-   FONDO DEL PERFIL
-   La imagen va detras de todo: el
-   avatar y el nombre la pisan. Ocupa
-   solo la franja de arriba y se
-   difumina al llegar al nombre.
-   ----------------------------- */
 
 .cabecera-perfil {
     position: relative;
@@ -7222,7 +6836,6 @@ button.servidor-tarjeta:focus-visible {
     --subida-avatar: 44px;
 }
 
-/* Todo lo de la cabecera por encima de la portada, sin excepciones. */
 .cabecera-perfil > *:not(.portada-perfil) {
     position: relative;
     z-index: 1;
@@ -7232,9 +6845,6 @@ button.servidor-tarjeta:focus-visible {
     display: none;
 }
 
-/* Versión de la app: solo en tu propio perfil, arriba a la izquierda. El
-   selector es específico para que la regla general de la cabecera (que pone
-   position:relative a todo) no lo posicione. */
 .cabecera-perfil > .version-app-perfil {
     position: absolute;
     top: 8px;
@@ -7269,7 +6879,6 @@ button.servidor-tarjeta:focus-visible {
             #111 100%
         ),
         var(--fondo-perfil);
-    /* El difuminado final: la imagen se deshace en el fondo de la pagina. */
     -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 55%, transparent 100%);
     mask-image: linear-gradient(180deg, #000 0%, #000 55%, transparent 100%);
     background-size: cover;
@@ -7277,16 +6886,10 @@ button.servidor-tarjeta:focus-visible {
     border-radius: 10px 10px 0 0;
 }
 
-/* El avatar sube y pisa el borde de abajo de la portada. */
 .cabecera-perfil.con-fondo .fila-cabecera {
     margin-top: calc(var(--subida-avatar) * -1);
 }
 
-/* -----------------------------
-   AVATAR Y NOMBRE JUNTOS
-   En tu perfil centrados; en el de
-   otra persona a la izquierda.
-   ----------------------------- */
 
 .fila-cabecera {
     display: flex;
@@ -7334,12 +6937,6 @@ button.servidor-tarjeta:focus-visible {
     width: auto;
 }
 
-/* -----------------------------
-   APODOS
-   El nombre privado que le pongo a
-   cada persona, editable en el
-   propio perfil.
-   ----------------------------- */
 
 .bloque-apodo-perfil {
     display: flex;
@@ -7433,10 +7030,6 @@ button.servidor-tarjeta:focus-visible {
     overflow-wrap: anywhere;
 }
 
-/* -----------------------------
-   FONDO EN CUENTA
-   Vista previa de la portada.
-   ----------------------------- */
 
 .fondo-cuenta {
     margin: 10px 0 0;
@@ -7571,9 +7164,7 @@ button.estadistica-perfil:hover {
 }
 
 
-/* ==============================
-   PERFIL DEL AUTOR EN ESTADOS
-   ============================== */
+/* PERFIL DEL AUTOR EN ESTADOS */
 
 .cabecera-historia-pantalla #boton-perfil-historia {
     position: static;
@@ -7599,9 +7190,7 @@ button.estadistica-perfil:hover {
     white-space: nowrap;
 }
 
-/* ========================================
-   PWA: INSTALAR LA APP Y AVISO DE ACTUALIZACION
-   ======================================== */
+/* PWA: INSTALAR LA APP Y AVISO DE ACTUALIZACION */
 
 .boton-instalar-app {
     display: inline-flex;
@@ -7644,8 +7233,6 @@ button.estadistica-perfil:hover {
     display: none;
 }
 
-/* Modo manual (Androides viejos sin aviso de instalacion): se explica cómo
-   instalar desde el menú del navegador. */
 
 .ayuda-instalar {
     max-width: 320px;
@@ -7663,8 +7250,6 @@ button.estadistica-perfil:hover {
     display: none;
 }
 
-/* Aviso de version nueva. Flota arriba para no tapar el contenido, y en
-   movil ocupa el ancho entero para que se pulse bien. */
 
 .aviso-actualizacion {
     position: fixed;
@@ -7733,11 +7318,7 @@ button.estadistica-perfil:hover {
 }
 
 
-/* ========================================
-   ANILLO DEL AVATAR CON EL COLOR DEL NOMBRE
-   La variable la pone app.js. Si el color del nombre es muy oscuro, app.js ya
-   la cambia por un blanco suave para que el anillo se vea sobre el fondo.
-   ======================================== */
+/* ANILLO DEL AVATAR CON EL COLOR DEL NOMBRE */
 
 .con-anillo-nombre {
     box-shadow: 0 0 0 2px var(--anillo-avatar, transparent);
@@ -7745,9 +7326,7 @@ button.estadistica-perfil:hover {
 
 
 
-/* ==============================
-   REELS, HISTORIAS Y MENU CREAR
-   ============================== */
+/* REELS, HISTORIAS Y MENU CREAR */
 
 .pista-reels {
     width: 100%;
@@ -7795,8 +7374,6 @@ button.estadistica-perfil:hover {
 }
 
 .visor-reels {
-    /* 100vw/100vh y no inset: asi el visor mide siempre la pantalla aunque un
-       ancestro con transform se convierta en su bloque contenedor. */
     position: fixed;
     top: 0;
     left: 0;
@@ -7851,7 +7428,6 @@ button.estadistica-perfil:hover {
     z-index: 2;
     position: absolute;
     right: 10px;
-    /* Por encima de la barra de avance, que ocupa la franja de abajo. */
     bottom: 62px;
     display: flex;
     flex-direction: column;
@@ -7886,7 +7462,6 @@ button.estadistica-perfil:hover {
     cursor: pointer;
 }
 
-/* El altavoz se pone blanco cuando el video suena. */
 .boton-sonido-reel.activo {
     color: #fff;
     background: rgba(255, 255, 255, 0.18);
@@ -7947,11 +7522,6 @@ button.estadistica-perfil:hover {
     font-size: 14px;
 }
 
-/* -----------------------------
-   CAJA DE COMENTAR
-   Sencilla: solo una linea y el boton de texto al lado, sin recuadros
-   ni colores llamantes.
-   ----------------------------- */
 
 .formulario-comentario-reel {
     display: flex;
@@ -8004,12 +7574,6 @@ button.estadistica-perfil:hover {
     cursor: default;
 }
 
-/* -----------------------------
-   BARRA DE AVANCE DEL REEL
-   Abajo del todo: el tiempo y una
-   pista que se puede arrastrar para
-   ir adelante o atras en el video.
-   ----------------------------- */
 
 .barra-reel {
     position: absolute;
@@ -8044,7 +7608,6 @@ button.estadistica-perfil:hover {
 }
 
 .barra-reel-pista::after {
-    /* Zona de pulsacion grande sin engordar la linea. */
     content: "";
     position: absolute;
     inset: -12px 0;
@@ -8063,7 +7626,6 @@ button.estadistica-perfil:hover {
     background: #fff;
 }
 
-/* Icono grande en el centro mientras el video esta en pausa. */
 .aviso-reproduccion {
     position: absolute;
     top: 50%;
@@ -8266,8 +7828,6 @@ button.estadistica-perfil:hover {
     display: flex;
     gap: 10px;
 }
-/* El visor y su columna de acciones se fijan a la ventana: asi no dependen
-   del ancho del bloque contenedor en el que caen. */
 .visor-reels {
     position: fixed;
     top: 0;
@@ -8283,9 +7843,7 @@ button.estadistica-perfil:hover {
     z-index: 3;
 }
 
-/* ============================== TÍTULO DE UN ESTADO CON MULTIMEDIA
-   Cuando el estado lleva texto y además foto/vídeo/audio, el texto se pinta
-   como título superpuesto arriba, no como bloque centrado. ============================== */
+/* ============================== TÍTULO DE UN ESTADO CON MULTIMEDIA */
 .titulo-historia-pantalla {
     position: absolute;
     top: 0;
@@ -8306,9 +7864,7 @@ button.estadistica-perfil:hover {
     pointer-events: none;
 }
 
-/* ============================== DESPEJAR LA PANTALLA CON PULSACIÓN LARGA
-   Al mantener pulsado el centro del visor se ocultan la cabecera, el progreso
-   y la barra de comentarios; el contenido queda solo. ============================== */
+/* ============================== DESPEJAR LA PANTALLA CON PULSACIÓN LARGA */
 .progreso-historias,
 .cabecera-historia-pantalla,
 .barra-comentario-estado {
@@ -8322,20 +7878,14 @@ button.estadistica-perfil:hover {
     pointer-events: none;
 }
 
-/* ============================== MODO CINE DEL MENÚ "DESPEJAR PANTALLA"
-   A diferencia de la pulsación larga (historia-despejada), aquí solo se
-   ocultan la cabecera y la barra de comentarios: la barra de avance sigue a
-   la vista y el estado NO se para. ============================== */
+/* ============================== MODO CINE DEL MENÚ "DESPEJAR PANTALLA" */
 .visor-historias-pantalla.historia-limpia .cabecera-historia-pantalla,
 .visor-historias-pantalla.historia-limpia .barra-comentario-estado {
     opacity: 0;
     pointer-events: none;
 }
 
-/* ============================== REPRODUCTOR DE AUDIO PROPIO
-   Sustituye al <audio controls> nativo: botón de play/pausa, ondas que se
-   mueven mientras suena y barra de progreso con brillo, todo con el color de
-   acento y los fondos oscuros de la web. ============================== */
+/* ============================== REPRODUCTOR DE AUDIO PROPIO */
 .reproductor-audio {
     position: relative;
     display: flex;
@@ -8348,22 +7898,10 @@ button.estadistica-perfil:hover {
     border-radius: var(--radio-md);
     overflow: hidden;
     box-sizing: border-box;
-    /* El reproductor vive dentro de .mensaje-chat-contenido, que pone
-       pointer-events:none a todo su contenido. Ese none se hereda y hacía que
-       ningún toque llegara al botón de play: el clic "no hacía nada" y no
-       salía nada en consola. Aquí se reactivan los eventos SOLO para el
-       reproductor; el gesto de deslizar la burbuja ya ignora este elemento,
-       así que deslizar para responder sigue funcionando fuera de la pastilla. */
     pointer-events: auto;
-    /* Pan-y: el navegador se queda con el scroll vertical y yo con los
-       gestos horizontales y los toques al boton. Sin esto, un micro-
-       movimiento al tocar cancela el pointer y el play no llega nunca. */
     touch-action: pan-y;
 }
 
-/* El <audio> real no se oculta con display:none: en iOS/Safari un elemento
-   con display:none no puede reproducir (play no da error y no suena). Se
-   pone fuera del flujo con tamano minimo e invisible para el ojo. */
 .reproductor-audio > audio {
     position: absolute;
     top: 0;
@@ -8416,9 +7954,6 @@ button.estadistica-perfil:hover {
     display: block;
 }
 
-/* Ondas: 30 barras con altura fija variada (forma de onda real) que se
-   encienden en acento según el avance (lo que falta queda apagado).
-   Al sonar, las encendidas también respiran. */
 .reproductor-audio-ondas {
     flex: 1 1 auto;
     display: flex;
@@ -8441,7 +7976,6 @@ button.estadistica-perfil:hover {
     transition: opacity 0.25s ease, background 0.25s ease;
 }
 
-/* Lo ya sonado se enciende con el color de acento de la web. */
 .reproductor-audio-ondas span.encendida {
     background: var(--acento);
     opacity: 1;
@@ -8481,7 +8015,6 @@ button.estadistica-perfil:hover {
     text-align: right;
 }
 
-/* Barra de progreso con brillo que recorre el tramo reproducido. */
 .reproductor-audio-pista {
     position: absolute;
     left: 0;
@@ -8521,8 +8054,6 @@ button.estadistica-perfil:hover {
     opacity: 0;
 }
 
-/* El aviso de "NO SE PUEDE" dentro de la pastilla: rojo para que se lea
-   como fallo y no como un tiempo raro. */
 .reproductor-audio-tiempo.reproductor-audio-tiempo-error {
     color: var(--peligro);
     font-weight: 700;
@@ -8533,8 +8064,6 @@ button.estadistica-perfil:hover {
     to { transform: translateX(400px); }
 }
 
-/* Los estados en el feed y en el visor usan .contenido-multimedia-social;
-   hay que darles el ancho del reproductor para que no quede raro. */
 .tarjeta-historia > .reproductor-audio,
 .estado-texto-amigo .reproductor-audio {
     position: absolute;
@@ -8548,5 +8077,4 @@ button.estadistica-perfil:hover {
 .contenido-historia-pantalla > .reproductor-audio {
     width: calc(100% - 32px);
 }
-/* reproductor: sin zoom de doble toque en Android */
 .reproductor-audio-boton,.reproductor-audio-pista,.reproductor-audio-ondas{touch-action:manipulation}

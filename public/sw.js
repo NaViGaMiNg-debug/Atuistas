@@ -1,23 +1,13 @@
-/* ========================================
-   SERVICE WORKER
-   Dos funciones: avisar de las notificaciones Push y mantener al día la
-   instalacion de la PWA.
+/* SERVICE WORKER */
 
-   La version se sube a mano (VERSION) al desplegar cambios: el navegador
-   compara los ficheros con esta version, borra la cache antigua y descarga
-   lo nuevo. Asi la app instalada se actualiza sola, sin reinstalarla.
-   ======================================== */
-
-const VERSION = "v47";
+const VERSION = "v48";
 const CACHE = `atuistas-${VERSION}`;
 
-// Solo se cachean estos ficheros. Todo lo demas (API, subidas) va directo a
-// la red, porque los datos de los usuarios no se pueden quedar guardados.
 const RECURSOS = [
     "/",
     "/index.html",
-    "/style.css?v=47",
-    "/app.js?v=47",
+    "/style.css?v=48",
+    "/app.js?v=48",
     "/data/emojis.js",
     "/qratuistas.png",
     "/app.webmanifest",
@@ -27,10 +17,6 @@ const RECURSOS = [
     "/icon-maskable-512.png"
 ];
 
-// cache.add falla entero si un recurso falla; se cachea uno a uno para que
-// un icono ausente no impida instalar el service worker entero. Escrito sin
-// Promise.allSettled (Chrome 76+) ni optional chaining para que los
-// Androides viejos puedan registrar este archivo y as� instalar la PWA.
 function cachearTodo(cache) {
     return Promise.all(RECURSOS.map((recurso) =>
         cache.add(recurso).catch(() => null)
@@ -41,9 +27,6 @@ self.addEventListener("install", (event) => {
     event.waitUntil(caches.open(CACHE).then(cachearTodo));
 });
 
-// La pagina avisa que ya se puede aplicar la version nueva. Se responde a
-// los clientes que siguen con la version antigua y se toma el control, de
-// modo que recarguen y ya sirvan los ficheros nuevos.
 self.addEventListener("message", (event) => {
     if (!event.data || event.data.tipo !== "activar-version") return;
 
@@ -75,14 +58,10 @@ self.addEventListener("fetch", (event) => {
     const url = new URL(solicitud.url);
     if (url.origin !== self.location.origin) return;
 
-    // API y subidas: siempre desde la red. Si no hay conexion, la app avisa
-    // con su propio mensaje de error en vez de mostrar datos rancios.
     if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/uploads/") || url.pathname.startsWith("/ws")) {
         return;
     }
 
-    // Navegacion: primero la red para traer el HTML al dia, y si no hay
-    // conexion se sirve el guardado para que la app abra al menos.
     if (solicitud.mode === "navigate") {
         event.respondWith((async () => {
             try {
@@ -95,9 +74,6 @@ self.addEventListener("fetch", (event) => {
         return;
     }
 
-    // Ficheros del programa (app.js, style.css...): primero la red y la cache
-    // solo hace de copia de seguridad. Servirlos desde cache primero hacia
-    // que la app instalada se quedara eternamente en una version vieja.
     event.respondWith((async () => {
         const cache = await caches.open(CACHE);
 
@@ -108,23 +84,18 @@ self.addEventListener("fetch", (event) => {
             }
             return respuesta;
         } catch (error) {
-            // Sin conexion se sirve la ultima copia buena.
             return (await cache.match(solicitud)) || Response.error();
         }
     })());
 });
 
-/* ========================================
-   NOTIFICACIONES PUSH
-   ======================================== */
+/* NOTIFICACIONES PUSH */
 
 self.addEventListener("push", (event) => {
     let data = {};
     try {
         data = event.data ? event.data.json() : {};
     } catch (error) {
-        // Sin optional chaining: los Androides viejos no la entienden y el
-        // service worker dejaria de registrarse, bloqueando la instalacion.
         const texto = event.data && typeof event.data.text === "function"
             ? event.data.text()
             : "Notificacion nueva.";
@@ -133,8 +104,6 @@ self.addEventListener("push", (event) => {
 
     event.waitUntil(self.registration.showNotification(data.title || "Atuistas", {
         body: data.body || "Tienes una notificación nueva.",
-        // El tag viene por persona: al llegar otro aviso del mismo chat se
-        // sustituye este en vez de apilar una notificación nueva.
         tag: data.tag || undefined,
         renotify: false,
         data: data.data || {},
@@ -145,8 +114,6 @@ self.addEventListener("push", (event) => {
 
 self.addEventListener("notificationclick", (event) => {
     event.notification.close();
-    // data trae el tipo y los ids del aviso: un mensaje privado abre el chat
-    // de quien lo escribió, el resto lleva a la pantalla principal.
     const data = event.notification.data || {};
     const destino = data.type === "mensaje_privado" && data.usuarioId
         ? `/?chat=${encodeURIComponent(data.usuarioId)}`
@@ -156,7 +123,6 @@ self.addEventListener("notificationclick", (event) => {
         for (const client of clientsList) {
             if ("focus" in client) {
                 await client.focus();
-                // Con la app ya abierta le decimos a qué chat saltar.
                 client.postMessage({ tipo: "abrir-notificacion", data, destino });
                 return;
             }

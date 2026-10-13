@@ -61,8 +61,8 @@ const css = fs.readFileSync(path.join(raiz, "public", "style.css"), "utf8");
 const inicio = codigo.indexOf("EL CÓDIGO QR");
 const fin = codigo.indexOf("SELECTOR DE EMOJIS, GIF Y STICKERS");
 const bloque = codigo.slice(
-    codigo.lastIndexOf("/* ==============================", inicio),
-    codigo.lastIndexOf("/* ==============================", fin)
+    codigo.lastIndexOf("/* EL CÓDIGO QR */", inicio),
+    codigo.lastIndexOf("/* SELECTOR DE EMOJIS, GIF Y STICKERS */", fin)
 );
 
 const ventana = {

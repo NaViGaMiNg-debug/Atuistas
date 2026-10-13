@@ -1,6 +1,4 @@
 function generarUUID() {
-    // crypto.randomUUID solo existe en Chrome 92+ (Android 7+ al día): en
-    // Android viejos se genera uno compatible para que la app arranque.
     if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
         return crypto.randomUUID();
     }
@@ -29,9 +27,7 @@ const identificadorDispositivo =
     obtenerIdentificadorDispositivo();
 
 
-/* ==============================
-   ELEMENTOS PRINCIPALES
-   ============================== */
+/* ELEMENTOS PRINCIPALES */
 
 const pantallaAcceso =
     document.getElementById("pantalla-acceso");
@@ -100,13 +96,8 @@ if (botonVolverChat) {
     });
 }
 
-/* ========================================
-   COMPOSER DE MENSAJES: MICRÓFONO, ENVÍO Y ADJUNTOS
-   ======================================== */
+/* COMPOSER DE MENSAJES: MICRÓFONO, ENVÍO Y ADJUNTOS */
 
-// Estas dos variables se declujan aqui, y no junto al resto del estado de
-// abajo, porque los composers se crean al principio del script y un "let"
-// declarado mas abajo todavia no existiria en ese momento.
 let composerChat = null;
 let composerServidor = null;
 
@@ -125,12 +116,8 @@ const ICONO_COMPOSER_MICROFONO = `
     </svg>
 `;
 
-// Versión de la app que se muestra arriba a la izquierda en tu propio perfil
-// y en la cabecera de Cuenta (dos sitios para que siempre se pueda ver).
-// Se sube junto a VERSION en public/sw.js y a las ?v= de public/index.html.
-const VERSION_APP = "v46";
+const VERSION_APP = "v48";
 
-// La de Cuenta no depende de petición ninguna: se escribe al cargar el script.
 document.getElementById("version-app-cuenta")?.replaceChildren(VERSION_APP);
 
 const ACEPTA_ADJUNTO = {
@@ -145,7 +132,6 @@ const ETIQUETA_ADJUNTO = {
     audio: "AUDIO"
 };
 
-// Chrome graba en webm y Safari en mp4: se elige lo que soporte el navegador.
 function tipoMimeGrabacion() {
     if (typeof MediaRecorder === "undefined" || typeof MediaRecorder.isTypeSupported !== "function") {
         return "";
@@ -163,7 +149,6 @@ function extensionDeAudio(mime) {
     if (mime.includes("ogg")) return "ogg";
     if (mime.includes("mp4")) return "m4a";
     if (mime.includes("mpeg")) return "mp3";
-    // .weba y no .webm: así el servidor lo sirve como audio y no como vídeo.
     return "weba";
 }
 
@@ -174,9 +159,6 @@ function tipoDeMime(mime) {
     return null;
 }
 
-// Composer compartido por el chat privado y el de servidor: cambia el icono
-// entre micrófono y enviar, graba audio en el momento (con opción de borrarlo
-// antes de enviarlo) y ofrece el menú de adjuntos con fotos, vídeos y audios.
 function crearComposer(config) {
     const {
         formulario,
@@ -192,7 +174,6 @@ function crearComposer(config) {
         enviar
     } = config;
 
-    // Botón PARAR y tira de ondas de cada fila de grabación (chat o servidor).
     const botonParar = document.getElementById(
         filaGrabacion?.id === "fila-grabacion-servidor"
             ? "boton-parar-grabacion-servidor"
@@ -204,10 +185,7 @@ function crearComposer(config) {
             : "ondas-grabacion-chat"
     );
 
-    // Máximo de audio que acepta el servidor (3:30): al llegar se para sola.
     const MAXIMO_GRABACION_SEG = 3 * 60 + 30;
-    // Las ondas de la fila son 24 barras: se van encendiendo según pasa el
-    // tiempo para que se vea cuánto falta para el corte automático.
     const BARRAS_GRABACION = 24;
 
     let adjunto = null;
@@ -219,20 +197,13 @@ function crearComposer(config) {
     let segundos = 0;
     let descartarGrabacion = false;
     let temporizadorAviso = null;
-    // Si el usuario pulsa enviar mientras graba, al parar el audio se manda
-    // solo: no hay que pulsar dos veces.
     let enviarAlParar = false;
-    // Medidor de voz en vivo: el analizador lee lo fuerte que hablas y el
-    // intervalo pinta las barras encendidas con esa altura.
     let contextoVoz = null;
     let analizadorVoz = null;
     let datosVoz = null;
     let intervaloVoz = null;
     let nivelVoz = 0;
 
-    // Una sesión de grabación sigue "activa" también en pausa: así el botón de
-    // enviar, el de borrar y el de parar/reanudar siguen funcionando mientras
-    // está pausada (si solo contara "recording", al pausar se rompían).
     const grabando = () => Boolean(grabadora) && grabadora.state !== "inactive";
     const hayTexto = () => Boolean(entrada.value.trim());
 
@@ -243,9 +214,7 @@ function crearComposer(config) {
             return;
         }
         chipAdjunto.hidden = false;
-        // El audio no enseña nunca el nombre del archivo: solo que está
         // listo para enviar.
-        // El audio no muestra ningun texto: el chip se oculta del todo.
         if (adjunto.tipo === "audio" && !adjunto.archivos) {
             chipAdjunto.hidden = true;
             chipAdjunto.textContent = "";
@@ -259,7 +228,6 @@ function crearComposer(config) {
         chipAdjunto.textContent = `${ETIQUETA_ADJUNTO[adjunto.tipo] ?? "ARCHIVO"}: ${(adjunto.archivos?.[0] ?? adjunto.archivo).name}`;
     }
 
-    // Los errores se enseñan donde el chip del adjunto, sin sacar alertas.
     function avisar(texto) {
         if (!texto) return;
         if (temporizadorAviso) clearTimeout(temporizadorAviso);
@@ -298,10 +266,6 @@ function crearComposer(config) {
         botonMas.setAttribute("aria-expanded", "false");
     }
 
-    // Tira de ondas de la fila: 24 barras con altura fija que respiran con tu
-    // voz. Se van encendiendo según pasa el tiempo (al llenarse del todo la
-    // grabación se para sola). El encendido se cuenta desde la última barra
-    // visible: la tira crece hacia la derecha conforme hablas.
     const ALTURAS_GRABACION = [38, 62, 45, 80, 55, 92, 48, 70, 35, 66, 84, 50, 74, 42, 95, 58, 68, 40, 78, 52, 88, 46, 64, 36];
 
     function prepararOndasGrabacion() {
@@ -318,8 +282,6 @@ function crearComposer(config) {
         if (!ondasGrabacion) return;
         const barras = ondasGrabacion.children;
         if (!barras.length) return;
-        // Las barras se encienden de izquierda a derecha con el paso del
-        // tiempo; la última encendida late con el volumen de tu voz.
         const encendidas = Math.min(
             barras.length,
             Math.floor((segundos / MAXIMO_GRABACION_SEG) * barras.length)
@@ -327,8 +289,6 @@ function crearComposer(config) {
         for (let i = 0; i < barras.length; i += 1) {
             const barra = barras[i];
             barra.classList.toggle("encendida", i < encendidas);
-            // Solo la barra "viva" respira con la voz; el resto mantiene su
-            // altura fija para que se lea el progreso.
             if (i === encendidas - 1) {
                 barra.style.setProperty("--latido-voz", String(0.35 + nivelVoz * 0.65));
                 barra.classList.add("viva");
@@ -357,7 +317,6 @@ function crearComposer(config) {
                 for (let i = 0; i < datosVoz.length; i += 1) {
                     pico = Math.max(pico, Math.abs(datosVoz[i] - 128) / 128);
                 }
-                // Suavizado: sube rápido al hablar y baja despacio en silencio.
                 nivelVoz = Math.max(pico, nivelVoz * 0.75);
                 pintarOndasGrabacion();
             }, 120);
@@ -367,8 +326,6 @@ function crearComposer(config) {
         }
     }
 
-    // La grabadora se pone en pausa (no se termina): queda escuchable en ese
-    // punto y se reanuda desde ahí. No muestra el chip del nombre del archivo.
     function pausaGrabacion() {
         if (!grabadora || grabadora.state === "inactive") return;
         try {
@@ -391,8 +348,6 @@ function crearComposer(config) {
         actualizarBoton();
     }
 
-    // El boton PARAR solo cambia su icono SVG: pausa (dos barras) mientras
-    // graba y play (triangulo) en pausa. La fila no cambia de interfaz.
     function reflejarPausaBotonParar() {
         if (!botonParar) return;
         const enPausa = Boolean(grabadora) && grabadora.state === "paused";
@@ -423,23 +378,17 @@ function crearComposer(config) {
         botonParar?.classList.remove("en-pausa");
     }
 
-    // Congela el reloj sin perder los segundos ya acumulados: se usa al
-    // pausar la grabación para que el tiempo y las ondas dejen de avanzar.
     function pausarContador() {
         if (intervalo) clearInterval(intervalo);
         intervalo = null;
     }
 
-    // Reanuda el conteo tras una pausa. Recrea el intervalo de un segundo que
-    // se había detenido, sin duplicarlo si ya estuviera corriendo.
     function arrancarContador() {
         if (intervalo) return;
         intervalo = setInterval(() => {
             segundos += 1;
             pintarTiempo();
             pintarOndasGrabacion();
-            // Al llegar al máximo del servidor se para sola: queda lista
-            // para enviar (no se tira).
             if (segundos >= MAXIMO_GRABACION_SEG && grabando()) {
                 detenerGrabacion(false);
             }
@@ -449,8 +398,6 @@ function crearComposer(config) {
     function detenerGrabacion(descartar) {
         descartarGrabacion = descartar;
         if (grabando()) {
-            // En pausa algunos navegadores no sueltan el audio al parar:
-            // se reanuda y se para en el mismo gesto.
             if (grabadora.state === "paused") {
                 try { grabadora.resume(); } catch {}
             }
@@ -473,7 +420,6 @@ function crearComposer(config) {
     }
 
     function limpiarTodo() {
-        // Si se estaba grabando, el audio a medias se tira: no se envía nunca.
         if (grabando()) detenerGrabacion(true);
         entrada.value = "";
         limpiarAdjunto();
@@ -500,8 +446,6 @@ function crearComposer(config) {
             avisar("Solo se pueden adjuntar fotos, vídeos o audios");
             return;
         }
-        // Las fotos pasan por el editor universal (recortar, pintar, texto).
-        // Si se cierra sin confirmar, no se adjunta nada.
         if (tipo === "imagen") {
             abrirEditorFoto(archivo, (resultado) => {
                 adjunto = { archivo: resultado, tipo };
@@ -515,9 +459,6 @@ function crearComposer(config) {
         actualizarBoton();
     }
 
-    // Varias fotos a la vez: se quedan juntas en un unico adjunto y cada una
-    // subira su propio mensaje al enviar. La compresion de las que pasen del
-    // limite se hace al subirlas, en subirAdjuntoPrivado.
     function prepararAdjuntos(elegidos) {
         if (!elegidos.length) return;
         if (elegidos.length === 1 || !config.multiplesFotos) {
@@ -534,14 +475,11 @@ function crearComposer(config) {
         actualizarBoton();
     }
 
-    // Al terminar la grabación el audio queda como adjunto listo para enviar, o
-    // se tira si el usuario pulsó BORRAR mientras grababa.
     function alDetenerGrabacion() {
         flujoLocal?.getTracks().forEach((pista) => pista.stop());
         flujoLocal = null;
         pararMedidorVoz();
 
-        // Se usa el MIME guardado al arrancar: la grabadora ya está liberada.
         const tipo = mimeActual;
 
         limpiarGrabacion();
@@ -566,7 +504,6 @@ function crearComposer(config) {
         };
         pintarChip();
         actualizarBoton();
-        // Venía de pulsar enviar grabando: se manda solo, sin segundo clic.
         if (enviarAlParar) {
             enviarAlParar = false;
             botonAccion.disabled = true;
@@ -584,8 +521,6 @@ function crearComposer(config) {
         }
     }
 
-    // Pide el micrófono y arranca la grabación. Mientras suena, el botón pasa a
-    // "detener" y la fila muestra el tiempo y el botón de borrar.
     async function iniciarGrabacion() {
         if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
             avisar("Este navegador no permite grabar audio");
@@ -618,7 +553,6 @@ function crearComposer(config) {
         trozos = [];
         segundos = 0;
         descartarGrabacion = false;
-        // El MIME se fija ahora porque al parar la grabadora ya está liberada.
         mimeActual = grabadora.mimeType || mime || "audio/webm";
 
         grabadora.addEventListener("dataavailable", (evento) => {
@@ -641,9 +575,6 @@ function crearComposer(config) {
         actualizarBoton();
     }
 
-    // El cuadro de escritura crece con el texto hasta tres lineas; a partir de
-    // ahi el CSS lo limita con max-height y solo hace scroll vertical dentro
-    // de el (overflow-x: hidden impide cualquier scroll hacia los lados).
     function ajustarAlturaEntrada() {
         if (!entrada || !entrada.style) return;
         entrada.style.height = "auto";
@@ -661,8 +592,6 @@ function crearComposer(config) {
         ajustarAlturaEntrada();
     });
 
-    // En un textarea Enter salta linea en vez de enviar: aqui se recupera el
-    // comportamiento de antes (Enter envia, Shift+Enter hace salto de linea).
     entrada.addEventListener("keydown", (evento) => {
         if (evento.key !== "Enter" || evento.shiftKey) return;
         evento.preventDefault();
@@ -685,7 +614,6 @@ function crearComposer(config) {
         cerrarMenu();
         if (grabando()) detenerGrabacion(true);
 
-        // La ubicación no es un archivo: se comparte en directo, no se adjunta.
         if (clase === "ubicacion") {
             abrirModalUbicacion(config.compartirUbicacion);
             return;
@@ -693,16 +621,12 @@ function crearComposer(config) {
 
         limpiarAdjunto();
         inputArchivo.accept = ACEPTA_ADJUNTO[clase] ?? "";
-        // En el chat privado se pueden elegir todas las fotos de una vez;
-        // videos y audios (y todo en el servidor) siguen siendo de uno en uno.
         inputArchivo.multiple = Boolean(config.multiplesFotos) && clase === "imagen";
         inputArchivo.click();
     });
 
     inputArchivo.addEventListener("change", () => {
         const elegidos = [...(inputArchivo.files ?? [])];
-        // Se vacia el input para que elegir otra vez la misma foto siga
-        // funcionando: si no, el navegador no da cambio y no se adjunta nada.
         inputArchivo.value = "";
         prepararAdjuntos(elegidos);
     });
@@ -715,7 +639,6 @@ function crearComposer(config) {
         limpiarAdjunto();
     });
 
-    // Botón PARAR de la fila: pausa/reanuda la grabación (no la termina).
     botonParar?.addEventListener("click", () => {
         if (!grabando()) return;
         pausaGrabacion();
@@ -731,13 +654,9 @@ function crearComposer(config) {
         cerrarMenu();
     });
 
-    // El botón principal es el que hace de micrófono, de enviar y de parar la
-    // grabación: el icono ya dice en cada momento qué va a pasar.
     formulario.addEventListener("submit", async (evento) => {
         evento.preventDefault();
 
-        // Grabando, el botón corta el audio; si además hay intención de
-        // enviar (texto o submit del botón), al parar se manda solo.
         if (grabando()) {
             if (entrada.value.trim() || evento.submitter === botonAccion) {
                 enviarAlParar = true;
@@ -746,16 +665,12 @@ function crearComposer(config) {
             return;
         }
 
-        // Si la graba está pausada (o en curso, por si acaso) se termina para que
-        // el audio quede como adjunto y se pueda enviar con un clic.
         if (grabadora && (grabadora.state === "paused" || grabadora.state === "recording")) {
             detenerGrabacion(false);
         }
 
         const contenido = entrada.value.trim();
 
-        // Sin texto ni adjunto el botón es el micrófono, así que empieza a
-        // grabar. Solo si viene de pulsarlo: con Enter no se graba.
         if (!contenido && !adjunto) {
             if (evento.submitter === botonAccion) await iniciarGrabacion();
             return;
@@ -777,15 +692,11 @@ function crearComposer(config) {
     actualizarBoton();
 
     return {
-        // Ademas de refrescar el boton, recoloca la altura del cuadro: lo usa
-        // el chat al poner el texto de un mensaje para editar.
         refrescar: () => {
             actualizarBoton();
             ajustarAlturaEntrada();
         },
-        // Lo usa el resto de la app para vaciar el composer al cambiar de chat.
         limpiar: limpiarTodo,
-        // El chat de servidor cambia el placeholder según el canal.
         cambiarPlaceholder: (texto) => {
             entrada.placeholder = texto;
         }
@@ -826,8 +737,6 @@ if (formularioMensaje) {
         cancelarCitaChat(true);
     });
 
-    // El envío real vive en el composer: él se encarga del micrófono, de los
-    // adjuntos y de vaciar la caja. Aquí solo se encolan las citas y la edición.
     composerChat = crearComposer({
         formulario: formularioMensaje,
         entrada: document.getElementById("entrada-mensaje"),
@@ -841,11 +750,9 @@ if (formularioMensaje) {
         chipAdjunto: document.getElementById("estado-adjunto-chat"),
         enviar: enviarMensajeChat,
         compartirUbicacion: (minutos) => compartirUbicacionChat(minutos),
-        // Solo el chat privado admite subir todas las fotos de una vez.
         multiplesFotos: true
     });
 
-    // Editar o responder se resuelve antes de mandar nada nuevo.
     async function enviarMensajeChat(contenido, adjunto) {
         const token = localStorage.getItem("atuistas_token");
         if (!token || !amigoChatActual) {
@@ -861,9 +768,6 @@ if (formularioMensaje) {
             return;
         }
 
-        // Con adjunto el texto es opcional: el archivo ya sube su propio mensaje.
-        // Con varias fotos a la vez, cada una sube la suya y el texto (y la cita
-        // de respuesta) se quedan en la primera.
         const porSubir = adjunto ? (adjunto.archivos ?? [adjunto.archivo]) : [];
         const subidos = [];
         for (const archivo of porSubir) {
@@ -906,16 +810,12 @@ if (formularioMensaje) {
         await cargarMensajesChat();
     }
 
-    // Sube la foto, el vídeo o el audio y devuelve el identificador con el que
-    // el mensaje se vincula al archivo.
     async function subirAdjuntoPrivado(archivo) {
         const token = localStorage.getItem("atuistas_token");
         if (!token || !amigoChatActual) {
             throw new Error("No se pudo subir el archivo");
         }
 
-        // El límite de siempre por foto: si pesa más de 12 MB se comprime
-        // aquí, antes de subirla (también cubre lo que sale del editor).
         if (archivo.type?.startsWith("image/") && archivo.size > LIMITE_FOTO_BYTES) {
             archivo = await comprimirFoto(archivo);
         }
@@ -940,9 +840,7 @@ if (formularioMensaje) {
     }
 }
 
-/* ==============================
-   CUENTA
-   ============================== */
+/* CUENTA */
 
 const contenidoEntrar =
     document.getElementById("contenido-entrar");
@@ -1019,9 +917,7 @@ const vistaNombreCuenta =
 const contenidoPublico = 
     document.getElementById("contenido-publico");
 
-// ========================================
 // AGREGAR AMIGOS
-// ========================================
 
 const botonEncontrarPersonas =
     document.getElementById("boton-encontrar-personas");
@@ -1050,9 +946,7 @@ const listaSolicitudesAmigos =
 const estadoSolicitudesAmigos =
     document.getElementById("estado-solicitudes-amigos");
 
-/* ==============================
-   FOTO DE PERFIL
-   ============================== */
+/* FOTO DE PERFIL */
 
 const modalOpcionesFoto =
     document.getElementById("modal-opciones-foto");
@@ -1090,8 +984,6 @@ let respuestaGrupoActual = null;
 let mensajeRespuestaChat = null;
 let mensajeEdicionChat = null;
 let mensajesSeleccionadosChat = new Set();
-// Mapa id -> mensaje para saber si lo marcado se puede borrar (solo míos
-// de texto) o solo reenviar (cualquiera visible).
 const mensajesChatPorId = new Map();
 let gestoChatEnCurso = false;
 let interaccionChatEnCurso = false;
@@ -1112,10 +1004,7 @@ const buscadorServidores = document.getElementById("buscador-servidores");
 const panelServidor = document.getElementById("panel-servidor");
 const zonaChatServidor = document.querySelector("#panel-servidor .zona-chat-servidor");
 const mensajesServidor = document.getElementById("mensajes-servidor");
-// Mensajes de servidor marcados con pulsación larga para reenviarlos o
-// borrarlos, igual que la selección del chat privado.
 let mensajesSeleccionadosServidor = new Set();
-// Mapa id -> mensaje para decidir si la papelera se enseña.
 const mensajesServidorPorId = new Map();
 const modalEstado = document.getElementById("modal-estado");
 const modalPublicacion = document.getElementById("modal-publicacion");
@@ -1128,25 +1017,16 @@ let limiteGrabacionAudio = null;
 let descartarGrabacionAudio = false;
 let registroServiceWorker = null;
 const secuenciasEstadosFeed = new Map();
-// Orden de las personas vistas en el feed, por sección: al abrir los estados
-// de una persona se recorren también las siguientes cuando se acaben.
 const ordenClavesEstados = new Map();
 let indiceHistoriaActual = 0;
 let temporizadorHistoria = null;
 let secuenciaHistoriaActual = [];
 let personasSecuencia = [];
 let personaActual = 0;
-// Límites [inicio, fin) de cada persona dentro de la secuencia plana, para
-// pintar solo las barras de progreso de la persona que se está viendo.
 let limitesPersonas = [];
 let botonOpcionesHistoria = null;
 
-/* ========================================
-   INSTALACIÓN Y ACTUALIZACIÓN DE LA PWA
-   El boton de instalar solo aparece si el navegador dice que se puede
-   instalar, y la actualizacion se comprueba sola: cuando hay version
-   nueva, aparece el aviso y basta con pulsar ACTUALIZAR.
-   ======================================== */
+/* INSTALACIÓN Y ACTUALIZACIÓN DE LA PWA */
 
 const botonInstalarApp = document.getElementById("boton-instalar-app");
 const avisoActualizacion = document.getElementById("aviso-actualizacion");
@@ -1155,10 +1035,6 @@ const ayudaInstalar = document.getElementById("ayuda-instalar");
 
 let instalacionPendiente = null;
 
-// Androides viejos (y navegadores sin el aviso de instalacion) nunca emiten
-// beforeinstallprompt: si a los pocos segundos no ha llegado ninguno, se
-// muestra el boton igual y al pulsarlo se explica como instalar a mano
-// desde el menu del navegador.
 if (!appYaInstalada()) {
     setTimeout(() => {
         if (!instalacionPendiente && botonInstalarApp && botonInstalarApp.hidden) {
@@ -1167,7 +1043,6 @@ if (!appYaInstalada()) {
     }, 6000);
 }
 
-// Si la app ya se esta ejecutando como instalada, no tiene sentido ofrecer
 // volver a instalarla.
 function appYaInstalada() {
     return window.matchMedia("(display-mode: standalone)").matches
@@ -1180,8 +1055,6 @@ function mostrarBotonInstalar() {
 }
 
 botonInstalarApp?.addEventListener("click", async () => {
-    // Sin aviso del navegador (Android viejo): se enseña como instalar
-    // desde el menu, que es la via que si existe en todas las versiones.
     if (!instalacionPendiente) {
         if (ayudaInstalar) ayudaInstalar.hidden = !ayudaInstalar.hidden;
         return;
@@ -1189,7 +1062,6 @@ botonInstalarApp?.addEventListener("click", async () => {
     botonInstalarApp.disabled = true;
     try {
         instalacionPendiente.prompt();
-        // El usuario puede cancelar: outcome queda en "dismissed".
         const { outcome } = await instalacionPendiente.userChoice;
         if (outcome === "accepted") {
             botonInstalarApp.hidden = true;
@@ -1201,11 +1073,6 @@ botonInstalarApp?.addEventListener("click", async () => {
     }
 });
 
-// Cuando hay una version nueva esperando, se aplica sola en cuanto la app
-// queda en segundo plano o se recarga: esperar al clic manual dejaba a la
-// gente (sobre todo en movil) mirando la version vieja eternamente aunque
-// recargara la pagina. Si el usuario esta escribiendo algo, se espera a que
-// termine para no perderle el texto.
 function avisarActualizacion(registration) {
     if (!avisoActualizacion) return;
 
@@ -1219,7 +1086,6 @@ function avisarActualizacion(registration) {
 
     const aplicar = () => {
         if (hayTextoSinEnviar()) {
-            // Se reintenta en 10 s: no se pierde lo que se esta escribiendo.
             setTimeout(() => {
                 try { aplicar(); } catch { /* reintento siguiente */ }
             }, 10 * 1000);
@@ -1234,59 +1100,45 @@ function avisarActualizacion(registration) {
         }
     };
 
-    // Se sigue enseñando el aviso por si alguien quiere forzarla ya, pero la
-    // aplicacion tambien avanza sola sin esperar al clic.
     avisoActualizacion.hidden = false;
     botonActualizarApp.onclick = aplicar;
     botonActualizarApp.disabled = false;
-    try { aplicar(); } catch { /* el boton manual sigue disponible */ }
-    // Si en 15 s no se aplico (el worker viejo no responde), se recarga a
-    // la fuerza: el HTML y el SW ya van en no-store, asi que la recarga
-    // trae la version nueva sin borrar nada a mano.
+    try { aplicar(); } catch {  }
     setTimeout(() => {
         try {
             if (!document.getElementById("aviso-actualizacion")?.hidden) {
                 window.location.reload();
             }
-        } catch { /* el boton manual sigue disponible */ }
+        } catch {  }
     }, 15 * 1000);
 }
 
 function vigilarActualizaciones(registration) {
     if (!registration) return;
 
-    // Ya hay una version nueva descargada al abrir la app.
     if (registration.waiting) {
         avisarActualizacion(registration);
     }
 
-    // Se esta descargando una version nueva.
     registration.addEventListener("updatefound", () => {
         const instalando = registration.installing;
         if (!instalando) return;
 
         instalando.addEventListener("statechange", () => {
-            // "installed" con un worker previo significa que hay version nueva.
             if (instalando.state === "installed" && navigator.serviceWorker.controller) {
                 avisarActualizacion(registration);
             }
         });
     });
 
-    // Cada certaino se pregunta al servidor si hay algo nuevo. Asi el
-    // cambio llega solo, sin que el usuario tenga que reinstalar nada.
     setInterval(async () => {
         try {
             await registration.update();
         } catch {
-            // Sin conexion no hay nada que comprobar.
         }
     }, 60 * 1000);
-    // El service worker avisa cuando ya esta sirviendo la version nueva: se
-    // recarga una vez y la app queda al dia sin que haya que instalar nada.
     let recargando = false;
     navigator.serviceWorker.addEventListener("message", (event) => {
-        // Un aviso Push pulsado con la app ya abierta: se salta al chat.
         if (event.data?.tipo === "abrir-notificacion") {
             const datos = event.data.data || {};
             if (datos.type === "mensaje_privado" && datos.usuarioId) {
@@ -1310,17 +1162,12 @@ if ("serviceWorker" in navigator && window.isSecureContext) {
         })
         .catch((error) => console.warn("No se pudo registrar el service worker:", error));
 
-    // Chrome avisa cuando la app cumple los requisitos de instalacion: se
-    // guarda el aviso y se muestra el boton para lanzarlo cuando el usuario
-    // lo pida. Si la pagina no llega a registrarlo a tiempo (navegadores
-    // antiguos), ya se encarga el boton en modo manual de arriba.
     window.addEventListener("beforeinstallprompt", (event) => {
         event.preventDefault();
         instalacionPendiente = event;
         mostrarBotonInstalar();
     });
 
-    // Si el usuario instalo desde el navegador, el boton ya no hace falta.
     window.addEventListener("appinstalled", () => {
         instalacionPendiente = null;
         if (botonInstalarApp) botonInstalarApp.hidden = true;
@@ -1344,9 +1191,7 @@ async function solicitarGrupo(ruta, opciones = {}) {
     return datos;
 }
 
-/* ==============================
-   MOSTRAR ACCESO
-   ============================== */
+/* MOSTRAR ACCESO */
 
 function mostrarAcceso() {
 
@@ -1355,13 +1200,10 @@ function mostrarAcceso() {
 
     desconectarTiempoReal();
 
-    // Al salir de la cuenta se olvida qué estaba viendo: los avisos vuelven.
     avisarSinVista();
 
 
-    /*
-     * RESTABLECER PANTALLA INICIAL
-     */
+    /* RESTABLECER PANTALLA INICIAL */
 
     accesoInicial.hidden = false;
     accesoLogin.hidden = true;
@@ -1369,9 +1211,7 @@ function mostrarAcceso() {
     codigoGenerado.hidden = true;
 
 
-    /*
-     * LIMPIAR CAMPOS Y ERRORES
-     */
+    /* LIMPIAR CAMPOS Y ERRORES */
 
     codigoLogin.value = "";
     errorLogin.textContent = "";
@@ -1386,8 +1226,6 @@ function colorSeguro(color) {
     return /^#[0-9a-f]{6}$/i.test(color || "") ? color : "#ffffff";
 }
 
-// Luminancia percibida: sirve para saber si un color se pierde sobre el fondo
-// oscuro de la aplicación y hay que rodearlo de algo claro.
 function esColorOscuro(color) {
     const hex = colorSeguro(color);
     const rojo = parseInt(hex.slice(1, 3), 16);
@@ -1397,23 +1235,14 @@ function esColorOscuro(color) {
     return luminancia < 105;
 }
 
-// Color del anillo de los avatares: el del nombre, o blanco suave cuando el
-// color es tan oscuro que se confundiría con el fondo.
 function colorDeAnillo(color) {
     return esColorOscuro(color) ? "rgba(255, 255, 255, 0.85)" : colorSeguro(color);
 }
 
-/* ==============================
-   APODOS
-   El nombre que le pongo yo a cada persona. Es privado: solo lo veo yo, la
-   otra persona sigue viendo su nombre de verdad. Se aplica en todas partes
-   con nombreVisible(), salvo en "Agregar amigos", donde se busca gente nueva y
-   se ve el nombre real.
-   ============================== */
+/* APODOS */
 
 const apodosPorUsuario = new Map();
 
-// Nombres reales de los que tengo apodo, para la lista de Cuenta.
 const nombreRealPorId = new Map();
 
 async function cargarApodos() {
@@ -1423,12 +1252,9 @@ async function cargarApodos() {
         (datos.apodos || []).forEach((entrada) => apodosPorUsuario.set(entrada.otro_id, entrada.apodo));
         await cargarNombresApodados();
     } catch {
-        // Sin apodos cargados se ven los nombres reales: no se rompe nada.
     }
 }
 
-// Para la lista de Cuenta hacen falta también los nombres reales, que no
-// vienen en /api/apodos. Se piden de los amigos que ya se conocen.
 async function cargarNombresApodados() {
     if (apodosPorUsuario.size === 0) return;
     const pedidos = [...apodosPorUsuario.keys()].map((id) =>
@@ -1441,14 +1267,11 @@ async function cargarNombresApodados() {
     await Promise.all(pedidos);
 }
 
-// Nombre que hay que pintar para esa persona.
 function nombreVisible(usuarioId, nombreReal) {
     if (!usuarioId) return nombreReal;
     return apodosPorUsuario.get(usuarioId) || nombreReal;
 }
 
-// Estilo en línea para pintar un nombre. Si el color es oscuro se añade un
-// halo claro, porque el fondo de la aplicación también es oscuro.
 function estiloNombre(color) {
     const seguro = colorSeguro(color);
     if (esColorOscuro(seguro)) {
@@ -1457,8 +1280,6 @@ function estiloNombre(color) {
     return `color:${seguro};`;
 }
 
-// Deja el anillo del avatar del color del nombre. Se usa una variable CSS para
-// que el estilo viva en style.css y no haya que repetirlo aquí.
 function aplicarAnilloAvatar(elemento, color) {
     if (!elemento) return;
     elemento.style.setProperty("--anillo-avatar", colorDeAnillo(color));
@@ -1474,13 +1295,7 @@ function escapeHtml(texto) {
     return elemento.innerHTML;
 }
 
-/* ==============================
-   UBICACIÓN EN DIRECTO
-   Compartir es enviar un mensaje normal con la posición dentro; a partir
-   de ahí se sigue la posición con watchPosition y la misma tarjeta se va
-   moviendo, sin llenar el chat de mensajes nuevos. Solo quien comparte
-   puede pararla.
-   ============================== */
+/* UBICACIÓN EN DIRECTO */
 
 const MINUTO_AUTOR_UBICACION = 60000;
 const METROS_MINIMO_MOVIMIENTO = 12;
@@ -1507,8 +1322,6 @@ function abrirModalUbicacion(compartir) {
 
     if (!modal) return;
 
-    // Si ya se está compartiendo, la ventanita ofrece parar en lugar de
-    // empezar otra vez: en un chat solo hay una ubicación propia en directo.
     const activa = Boolean(compartiendoUbicacion);
     botonParar.hidden = !activa;
     botonEnviar.hidden = activa;
@@ -1537,23 +1350,8 @@ function distanciaEntre(a, b) {
     return 2 * radioTierra * Math.asin(Math.sqrt(x));
 }
 
-/* ==============================
-   TARJETA DE UBICACIÓN
-   Una tarjeta pequeña: un trozo de mapa de OpenStreetMap, el estado
-   (en vivo o terminada) y un botón para abrirla en el mapa del móvil.
-   No hace falta ninguna clave ni servicio de pago: los mosaicos son
-   los públicos de OpenStreetMap.
-   ============================== */
+/* TARJETA DE UBICACIÓN */
 
-/* El mapa se monta con las teselas públicas de OpenStreetMap, que son
-   imágenes de verdad. Antes se usaba el "embed" del mapa, que devuelve una
-   página HTML: eso dentro de un <img> no se ve nunca y solo salía su texto
-   alternativo, parpadeando con cada refresco.
-
-   Se hacen cuatro teselas (2x2) reducidas a la mitad y se colocan como fondos
-   CSS, con la chincheta encima. El resultado se guarda en memoria: el chat se
-   repinta cada dos segundos y sin esta caché se volverían a pedir las mismas
-   teselas una y otra vez. */
 const ZOOM_UBICACION = 16;
 const LADO_TESELA_PANTALLA = 128;
 
@@ -1569,7 +1367,6 @@ function teselaDe(lat, lon, zoom, desfaseX, desfaseY) {
     const x = Math.floor(xExacto) + desfaseX;
     const y = Math.floor(yExacto) + desfaseY;
 
-    // Posición de la tesela dentro de la caja de 256x256 de la tarjeta.
     const izquierda = Math.round((x - xExacto) * LADO_TESELA_PANTALLA);
     const arriba = Math.round((y - yExacto) * LADO_TESELA_PANTALLA);
 
@@ -1583,8 +1380,6 @@ function teselaDe(lat, lon, zoom, desfaseX, desfaseY) {
 const mapasEnMemoria = new Map();
 
 function pintarMapaUbicacion(lat, lon) {
-    // Se redondea la posición: si la tarjeta se repinta con el mismo punto
-    // aproximado, se reutiliza lo ya calculado.
     const clave = `${lat.toFixed(4)}|${lon.toFixed(4)}|${ZOOM_UBICACION}`;
     const guardada = mapasEnMemoria.get(clave);
     if (guardada) return guardada;
@@ -1596,8 +1391,6 @@ function pintarMapaUbicacion(lat, lon) {
         teselaDe(lat, lon, ZOOM_UBICACION, 1, 1)
     ];
 
-    // La chincheta va en el centro de la caja, que es donde cae el punto exacto
-    // porque la tesela de arriba a la izquierda se posiciona por su desfase.
     const estilo = teselas.map((tesela) => {
         return (
             `url("${tesela.url}") ${tesela.izquierda}px ${tesela.arriba}px / ` +
@@ -1669,8 +1462,6 @@ function pedirPosicionActual() {
     });
 }
 
-// El arnés recibe una función con tres acciones: crear el mensaje, moverlo y
-// pararlo. Cada sitio (chat o servidor) aporta sus propias rutas.
 async function compartirUbicacionChat(minutos) {
     if (!amigoChatActual) return;
 
@@ -1720,7 +1511,6 @@ async function compartirUbicacionChat(minutos) {
     });
 }
 
-// Compartir en el canal abierto de un servidor.
 async function compartirUbicacionServidor(minutos) {
     if (!grupoActual) return;
 
@@ -1790,8 +1580,6 @@ async function iniciarCompartido(minutos, enviar) {
     }
 }
 
-// watchPosition entrega punto cada pocos segundos; aqui solo se avisa al
-// servidor cuando la persona se ha movido de verdad, para no gastar.
 function seguirUbicacion() {
     if (!navigator.geolocation || !compartiendoUbicacion) return;
 
@@ -1817,7 +1605,6 @@ function seguirUbicacion() {
             try {
                 await compartiendoUbicacion.actualizar(nueva);
             } catch (error) {
-                // Si ya no esta en directo (caduco o se paro), se deja de vigilar.
                 await detenerCompartido();
             }
         },
@@ -1855,7 +1642,6 @@ async function detenerCompartido() {
     try {
         await enCurso.parar();
     } catch (error) {
-        // Si ya estaba parada en el servidor, no hay nada que arreglar.
     }
 }
 
@@ -1867,8 +1653,6 @@ async function pararCompartido() {
     else if (grupoActual) await cargarMensajesServidor();
 }
 
-// El botón "DEJAR DE COMPARTIR" va en la propia tarjeta, para poder pararlo
-// sin tener que abrir la ventanita de la ubicación otra vez.
 document.addEventListener("click", async (evento) => {
     const boton = evento.target.closest?.("[data-parar-ubicacion]");
     if (!boton) return;
@@ -1880,12 +1664,7 @@ document.addEventListener("click", async (evento) => {
     await pararCompartido();
 });
 
-/* ==============================
-   EL CÓDIGO QR
-   Atajo: mantener pulsadas la Q y la R a la vez durante cinco segundos
-   dentro de la web. En móvil, donde no hay teclado, hay un botón en la
-   cabecera que solo aparece dentro de Cuenta.
-   ============================== */
+/* EL CÓDIGO QR */
 
 const IMAGEN_CODIGO = "/qratuistas.png";
 const SEGUNDOS_ATAJO_CODIGO = 5;
@@ -1916,7 +1695,6 @@ function construirVentanaCodigo() {
 
     ventana.querySelector("#cerrar-codigo").addEventListener("click", cerrarCodigo);
     ventana.addEventListener("click", (evento) => {
-        // Pulsar en el fondo también lo cierra; en la imagen no.
         if (evento.target === ventana) cerrarCodigo();
     });
 }
@@ -1940,7 +1718,6 @@ function cancelarAtajoCodigo() {
 }
 
 document.addEventListener("keydown", (evento) => {
-    // Con Ctrl u Alt no cuenta: si no, recargar con Ctrl+R saltaría el atajo.
     if (evento.ctrlKey || evento.altKey || evento.metaKey) return;
 
     const tecla = String(evento.key).toLowerCase();
@@ -1948,7 +1725,6 @@ document.addEventListener("keydown", (evento) => {
 
     teclasAtajoPulsadas.add(tecla);
 
-    // Solo cuando están las dos a la vez, y solo una cuenta de 5 segundos.
     if (teclasAtajoPulsadas.size === TECLAS_ATAJO_CODIGO.length && !temporizadorAtajo) {
         temporizadorAtajo = setTimeout(() => {
             temporizadorAtajo = null;
@@ -1962,18 +1738,11 @@ document.addEventListener("keyup", (evento) => {
     if (temporizadorAtajo) cancelarAtajoCodigo();
 });
 
-// Si se cambia de ventana con las teclas pulsadas, el atajo se cancela solo.
 window.addEventListener("blur", cancelarAtajoCodigo);
 
 document.getElementById("boton-qr-cuenta")?.addEventListener("click", abrirCodigo);
 
-/* ==============================
-   SELECTOR DE EMOJIS, GIF Y STICKERS
-   Un único panel sirve para los cuatro sitios donde se escribe: chat
-   privado, servidor, comentarios de reels y comentarios de
-   publicaciones. Se abre sobre el campo de escritura sin robarle el
-   foco, para que en el móvil no salte el teclado de golpe.
-   ============================== */
+/* SELECTOR DE EMOJIS, GIF Y STICKERS */
 
 const CLAVE_EMOJIS_RECIENTES = "atuistas_emoji_recientes";
 const MAXIMO_EMOJIS_RECIENTES = 32;
@@ -2004,12 +1773,9 @@ function recordarEmoji(emoji, nombre) {
     try {
         localStorage.setItem(CLAVE_EMOJIS_RECIENTES, JSON.stringify(emojisRecientes));
     } catch (error) {
-        // Si el navegador no deja guardar, los recientes duran esta sesión.
     }
 }
 
-// El botón se inserta antes del campo de escritura en cada sitio. Se crea
-// siempre igual para no repetir el dibujo cuatro veces.
 function asegurarBotonEmoji(idEntrada, destino) {
     if (document.getElementById(`boton-emoji-${destino}`)) return;
 
@@ -2030,7 +1796,6 @@ function asegurarBotonEmoji(idEntrada, destino) {
             <path d="M8 14.2a5 5 0 0 0 8 0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
         </svg>`;
 
-    // Sin preventDefault el móvil cierra el teclado al pulsar el botón.
     boton.addEventListener("mousedown", (evento) => evento.preventDefault());
     boton.addEventListener("click", (evento) => {
         evento.preventDefault();
@@ -2135,8 +1900,6 @@ function cerrarSelector() {
     destinoSelector = null;
 }
 
-// Inserta texto donde esté el cursor, no al final: se nota al escribir a
-// mitad de un mensaje ya empezado.
 function insertarEnEntrada(entrada, texto) {
     const inicio = entrada.selectionStart ?? entrada.value.length;
     const fin = entrada.selectionEnd ?? inicio;
@@ -2148,7 +1911,6 @@ function insertarEnEntrada(entrada, texto) {
     try {
         entrada.setSelectionRange(cursor, cursor);
     } catch (error) {
-        // Algunos navegadores de móvil no dejan colocar el cursor así.
     }
 
     entrada.dispatchEvent(new Event("input", { bubbles: true }));
@@ -2176,7 +1938,6 @@ function pintarSelector() {
         return;
     }
 
-    // Buscando: una sola lista de resultados, sin cabeceras de grupo.
     if (texto) {
         const piezas = [];
         for (const grupo of EMOJIS_ATUISTAS) {
@@ -2215,8 +1976,6 @@ function pintarSelector() {
         </div>`).join("");
 }
 
-// GIF y stickers llegan de Giphy. La clave la tiene el servidor: si no está
-// puesta, el panel lo dice claro en vez de quedarse en blanco.
 async function buscarMedioEnProveedor(texto) {
     const panel = document.getElementById("selector-medio");
     if (!panel) return;
@@ -2274,8 +2033,6 @@ async function buscarMedioEnProveedor(texto) {
     }
 }
 
-// Pulsar un emoji lo pone en el campo; un GIF o sticker se envía tal cual,
-// como si la persona lo hubiera subido desde el móvil.
 function manejarClicSelector(evento) {
     const botonEmoji = evento.target.closest(".selector-emoji");
     if (botonEmoji && destinoSelector) {
@@ -2309,7 +2066,6 @@ async function enviarMedioSeleccionado(url, destino, idEntrada) {
         const extension = esImagen ? "gif" : (blob.type?.split("/")[1] || "bin");
         const archivo = new File([blob], `medio.${extension}`, { type: blob.type });
 
-        // En los comentarios solo hay texto: se manda el enlace del GIF.
         if (destino === "comentario-reel" || destino === "comentario-publicacion") {
             const entrada = document.getElementById(idEntrada);
             if (entrada) insertarEnEntrada(entrada, url);
@@ -2327,16 +2083,7 @@ async function enviarMedioSeleccionado(url, destino, idEntrada) {
     }
 }
 
-/* ==============================
-   VISOR DE FOTOS DEL CHAT
-   Pulsar la foto de un mensaje la abre
-   en grande: se amplia con la rueda,
-   doble pulsación o pellizco, se cambia
-   de foto deslizando a los lados (o con
-   las flechas, en ratón) y se sale con
-   la X de arriba a la izquierda o
-   deslizando arriba o abajo.
-   ============================== */
+/* VISOR DE FOTOS DEL CHAT */
 
 let fotosChatAbiertas = [];
 let indiceFotoChat = 0;
@@ -2357,8 +2104,6 @@ function obtenerDialogoFotosChat() {
     return document.querySelector("#modal-fotos-chat .dialogo-fotos-chat");
 }
 
-/* Al arrastrar en vertical se atenúa el fondo para avisar de que al soltar
-   se sale del visor, como en los estados. */
 function vistaPreviaSalidaFotoChat(deltaX, deltaY) {
     const imagen = document.getElementById("foto-chat-grande");
     const dialogo = obtenerDialogoFotosChat();
@@ -2403,7 +2148,6 @@ function pintarFotoChat(indice) {
 function abrirFotosChat(contenedorId, imagen) {
     const contenedor = document.getElementById(contenedorId);
     if (!contenedor || !contenedor.querySelectorAll) return;
-    // Las fotos de la conversación entera, en el orden en que se ven.
     fotosChatAbiertas = [...contenedor.querySelectorAll(".adjunto-mensaje img")]
         .map((foto) => foto.getAttribute?.("src") || foto.src || "")
         .filter(Boolean);
@@ -2446,14 +2190,9 @@ document.addEventListener("keydown", (evento) => {
     else if (evento.key === "ArrowLeft") cambiarFotoChat(-1);
 });
 
-// Pulsar una foto de cualquier conversación (privada o de servidor) la abre.
-// OJO: el gesto del mensaje hace setPointerCapture en pointerdown, así que
-// cuando el clic llega el evento.target ya no es la foto sino el mensaje.
-// Por eso se busca también bajo el puntero y, si el mensaje solo trae una
 // foto, se usa esa.
 for (const contenedorId of ["lista-mensajes", "mensajes-servidor"]) {
     document.getElementById(contenedorId)?.addEventListener("click", (evento) => {
-        // Con la selección de mensajes activa, el toque selecciona: no se abre.
         if (typeof mensajesSeleccionadosChat !== "undefined" && mensajesSeleccionadosChat.size > 0) return;
         if (typeof mensajesSeleccionadosServidor !== "undefined" && mensajesSeleccionadosServidor.size > 0) return;
         let imagen = evento.target.closest?.(".adjunto-mensaje img") ?? null;
@@ -2474,7 +2213,6 @@ for (const contenedorId of ["lista-mensajes", "mensajes-servidor"]) {
 const pistaFotosChat = document.querySelector(".fotos-chat-pista");
 
 if (pistaFotosChat) {
-    // Doble pulsación: ampliar y volver al tamaño normal.
     pistaFotosChat.addEventListener("dblclick", (evento) => {
         evento.preventDefault();
         if (escalaFotoChat > 1) {
@@ -2487,7 +2225,6 @@ if (pistaFotosChat) {
         }
     });
 
-    // Rueda del ratón: acercar y alejar.
     pistaFotosChat.addEventListener("wheel", (evento) => {
         if (!fotosChatAbiertas.length) return;
         evento.preventDefault();
@@ -2534,9 +2271,6 @@ if (pistaFotosChat) {
         const deltaY = evento.clientY - arrastreFotoChat.inicioY;
         if (Math.abs(deltaX) > 8 || Math.abs(deltaY) > 8) arrastreFotoChat.movido = true;
 
-        // Ampliada, el dedo arrastra la foto; al tamaño normal se guarda el
-        // movimiento para decidir al soltar si se cambia de foto (a los
-        // lados) o se sale del visor (arriba o abajo).
         if (escalaFotoChat > 1) {
             desplazFotoChat = {
                 x: arrastreFotoChat.origenX + deltaX,
@@ -2560,8 +2294,6 @@ if (pistaFotosChat) {
 
         if (punterosFotoChat.size === 0) {
             arrastreFotoChat = null;
-            // Al tamaño normal, deslizar a un lado y a otro pasa de foto y
-            // deslizar arriba o abajo sale del visor, en cualquier foto.
             if (eraDesliz) {
                 if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > 70) {
                     cerrarFotosChat();
@@ -2575,7 +2307,6 @@ if (pistaFotosChat) {
                 aplicarTransformFotoChat();
             }
         } else if (punterosFotoChat.size === 1) {
-            // Queda un dedo: el arrastre sigue desde donde está.
             const [restante] = [...punterosFotoChat.values()];
             arrastreFotoChat = {
                 pinch: false,
@@ -2591,9 +2322,7 @@ if (pistaFotosChat) {
     pistaFotosChat.addEventListener("pointercancel", soltarPunteroFotoChat);
 }
 
-/* ==============================
-   MOSTRAR APLICACIÓN
-   ============================== */
+/* MOSTRAR APLICACIÓN */
 
 function mostrarAplicacion() {
 
@@ -2610,8 +2339,6 @@ function mostrarAplicacion() {
     comprobarPoderesDesarrollador();
     cargarApodos();
 
-    // Enlace directo de un aviso Push (/?chat=<id>): se abre ese chat y la
-    // dirección se limpia para que no se reabra al recargar.
     const chatPendiente = new URLSearchParams(window.location?.search || "").get("chat");
     if (chatPendiente) {
         window.history?.replaceState?.(null, "", window.location?.pathname || "/");
@@ -2628,8 +2355,6 @@ function mostrarAplicacion() {
 
 }
 
-// Las preferencias no tienen botón de guardar: se guardan solas cuando se
-// cierra la ventanita de notificaciones. La bandera avisa si hubo cambios.
 let preferenciasNotificacionesSucias = false;
 
 async function cargarConfiguracionNotificaciones() {
@@ -2686,7 +2411,6 @@ document.getElementById("boton-activar-notificaciones-dispositivo").addEventList
     }
 });
 
-// Las casillas se marcan como sucias al tocarlas y se guardan al cerrar.
 document.querySelectorAll("[data-preferencia]").forEach((entrada) => {
     entrada.addEventListener("change", () => {
         preferenciasNotificacionesSucias = true;
@@ -2712,7 +2436,6 @@ async function guardarConfiguracionNotificaciones() {
     }
 }
 
-/* ---------- Ventanita de notificaciones ---------- */
 
 const modalNotificaciones = document.getElementById("modal-notificaciones");
 
@@ -2728,13 +2451,10 @@ function fechaAviso(iso) {
 }
 
 function pintarPuntoNotificaciones(cantidad) {
-    // Solo queda un sitio donde mirar: la campanita de la cabecera.
     const punto = document.getElementById("punto-notificaciones");
     if (punto) punto.hidden = !(Number(cantidad) > 0);
 }
 
-// Solo se ofrece activar el dispositivo mientras el navegador no haya dado ya
-// permiso: con el permiso concedido el botón deja de salir.
 function actualizarBotonActivarDispositivo() {
     const boton = document.getElementById("boton-activar-notificaciones-dispositivo");
     const estado = document.getElementById("estado-notificaciones-dispositivo");
@@ -2746,12 +2466,7 @@ function actualizarBotonActivarDispositivo() {
     }
 }
 
-/* ==============================
-   PRESENCIA: QUÉ ESTÁ VIENDO
-   Se le dice al servidor qué chat o servidor está abierto para que no
-   mande avisos de lo que la persona ya tiene delante. Caduca solo a los
-   tres minutos, así que si cierra el navegador no se queda callado.
-   ============================== */
+/* PRESENCIA: QUÉ ESTÁ VIENDO */
 
 let vistaAvisada = null;
 
@@ -2763,7 +2478,6 @@ function avisarVista(vista) {
         method: "POST",
         body: JSON.stringify(vista)
     }).catch(() => {
-        // Sin presencia no pasa nada grave: solo puede llegar un aviso de más.
     });
 }
 
@@ -2779,8 +2493,6 @@ function avisarSinVista() {
     avisarVista({ chatId: null, servidorId: null });
 }
 
-// Mientras haya un chat o un servidor abierto se refresca la presencia antes de
-// que caduque, por si la conversación dura más de tres minutos.
 setInterval(() => {
     if (vistaAvisada && vistaAvisada !== JSON.stringify({ chatId: null, servidorId: null })) {
         solicitarGrupo("/api/presencia", {
@@ -2809,8 +2521,6 @@ async function cargarListaNotificaciones() {
             const elemento = document.createElement("button");
             elemento.type = "button";
             elemento.className = aviso.leida ? "aviso-notificacion" : "aviso-notificacion sin-leer";
-            // Los avisos repetidos de la misma persona llegan agrupados: aquí
-            // se ve cuántos son en vez de una fila por cada uno.
             const veces = Number(aviso.cantidad) || 1;
             const contador = veces > 1 ? `<em class="contador-aviso">${veces}</em>` : "";
             elemento.innerHTML = `
@@ -2826,13 +2536,10 @@ async function cargarListaNotificaciones() {
     }
 }
 
-// Al tocar un aviso se marca como leída y, si viene de un mensaje privado,
-// se salta directamente a esa conversación.
 async function marcarAvisoLeido(aviso) {
     try {
         await solicitarGrupo(`/api/notificaciones/${aviso.id}/leer`, { method: "POST" });
     } catch {
-        // Aunque falle el marcado, el enlace sigue siendo útil.
     }
     const usuarioId = aviso.datos?.usuarioId;
     if (aviso.tipo === "mensaje_privado" && usuarioId) {
@@ -2843,19 +2550,14 @@ async function marcarAvisoLeido(aviso) {
     await cargarListaNotificaciones();
 }
 
-// Punto rojo del menú y del botón de Cuenta: solo hace falta el recuento.
 async function actualizarPuntoNotificaciones() {
     try {
         const datos = await solicitarGrupo("/api/notificaciones");
         pintarPuntoNotificaciones(datos.no_leidas);
     } catch {
-        // Sin conexión no hay recuento que actualizar.
     }
 }
 
-// Al abrir el panel los avisos se dan por vistos solos: no hay ningún botón
-// de "marcar como leídas". Si el marcado falla por un momento, la lista se
-// enseña igualmente y el punto rojo se corrige al recargar.
 async function abrirModalNotificaciones() {
     if (!modalNotificaciones) return;
     modalNotificaciones.hidden = false;
@@ -2866,7 +2568,6 @@ async function abrirModalNotificaciones() {
         await solicitarGrupo("/api/notificaciones/leer-todas", { method: "POST" });
         pintarPuntoNotificaciones(0);
     } catch {
-        // Sin conexión se muestran tal cual; no pasa nada por no marcar.
     }
 
     await cargarListaNotificaciones();
@@ -2874,7 +2575,6 @@ async function abrirModalNotificaciones() {
 
 function cerrarModalNotificaciones() {
     if (!modalNotificaciones) return;
-    // Se guardan las casillas pendientes justo al cerrar: no hay botón.
     guardarConfiguracionNotificaciones();
     modalNotificaciones.hidden = true;
 }
@@ -2913,7 +2613,6 @@ async function abrirChat(amigo) {
     nombreChat.textContent = nombreVisible(amigo.id, amigo.nombre);
     nombreChat.setAttribute("style", estiloNombre(amigo.color_nombre));
 
-    // El marco de la foto va del mismo color que el nombre.
     aplicarAnilloAvatar(avatarChat, amigo.color_nombre);
 
     avatarChat.innerHTML = amigo.avatar_url
@@ -2927,7 +2626,6 @@ async function abrirChat(amigo) {
 
     panelChat.hidden = false;
 
-    // Con el chat delante, los mensajes de esta persona no generan aviso.
     avisarChatVisto(amigo.id);
 
     listaMensajes.innerHTML = `
@@ -2970,8 +2668,6 @@ async function abrirChat(amigo) {
 
         await cargarMensajesChat();
 
-        // El teclado NO se abre solo: en el móvil abriría la pantalla del
-        // teclado nada más entrar en un chat. Se abre cuando la persona pulsa
         // el campo de escritura.
 
         if (intervaloChat) {
@@ -2996,32 +2692,15 @@ async function abrirChat(amigo) {
     }
 }
 
-/* ==============================
-   HORA EN LOS MENSAJES (vista personal)
-   Cada persona decide si ve, bajo cada mensaje, la hora a la que se envió, y
-   si aparece el separador centrado con el día cuando la fecha cambia. Es un
-   ajuste suyo y solo suyo: no cambia lo que ven las demás personas.
-
-   La clave "atuistas_ver_hora" dice si está activo ("1") o no ("0"). Si no
-   existe nada guardado se considera activo, que es el estado por defecto.
-
-   La clave "atuistas_hora_desde" guarda la fecha y hora exactas del momento
-   en que se reactivó. Gracias a ella, al volver a activar NO reaparecen las
-   horas de los mensajes viejos (los anteriores a ese instante se quedan sin
-   hora para siempre); solo los mensajes nuevos enviados a partir de entonces
-   vuelven a mostrar su hora.
-   ============================== */
+/* HORA EN LOS MENSAJES (vista personal) */
 
 const CLAVE_VER_HORA = "atuistas_ver_hora";
 const CLAVE_HORA_DESDE = "atuistas_hora_desde";
 
-// ¿Está la vista de hora activada para esta persona?
 function verHoraActivado() {
     return localStorage.getItem(CLAVE_VER_HORA) !== "0";
 }
 
-// Fecha (en ms) a partir de la cual se permite mostrar la hora. Si no hay
-// corte guardado, se muestra siempre (nunca se ha desactivado).
 function horaVisibleDesde() {
     const guardado = localStorage.getItem(CLAVE_HORA_DESDE);
     if (!guardado) return null;
@@ -3029,8 +2708,6 @@ function horaVisibleDesde() {
     return Number.isNaN(fecha) ? null : fecha;
 }
 
-// ¿Debe este mensaje concreto enseñar su hora? Solo si la vista está activa y
-// el mensaje se envió después del último corte (o nunca hubo corte).
 function debeMostrarHora(mensaje) {
     if (!verHoraActivado()) return false;
     const desde = horaVisibleDesde();
@@ -3040,7 +2717,6 @@ function debeMostrarHora(mensaje) {
     return creado >= desde;
 }
 
-// Clave de día (año-mes-día) en la zona local, para agrupar por fecha.
 function claveDia(iso) {
     const fecha = new Date(iso);
     if (Number.isNaN(fecha.getTime())) return "";
@@ -3049,7 +2725,6 @@ function claveDia(iso) {
     return `${fecha.getFullYear()}-${mes}-${dia}`;
 }
 
-// "5 de noviembre de 2025"
 function textoDia(iso) {
     const fecha = new Date(iso);
     if (Number.isNaN(fecha.getTime())) return "";
@@ -3067,13 +2742,10 @@ function textoHora(iso) {
     return fecha.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
-// El separador solo tiene sentido mientras la vista de hora esté activa: si no,
-// se enseña siempre, porque entonces no hay horas que contextualizar.
 function separadorDiaVisible(mensaje) {
     return verHoraActivado() && debeMostrarHora(mensaje);
 }
 
-// Nodo DOM del separador de día (chat privado).
 function crearNodoSeparadorDia(iso) {
     const separador = document.createElement("div");
     separador.className = "separador-dia";
@@ -3082,20 +2754,10 @@ function crearNodoSeparadorDia(iso) {
     return separador;
 }
 
-// Igual, pero como cadena de HTML (servidor).
 function htmlSeparadorDia(iso) {
     return `<div class="separador-dia" data-separador="${claveDia(iso)}">${textoDia(iso)}</div>`;
 }
 
-/* ---------- Pintar los mensajes del chat privado ----------
-
-   Antes la lista se borraba entera y se volvía a construir en cada refresco
-   (cada dos segundos). Eso hacía parpadear fotos, audios y el mapa de la
-   ubicación, y se perdían los estados de los reproductores.
-
-   Ahora se reutiliza el nodo de cada mensaje si lo que muestra no ha
-   cambiado: solo se rehace lo que de verdad es distinto. Un chat normal no
-   toca ningún nodo, así que el refresco no se ve. */
 
 function firmaMensaje(mensaje) {
     const ubicacion = mensaje.datos?.ubicacion;
@@ -3105,8 +2767,6 @@ function firmaMensaje(mensaje) {
         mensaje.editado_en ?? null,
         mensaje.archivo_ruta ?? null,
         mensaje.mensaje_respuesta_contenido ?? null,
-        // Si se activa o desactiva la hora hay que rehacer el nodo, así que el
-        // estado de "¿se ve la hora?" entra en la firma.
         debeMostrarHora(mensaje) ? textoHora(mensaje.creado_en) : "",
         ubicacion
             ? [Number(ubicacion.lat), Number(ubicacion.lon), ubicacion.enVivo === true]
@@ -3138,7 +2798,6 @@ function crearNodoMensajeChat(mensaje) {
         envoltura.appendChild(cita);
     }
 
-    // Foto, audio o vídeo: el archivo ya viene con su ruta y su tipo.
     if (mensaje.archivo_ruta) {
         const fuente = escapeHtml(mensaje.archivo_ruta);
         const adjunto = document.createElement("div");
@@ -3151,8 +2810,6 @@ function crearNodoMensajeChat(mensaje) {
             imagen.loading = "lazy";
             adjunto.appendChild(imagen);
         } else if (mensaje.tipo === "audio") {
-            // Reproductor propio (funciona aunque el gesto del mensaje capture
-            // el puntero: se controla con clic delegado, no con controles nativos).
             adjunto.insertAdjacentHTML("beforeend", reproductorAudioHTML(fuente));
         } else if (mensaje.tipo === "video") {
             const video = document.createElement("video");
@@ -3166,8 +2823,6 @@ function crearNodoMensajeChat(mensaje) {
         envoltura.appendChild(adjunto);
     }
 
-    // La ubicación en vivo es un mensaje de texto con datos dentro: se pinta la
-    // tarjeta del mapa en vez del texto pelado.
     if (mensaje.datos?.ubicacion) {
         envoltura.insertAdjacentHTML("beforeend", htmlTarjetaUbicacion(mensaje));
     }
@@ -3181,16 +2836,11 @@ function crearNodoMensajeChat(mensaje) {
         contenido.appendChild(marca);
     }
 
-    // Un mensaje solo con archivo no necesita un párrafo vacío debajo. La
-    // ubicación tampoco: el texto ("📍 ...") solo haría ruido bajo el mapa.
     const conUbicacion = Boolean(mensaje.datos?.ubicacion);
     if ((mensaje.contenido || mensaje.editado_en) && !conUbicacion) {
         envoltura.appendChild(contenido);
     }
 
-    // Hora del envío (si la vista está activa y el mensaje es posterior al
-    // último corte). Va en su propia línea, muy pegada a la esquina y sin
-    // márgenes, para que no parezca continuación del texto y ocupe lo mínimo.
     if (debeMostrarHora(mensaje)) {
         const hora = document.createElement("time");
         hora.className = "hora-mensaje";
@@ -3206,9 +2856,6 @@ function crearNodoMensajeChat(mensaje) {
 }
 
 function pintarMensajesChat(listaMensajes, mensajes) {
-    // Nodos ya en pantalla: los mensajes por su id y los separadores por su
-    // clave de día. Reutilizando también los separadores, en un chat estable no
-    // se mueve ni un solo nodo (así no se reinicia ningún audio ni vídeo).
     const porMensajeId = new Map();
     const porSeparador = new Map();
     for (const nodo of listaMensajes.children) {
@@ -3216,16 +2863,12 @@ function pintarMensajesChat(listaMensajes, mensajes) {
         else if (nodo.dataset?.separador) porSeparador.set(nodo.dataset.separador, nodo);
     }
 
-    // Secuencia de nodos que debe quedar en pantalla, ya en orden.
     const deseados = [];
     let diaPrevio = null;
 
     mensajes.forEach((mensaje) => {
-        // Ficha para la barra de selección: decide si la papelera se enseña.
         mensajesChatPorId.set(mensaje.id, mensaje);
 
-        // Separador de día: aparece cuando la fecha cambia respecto al mensaje
-        // anterior que sí lleva hora.
         const conHora = separadorDiaVisible(mensaje);
         const dia = conHora ? claveDia(mensaje.creado_en) : null;
         if (dia !== null && dia !== diaPrevio) {
@@ -3242,8 +2885,6 @@ function pintarMensajesChat(listaMensajes, mensajes) {
         const previo = porMensajeId.get(mensaje.id);
         porMensajeId.delete(mensaje.id);
 
-        // Mismo mensaje y mismo contenido: no se toca el nodo, y con él se
-        // quedan intactos la foto, el audio en marcha y el mapa ya descargado.
         if (previo && previo.dataset.firma === firmaMensaje(mensaje)) {
             deseados.push(previo);
             return;
@@ -3254,9 +2895,6 @@ function pintarMensajesChat(listaMensajes, mensajes) {
         deseados.push(nodo);
     });
 
-    // Se recoloca cada nodo en su sitio sin destruir los reutilizados: se
-    // recorre la secuencia deseada y se inserta delante del nodo de referencia.
-    // Si el nodo ya está donde toca, no se mueve (así no parpadea nada).
     let referencia = listaMensajes.firstChild;
     for (const nodo of deseados) {
         if (referencia === nodo) {
@@ -3266,8 +2904,6 @@ function pintarMensajesChat(listaMensajes, mensajes) {
         listaMensajes.insertBefore(nodo, referencia);
     }
 
-    // Lo que quede por delante de la referencia sobra: mensajes borrados o
-    // separadores viejos que ya no tocan.
     while (referencia) {
         const sobrante = referencia;
         referencia = referencia.nextSibling;
@@ -3364,10 +3000,8 @@ function cerrarChat() {
     amigoChatActual = null;
     limpiarEstadoGestosChat();
 
-    // Al salir, los mensajes de este chat vuelven a avisar.
     avisarSinVista();
 
-    // Se vacía el composer para que un audio grabado no acabe en otra persona.
     composerChat?.limpiar();
 
     if (intervaloChat) {
@@ -3378,9 +3012,7 @@ function cerrarChat() {
     console.log("Chat cerrado");
 }
 
-/* ==============================
-   GESTOS DE MENSAJES DEL CHAT
-   ============================== */
+/* GESTOS DE MENSAJES DEL CHAT */
 
 const DISTANCIA_MAXIMA_GESTO_CHAT = 72;
 const UMBRAL_RESPUESTA_CHAT = 30;
@@ -3458,14 +3090,12 @@ function activarEdicionChat(mensaje) {
     if (estadoRespuesta) estadoRespuesta.textContent = "";
     if (entradaMensaje) {
         entradaMensaje.value = mensaje.contenido || "";
-        // El texto viene del mensaje, no de una pulsación: hay que refrescar el botón.
         composerChat?.refrescar();
         entradaMensaje.focus();
     }
 }
 
 function alternarSeleccionMensajeChat(mensaje, elemento) {
-    // Reenviar vale para cualquiera visible; borrar se filtra en la barra.
     if (mensajesSeleccionadosChat.has(mensaje.id)) {
         mensajesSeleccionadosChat.delete(mensaje.id);
         elemento?.classList.remove("mensaje-chat-seleccionado");
@@ -3481,7 +3111,6 @@ function puedeBorrarSeleccionChat() {
     if (mensajesSeleccionadosChat.size === 0) return false;
     for (const id of mensajesSeleccionadosChat) {
         const mensaje = mensajesChatPorId.get(id);
-        // Sin ficha (nodo viejo): solo se deja reenviar, no borrar.
         if (!mensaje || !mensaje.es_mio || (mensaje.tipo || "texto") !== "texto") return false;
     }
     return true;
@@ -3496,7 +3125,6 @@ function actualizarBarraSeleccionChat() {
     const total = mensajesSeleccionadosChat.size;
     barra.hidden = total === 0;
     contador.textContent = total === 1 ? "1 seleccionado" : `${total} seleccionados`;
-    // Reenviar: cualquiera marcado. Borrar: solo míos de texto.
     if (botonReenviar) botonReenviar.hidden = total === 0;
     if (botonBorrar) botonBorrar.hidden = !puedeBorrarSeleccionChat();
 }
@@ -3542,15 +3170,12 @@ function configurarGestoMensajeChat(elemento, mensaje) {
     elemento.addEventListener("pointerdown", (evento) => {
         if (evento.pointerType === "mouse" && evento.button !== 0) return;
         if (punteroActivo !== null) return;
-        // El reproductor de audio tiene sus propios controles (play y salto):
-        // el gesto del mensaje no debe capturar ese toque ni marcar nada.
         if (evento.target.closest?.(".reproductor-audio")) return;
         punteroActivo = evento.pointerId;
         interaccionChatEnCurso = true;
         try {
             elemento.setPointerCapture(evento.pointerId);
         } catch {
-            // Si el navegador no permite capturar, se sigue con el gesto igualmente.
         }
         inicioX = evento.clientX;
         inicioY = evento.clientY;
@@ -3698,13 +3323,8 @@ document.getElementById("boton-cancelar-seleccion-chat")?.addEventListener("clic
     actualizarBarraSeleccionChat();
 });
 
-/* ==============================
-   REENVIAR MENSAJES A UN AMIGO
-   Vale desde el chat privado y desde el servidor. El destino es
-   siempre un chat privado: se elige al amigo en el modal.
-   ============================== */
+/* REENVIAR MENSAJES A UN AMIGO */
 
-// Origen pendiente: { tipo: "privado" } o { tipo: "servidor", grupoId }.
 let reenvioPendiente = null;
 
 function limpiarReenvioPendiente() {
@@ -3812,7 +3432,6 @@ async function reenviarA(amigo) {
         const eraServidor = reenvioPendiente.tipo === "servidor";
         cerrarModalReenviar();
         limpiarSeleccionReenvio();
-        // Si el destino es el chat abierto, se recarga para verlo llegar.
         if (!eraServidor && amigoChatActual && amigoChatActual.id === amigo.id) {
             await cargarMensajesChat();
         }
@@ -3843,9 +3462,7 @@ document.addEventListener("keydown", (evento) => {
     if (modal && !modal.hidden) cerrarModalReenviar();
 });
 
-// ========================================
 // CARGAR AMIGOS EN ENTRAR
-// ========================================
 
 async function cargarAmigos() {
 
@@ -3906,9 +3523,6 @@ async function cargarAmigos() {
             return;
         }
 
-        // Chats con mensaje primero, del más reciente al más antiguo; los que
-        // nunca se han escrito van al final. Como el backend ya los manda por
-        // nombre y sort es estable, los que no tienen fecha conservan ese orden
         // alfabético entre sí.
         datos.amigos.sort((a, b) => {
             const fechaA = a.ultimo_mensaje_en ? new Date(a.ultimo_mensaje_en).getTime() : 0;
@@ -3919,8 +3533,6 @@ async function cargarAmigos() {
             return 0;
         });
 
-        // Fijados arriba del todo por orden de fijado (último fijado arriba),
-        // sin seguir el orden por recencia; el resto conserva el orden anterior.
         const amigosOrdenados = ordenarAmigosConFijados(datos.amigos);
 
         amigosOrdenados.forEach((amigo) => {
@@ -3993,11 +3605,7 @@ async function cargarAmigos() {
     }
 }
 
-/* =============================
-   ABRIR CHAT POR ID
-   Sirve para los enlaces de los avisos Push (/?chat=<id>) y para cuando se
-   pulsa un aviso de mensaje privado con la app ya abierta.
-   ============================== */
+/* ABRIR CHAT POR ID */
 
 async function abrirChatPorId(usuarioId) {
     const token = localStorage.getItem("atuistas_token");
@@ -4030,9 +3638,7 @@ async function abrirChatPorId(usuarioId) {
 }
 
 
-/* ==============================
-   CAMBIAR SECCIÓN
-   ============================== */
+/* CAMBIAR SECCIÓN */
 
 let seccionActual = "entrar";
 
@@ -4046,7 +3652,6 @@ function mostrarSeccion(seccion, opciones = {}) {
 
     amigoChatActual = null;
 
-    // Fuera del chat los mensajes vuelven a generar aviso.
     avisarSinVista();
 
     if (intervaloChat) {
@@ -4064,8 +3669,6 @@ function mostrarSeccion(seccion, opciones = {}) {
     canalActual = null;
     cerrarPanelesServidor();
 
-    // Si se sale de Cuenta con algo a medio escribir, se guarda antes de
-    // ocultar el panel: así no se pierde nada por no haber botón de guardar.
     if (!contenidoCuenta.hidden && seccion !== "cuenta") {
         guardarCuenta();
     }
@@ -4077,11 +3680,8 @@ function mostrarSeccion(seccion, opciones = {}) {
     contenidoAmigos.hidden = true;
     contenidoServidores.hidden = true;
 
-    // La vista de servidores usa todo el ancho en escritorio.
     document.body.classList.toggle("vista-servidores", seccion === "servidores");
 
-    // Los botones de la barra son iconos: se marca con "activa" el de la
-    // sección abierta para saber siempre dónde estás.
     [
         [botonEntrarApp, "entrar"],
         [botonAmigos, "amigos"],
@@ -4121,31 +3721,21 @@ function mostrarSeccion(seccion, opciones = {}) {
 
     seccionActual = seccion;
 
-    // El botón del QR solo tiene sentido en Cuenta, y en el móvil.
     const botonCodigo = document.getElementById("boton-qr-cuenta");
     if (botonCodigo) botonCodigo.hidden = seccion !== "cuenta";
 
-    // El historial se sincroniza con la sección, salvo que el cambio venga
-    // del propio botón atrás (entonces ya se ha descontado).
     if (!opciones.desdeAtras) {
         sincronizarAtrasSeccion(seccion);
     }
 }
 
-/* ==============================================================
-   BOTÓN ATRÁS DEL MÓVIL
-   Cada cosa que se abre encima (una ventana, un reel, un chat, un
-   servidor) apila una entrada del historial. Así el botón del móvil
-   va cerrando de arriba abajo y, desde Entrar sin nada abierto, sale
-   de la aplicación porque no queda nada apilado.
-   ============================================================== */
+/* BOTÓN ATRÁS DEL MÓVIL */
 
 let capasApiladas = 0;
 let gestionandoAtras = false;
 let backEnCurso = false;
 let backsPendientes = 0;
 
-// Marca de navegacion interna (sin red): solo para depurar en local.
 function trazaHistorial(accion, detalle) {
     return;
 }
@@ -4156,18 +3746,9 @@ function apilarCapa() {
         capasApiladas += 1;
         trazaHistorial("push", "capa");
     } catch {
-        // Sin historial (incrustado, PWA rara): no se apila nada.
     }
 }
 
-// Gasta una entrada del historial con UN solo history.back(). Reglas:
-//  1. Solo si la entrada actual la apiló la app (state.capa). Si no, o si el
-//     contador está en 0, NO se toca el historial: un back() sobre la entrada
-//     inicial sacaría al usuario de Atuistas (a Google, a la pestaña anterior).
-//  2. Nunca hay dos back() en vuelo a la vez: si se lanzan juntos en el mismo
-//     lote, el segundo atraviesa la comprobación de estado sin pasar por aquí
-//     y sale de la app. Los que queden pendientes se gastan desde popstate,
-//     de uno en uno y siempre revalidando el estado.
 function gastarEntradaPropia() {
     if (backEnCurso || gestionandoAtras || capasApiladas <= 0) {
         trazaHistorial("back-saltado", backEnCurso ? "en-vuelo" : (gestionandoAtras ? "gestionando" : "sin-contador"));
@@ -4177,17 +3758,11 @@ function gastarEntradaPropia() {
     const esNuestra = estado &&
         (estado.capa === true || estado.capa === "capa" || estado.capa === "seccion");
     if (!esNuestra) {
-        // Entrada ajena (la inicial o la de otro sitio): se resincroniza el
-        // contador sin navegar para no expulsar al usuario.
         trazaHistorial("back-rechazado", "estado-ajeno");
         capasApiladas = 0;
         backsPendientes = 0;
         return;
     }
-    // Segunda barrera: aunque el state sea nuestro, si el navegador dice que
-    // no hay entrada debajo (historial podado al recuperar la pestaña), un
-    // back() cerraria la pestana y dejaria en Google. navigation.canGoBack
-    // existe desde Chrome 102; en navegadores viejos se omite este control.
     if (typeof navigation !== "undefined" && navigation && navigation.canGoBack === false) {
         trazaHistorial("back-rechazado", "sin-atras-posible");
         capasApiladas = 0;
@@ -4203,18 +3778,12 @@ function gastarEntradaPropia() {
     }
 }
 
-// Al cerrar con el botón o la × de la propia capa, la entrada del historial
-// se gasta sola para que el botón atrás no la encuentre por detrás. El
-// contador se descuenta en popstate (único punto de descuento).
 function desapilarCapa() {
     if (gestionandoAtras || capasApiladas <= 0) return;
     backsPendientes = Math.min(backsPendientes + 1, capasApiladas);
     gastarEntradaPropia();
 }
 
-// El historial y las secciones se cuadran solos: si no estamos en Entrar hay
-// una entrada; al volver a Entrar se gasta. Igual que desapilarCapa: nunca se
-// vuelve atrás sobre una entrada ajena ni con dos back() en vuelo (eso sacaría
 // al usuario de Atuistas).
 function sincronizarAtrasSeccion(seccion) {
     const hayEntradaDeSeccion = window.history?.state?.capa === "seccion";
@@ -4224,7 +3793,6 @@ function sincronizarAtrasSeccion(seccion) {
             capasApiladas += 1;
             trazaHistorial("push", "seccion");
         } catch {
-            // Sin historial: no se apila nada.
         }
         return;
     }
@@ -4234,10 +3802,7 @@ function sincronizarAtrasSeccion(seccion) {
     }
 }
 
-// Cierra lo que haya abierto encima: primero las pantallas completas y
-// después la última ventana abierta, usando su propio botón de cerrar.
 function cerrarCapaSuperior() {
-    // El selector va el primero: es lo que está encima de todo (z-index 3500).
     const selector = document.getElementById("selector-medio");
     if (selector && selector.hidden === false) {
         cerrarSelector();
@@ -4280,10 +3845,6 @@ function cerrarCapaSuperior() {
 }
 
 window.addEventListener("popstate", () => {
-    // Travesía lanzada por la propia app (gastarEntradaPropia): la interfaz ya
-    // se actualizó sola al cerrar la capa. Solo se descuenta y, si quedaban
-    // entradas por gastar en el mismo lote, se encadena la siguiente de una
-    // en una: nunca dos back() en vuelo a la vez.
     if (backEnCurso) {
         backEnCurso = false;
         capasApiladas = Math.max(0, capasApiladas - 1);
@@ -4295,14 +3856,11 @@ window.addEventListener("popstate", () => {
         return;
     }
 
-    // Botón atrás del sistema: la entrada gastada se descuenta aquí (único
-    // punto de descuento junto con el de arriba).
     capasApiladas = Math.max(0, capasApiladas - 1);
     trazaHistorial("pop", "usuario");
 
     gestionandoAtras = true;
     try {
-        // Si hay algo abierto encima se cierra; si no, se vuelve a Entrar.
         if (!cerrarCapaSuperior() && seccionActual !== "entrar") {
             mostrarSeccion("entrar", { desdeAtras: true });
         }
@@ -4311,12 +3869,6 @@ window.addEventListener("popstate", () => {
     }
 });
 
-// Las capas que se abren y se cierran solas (cualquier ventana) apilan y
-// desapilan solas: así no hay que tocar una por una. Solo se mira el atributo
-// `hidden`, que es lo único que cambia al abrirlas; con attributeFilter el
-// navegador no llega a encolar el resto de mutaciones, así que una lista de
-// mensajes que se repinta cada dos segundos no cuesta nada.
-// Ojo con subtree: sin esto solo se vigila <body> y el observador no dispara.
 function observarCapas() {
     if (typeof MutationObserver !== "function") return;
     const selectores = ".modal, #selector-medio, #visor-reels, #visor-historias-pantalla, #panel-chat, #panel-servidor";
@@ -4353,12 +3905,7 @@ function cambiarFeedEntrada(publico) {
 document.getElementById("boton-feed-amigos").addEventListener("click", () => cambiarFeedEntrada(false));
 document.getElementById("boton-feed-publico").addEventListener("click", () => cambiarFeedEntrada(true));
 
-// ========================================
 // NAVEGACIÓN POR FASES
-// En escritorio los canales y el chat conviven; en móvil
-// se muestra uno de cada vez. La misma lógica sirve para
-// ambos: 'lista' -> 'canales' -> 'chat'.
-// ========================================
 
 let vistaServidorActual = "lista";
 
@@ -4366,8 +3913,6 @@ function esPantallaAncha() {
     return window.matchMedia("(min-width: 1000px)").matches;
 }
 
-// Un servidor de chat único no tiene lista de canales: su único canal es el
-// general y nunca se enseña. En cuanto pasa a tener canales, vuelve a verse.
 function servidorUsaCanales() {
     const modelo = detalleGrupo?.modelo ?? grupoActual?.modelo ?? null;
     return modelo === "canales";
@@ -4386,7 +3931,6 @@ function actualizarContextoServidor() {
     const avatar = document.getElementById("avatar-contexto-servidor");
     const botonFoto = document.getElementById("boton-foto-servidor");
 
-    // La foto del servidor acompaña al nombre; sin foto, se muestra la inicial.
     if (avatar) {
         const ruta = detalleGrupo?.imagen_ruta ?? grupoActual?.imagen_ruta ?? null;
         avatar.innerHTML = ruta
@@ -4395,13 +3939,11 @@ function actualizarContextoServidor() {
         avatar.hidden = !grupoActual || panel.hidden;
     }
 
-    // El botón de la foto solo existe con un servidor abierto.
     if (botonFoto) {
         botonFoto.hidden = !grupoActual || panel.hidden;
     }
 
     if (!grupoActual || panel.hidden) {
-        // Pantalla de lista: sin titulo, la cabecera se queda limpia.
         titulo.textContent = "";
         subtitulo.textContent = "";
         volver.hidden = true;
@@ -4414,8 +3956,6 @@ function actualizarContextoServidor() {
     const nombreServidor = grupoActual.nombre ?? "";
 
     if (vistaServidorActual === "chat") {
-        // Con canales se enseña cuál está abierto; en chat único el título
-        // es directamente el nombre del servidor.
         const tituloCanal = servidorUsaCanales() && canalActual;
         titulo.textContent = tituloCanal ? `#${canalActual.nombre}` : nombreServidor;
         subtitulo.textContent = tituloCanal ? nombreServidor : "";
@@ -4431,26 +3971,19 @@ function actualizarContextoServidor() {
         ].filter(Boolean).join(" · ");
     }
 
-    // La fila de botones ya no se muestra: sus acciones viven en el modal
-    // que abre el nombre del grupo. Se deja oculta siempre.
     volver.hidden = false;
     acciones.hidden = true;
     if (crear) crear.hidden = true;
     if (pestanas) pestanas.hidden = true;
 
-    // En escritorio los canales permanecen a la izquierda siempre que haya chat.
-    // Un chat único no los muestra nunca, porque solo tiene el general.
     const verColumna = servidorUsaCanales() && (ancho || vistaServidorActual === "canales");
     columna.hidden = !verColumna;
     zonaChatServidor.hidden = !verColumna && !(ancho || vistaServidorActual === "chat");
 }
 
-// Navega a una de las tres fases y refleja el cambio en el panel.
 function mostrarFaseServidor(fase) {
     vistaServidorActual = fase;
 
-    // La barra de contexto (nombre, canales) solo aparece con un servidor
-    // abierto. En la lista se esconde para que las pestañas no bajen.
     const barraContexto = document.getElementById("barra-contexto-servidor");
     if (barraContexto) barraContexto.hidden = fase === "lista";
 
@@ -4470,7 +4003,6 @@ function mostrarFaseServidor(fase) {
             clearInterval(intervaloGrupo);
             intervaloGrupo = null;
         }
-        // Al salir del servidor, sus mensajes vuelven a avisar.
         avisarSinVista();
     } else {
         for (const id of ["seccion-mis-servidores", "seccion-buscar-servidores"]) {
@@ -4483,9 +4015,6 @@ function mostrarFaseServidor(fase) {
 }
 
 document.getElementById("boton-volver-servidor").addEventListener("click", () => {
-    // En escritorio los canales y el chat conviven: la flecha vuelve directo a la lista.
-    // En móvil se retrocede un paso: chat -> canales -> lista. Un chat único
-    // no tiene pantalla de canales, así que vuelve directo a la lista.
     if (servidorUsaCanales() && !esPantallaAncha() && vistaServidorActual === "chat") {
         mostrarFaseServidor("canales");
     } else {
@@ -4494,8 +4023,6 @@ document.getElementById("boton-volver-servidor").addEventListener("click", () =>
 });
 
 function mostrarPestanaServidor(nombre) {
-    // "chats" va el primero y es la pestana de entrada: los chats
-    // viven aqui, no en Entrar.
     const secciones = {
         chats: document.getElementById("seccion-chats"),
         propios: document.getElementById("seccion-mis-servidores"),
@@ -4518,8 +4045,6 @@ function mostrarPestanaServidor(nombre) {
     actualizarContextoServidor();
 }
 
-// Las tarjetas aprovechan datos que el backend ya envía y que antes se ignoraban:
-// imagen, preview del último mensaje y contador de mensajes sin leer.
 function plantillaTarjetaServidor(grupo, { conAccionUnirse = false } = {}) {
     const sinLeer = Number(grupo.mensajes_sin_leer) || 0;
     const preview = grupo.ultimo_mensaje
@@ -4546,7 +4071,6 @@ function plantillaTarjetaServidor(grupo, { conAccionUnirse = false } = {}) {
             </span>
             ${insignia}`;
 
-    // En "mis servidores" la tarjeta entera es el botón: se entra pulsándola.
     if (!conAccionUnirse) {
         return `
         <button type="button" class="servidor-tarjeta" data-abrir-servidor="${escapeHtml(grupo.id)}">
@@ -4565,8 +4089,6 @@ function plantillaTarjetaServidor(grupo, { conAccionUnirse = false } = {}) {
     `;
 }
 
-// Recarga solo las tarjetas, sin cambiar de pantalla: se usa tras poner o
-// quitar la foto, porque el modal de ajustes está dentro del panel del servidor.
 async function refrescarListaServidores() {
     try {
         const datos = await solicitarGrupo("/api/grupos");
@@ -4611,7 +4133,6 @@ async function abrirServidor(grupo) {
     if (intervaloGrupo) clearInterval(intervaloGrupo);
     grupoActual = grupo;
 
-    // Con el servidor delante, sus mensajes no generan aviso.
     avisarServidorVisto(grupo.id);
     detalleGrupo = null;
     canalesGrupo = [];
@@ -4622,12 +4143,8 @@ async function abrirServidor(grupo) {
     mensajeRespuestaChat = null;
     mensajeEdicionChat = null;
 
-    // El composer no arrastra nada de un servidor a otro.
     composerServidor?.limpiar();
 
-    // Un chat único no tiene fase intermedia: se entra directo al chat,
-    // también en móvil. Los que sí tienen canales conservan la pantalla
-    // de canales como paso previo en móvil.
     mostrarFaseServidor(servidorUsaCanales() ? (esPantallaAncha() ? "chat" : "canales") : "chat");
 
     document.getElementById("boton-eliminar-servidor").hidden = !grupo.es_creador;
@@ -4641,7 +4158,6 @@ async function abrirServidor(grupo) {
         await abrirChatServidor();
     }
 
-    // Con el WebSocket activo no hace falta sondear; el sondeo es la red de seguridad.
     intervaloGrupo = setInterval(() => {
         if (!socketAbierto()) {
             cargarMensajesServidor();
@@ -4649,7 +4165,6 @@ async function abrirServidor(grupo) {
     }, 7000);
 }
 
-// El chat solo se carga cuando la fase actual lo muestra.
 async function abrirChatServidor() {
     if (!grupoActual) return;
     mostrarFaseServidor("chat");
@@ -4657,8 +4172,6 @@ async function abrirChatServidor() {
     actualizarContextoServidor();
 }
 
-// El nombre del autor solo aparece en el primer mensaje seguido de esa persona,
-// igual que en los chats privados. Los mensajes ocultos nunca lo muestran.
 function plantillaMensaje(mensaje, opciones = {}) {
     const mostrarAutor = opciones.mostrarAutor === true;
     const ocultoAjeno = Boolean(mensaje.oculto) && !mensaje.es_mio && !mensaje.autor_nombre;
@@ -4702,16 +4215,12 @@ const autorId = mensaje.autor_id;
            </div>`
         : "";
 
-    // La hora respeta el ajuste personal: solo se pinta si la vista está activa
-    // y el mensaje es posterior al último corte. El data-con-hora sirve para
-    // saber, al llegar un mensaje nuevo en caliente, si hay que abrir un
     // separador de día.
     const conHora = separadorDiaVisible(mensaje);
     const horaHtml = conHora
         ? `<time class="hora-mensaje" datetime="${escapeHtml(mensaje.creado_en)}">${textoHora(mensaje.creado_en)}</time>`
         : "";
 
-    // Texto del mensaje (si no es una ubicación en vivo, que se pinta como mapa).
     const cuerpo = Boolean(mensaje.contenido) && !mensaje.datos?.ubicacion
         ? `<p>${escapeHtml(mensaje.contenido)}</p>`
         : "";
@@ -4737,18 +4246,14 @@ const autorId = mensaje.autor_id;
     `;
 }
 
-// Agrupa por autor para decidir quién necesita cabecera, e intercala el
-// separador de día cada vez que cambia la fecha entre mensajes que llevan hora.
 function plantillasMensajesGrupo(mensajes) {
     let autorPrevio = null;
     let diaPrevio = null;
     const salida = [];
     mensajes.forEach((mensaje) => {
-        // Los adjuntos y los ocultos rompen el agrupado: siempre llevan cabecera.
         const conCabecera = autorPrevio !== mensaje.autor_id || mensaje.tipo !== "texto";
         autorPrevio = mensaje.autor_id;
 
-        // Separador de día cuando la fecha cambia respecto al mensaje anterior.
         const conHora = separadorDiaVisible(mensaje);
         const dia = conHora ? claveDia(mensaje.creado_en) : null;
         if (dia !== null && dia !== diaPrevio) {
@@ -4768,11 +4273,9 @@ async function cargarMensajesServidor() {
         const datos = await solicitarGrupo(`/api/grupos/${encodeURIComponent(grupoActual.id)}/mensajes${parametros}`);
         mensajesServidor.innerHTML = plantillasMensajesGrupo(datos.mensajes).join("")
             || '<p class="estado-amigos">Aún no hay mensajes en este canal.</p>';
-        // Los gestos de responder, editar y borrar se cablean tras cada render.
         for (const elemento of mensajesServidor.querySelectorAll(".mensaje-chat")) {
             const mensaje = datos.mensajes.find((item) => item.id === elemento.dataset.mensajeId);
             if (!mensaje) continue;
-            // Ficha para la barra de selección (papelera sí / papelera no).
             mensajesServidorPorId.set(mensaje.id, mensaje);
             configurarGestoMensajeServidor(elemento, mensaje);
         }
@@ -4811,7 +4314,6 @@ document.getElementById("resultados-servidores").addEventListener("click", async
 document.getElementById("boton-chats").addEventListener("click", () => { mostrarPestanaServidor("chats"); cargarAmigos(); });
 document.getElementById("boton-mis-servidores").addEventListener("click", () => { mostrarPestanaServidor("propios"); cargarServidores(); });
 document.getElementById("boton-buscar-servidores").addEventListener("click", () => mostrarPestanaServidor("buscar"));
-// Vuelve a la lista de servidores desde cualquier punto (salir, eliminar, expulsión).
 function volverAListaServidores() {
     if (intervaloGrupo) clearInterval(intervaloGrupo);
     intervaloGrupo = null;
@@ -4856,7 +4358,6 @@ document.getElementById("formulario-crear-servidor").addEventListener("submit", 
     }
 });
 
-// Sube el archivo seleccionado y devuelve { archivo_id, tipo }.
 async function subirAdjuntoServidor(archivo) {
     const datos = new FormData();
     datos.append("archivo", archivo);
@@ -4870,8 +4371,6 @@ async function subirAdjuntoServidor(archivo) {
     return cuerpo;
 }
 
-// El composer del servidor comparte motor con el del chat privado: mismo
-// micrófono, mismos adjuntos y el mismo botón que cambia de icono solo.
 const formularioMensajeServidor = document.getElementById("formulario-mensaje-servidor");
 
 if (formularioMensajeServidor) {
@@ -4891,8 +4390,6 @@ if (formularioMensajeServidor) {
     });
 }
 
-// Editar, responder, marcar como oculto y enviar el archivo son el mismo camino:
-// aquí solo se compone el cuerpo de la petición.
 async function enviarMensajeServidor(contenido, adjunto) {
     if (!grupoActual) {
         throw new Error("No hay ningún servidor abierto");
@@ -4936,8 +4433,6 @@ async function enviarMensajeServidor(contenido, adjunto) {
     await cargarMensajesServidor();
 }
 
-// Gestos de los mensajes de servidor, equivalentes a los del chat privado:
-// deslizar al centro responde, mantener pulsado y deslizar más edita.
 function configurarGestoMensajeServidor(elemento, mensaje) {
     if (elemento.dataset.gestoActivo === "1") return;
     elemento.dataset.gestoActivo = "1";
@@ -4977,13 +4472,11 @@ function configurarGestoMensajeServidor(elemento, mensaje) {
     elemento.addEventListener("pointerdown", (evento) => {
         if (evento.pointerType === "mouse" && evento.button !== 0) return;
         if (punteroActivo !== null) return;
-        // Igual que en el privado: el reproductor se controla solo.
         if (evento.target.closest?.(".reproductor-audio")) return;
         punteroActivo = evento.pointerId;
         try {
             elemento.setPointerCapture(evento.pointerId);
         } catch {
-            // Sin captura de puntero el gesto sigue funcionando.
         }
         inicioX = evento.clientX;
         inicioY = evento.clientY;
@@ -4995,7 +4488,6 @@ function configurarGestoMensajeServidor(elemento, mensaje) {
         const idPuntero = evento.pointerId;
         temporizadorSeleccion = setTimeout(() => {
             if (movido || punteroActivo !== idPuntero) return;
-            // Pulsación larga: marca el mensaje para reenviarlo o borrarlo.
             punteroActivo = null;
             if (alternarSeleccionMensajeServidor(mensaje, elemento) && navigator.vibrate) {
                 navigator.vibrate(20);
@@ -5039,7 +4531,6 @@ function configurarGestoMensajeServidor(elemento, mensaje) {
         const fuePulsacion = !movido;
         resetear();
 
-        // Con una selección activa, un toque añade o quita el mensaje.
         if (fuePulsacion) {
             if (mensajesSeleccionadosServidor.size > 0) {
                 alternarSeleccionMensajeServidor(mensaje, elemento);
@@ -5059,15 +4550,11 @@ function configurarGestoMensajeServidor(elemento, mensaje) {
     elemento.addEventListener("pointercancel", resetear);
 }
 
-// Selección de mensajes de servidor: la pulsación larga marca mensajes para
-// reenviarlos (cualquiera visible) o borrarlos (míos o de gestor).
-// Un toque con la selección activa la activa o desactiva.
 function puedeEliminarMensajeServidor(mensaje) {
     const gestor = Boolean(detalleGrupo) && (detalleGrupo.mi_rol === "creador" || detalleGrupo.mi_rol === "moderador");
     return Boolean(mensaje.es_mio) || gestor;
 }
 
-// Oculto ajeno: su contenido está enmascarado y no se puede reenviar.
 function puedeReenviarMensajeServidor(mensaje) {
     if (!mensaje) return false;
     if (mensaje.oculto && !mensaje.es_mio) return false;
@@ -5107,7 +4594,6 @@ function actualizarBarraSeleccionServidor() {
     const total = mensajesSeleccionadosServidor.size;
     barra.hidden = total === 0;
     contador.textContent = total === 1 ? "1 seleccionado" : `${total} seleccionados`;
-    // Reenviar: cualquiera marcado. Borrar: solo borrables.
     if (botonReenviar) botonReenviar.hidden = total === 0;
     if (botonBorrar) botonBorrar.hidden = !puedeBorrarSeleccionServidor();
 }
@@ -5158,7 +4644,6 @@ function activarEdicionMensajeServidor(mensaje) {
     const entrada = document.getElementById("entrada-mensaje-servidor");
     entrada.value = mensaje.contenido ?? "";
     entrada.placeholder = "Editando el mensaje. Envía para guardar...";
-    // El texto viene del mensaje, no de una pulsación: hay que refrescar el botón.
     composerServidor?.refrescar();
     entrada.focus();
 }
@@ -5183,9 +4668,6 @@ document.getElementById("boton-eliminar-servidor").addEventListener("click", asy
     }
 });
 
-// ========================================
-// DETALLE DEL SERVIDOR, CANALES Y COMPOSER
-// ========================================
 
 async function refrescarDetalleServidor() {
     if (!grupoActual) return;
@@ -5211,9 +4693,6 @@ function renderizarCanales() {
     const lista = document.getElementById("lista-canales");
     const usaCanales = Boolean(detalleGrupo) && detalleGrupo.modelo === "canales";
 
-    // El canal ya no lleva botón de editar encima: la gestión va en su pantalla.
-    // En chat único la lista no se pinta: su único canal es el general, que no
-    // se enseña nunca como botón.
     lista.innerHTML = usaCanales
         ? canalesGrupo.map((canal) => {
         const activo = Boolean(canalActual) && canal.id === canalActual.id;
@@ -5243,14 +4722,11 @@ function actualizarControlesComposer() {
     botonOculto.setAttribute("aria-pressed", String(ocultoServidorActivo));
 
     if (!mensajeRespuestaChat && !mensajeEdicionChat) {
-        // En chat único no se nombra el canal: se escribe en el servidor entero.
         entrada.placeholder = servidorUsaCanales() && canalActual
             ? `Escribe un mensaje en #${canalActual.nombre}...`
             : "Escribe un mensaje...";
     }
 
-    // El placeholder cambia, y con él el icono del botón: si hay texto de una
-    // edición ya escrito, tiene que verse el de enviar y no el del micrófono.
     composerServidor?.refrescar();
 }
 
@@ -5275,7 +4751,6 @@ document.getElementById("lista-canales").addEventListener("click", async (evento
         }).catch(() => {});
     }
 
-    // En escritorio el chat ya está visible; en móvil se abre al tocar el canal.
     if (!esPantallaAncha()) {
         await abrirChatServidor();
     }
@@ -5307,12 +4782,8 @@ document.getElementById("boton-oculto-servidor").addEventListener("click", () =>
     boton.setAttribute("aria-pressed", String(ocultoServidorActivo));
 });
 
-// ========================================
 // ACCIONES DEL SERVIDOR
-// Se abren al pulsar el nombre del grupo, con el mismo criterio que el
-// nombre de una persona: una pantalla propia en lugar de botones de
 // siempre arriba.
-// ========================================
 
 const modalAccionesServidor =
     document.getElementById("modal-acciones-servidor");
@@ -5335,15 +4806,12 @@ function abrirAccionesServidor() {
     document.getElementById("resumen-miembros-servidor").textContent =
         `${miembros} ${miembros === 1 ? "miembro" : "miembros"}`;
 
-    // La foto se ve en grande con el mismo modal que las fotos de perfil.
     const resumenFoto = document.getElementById("resumen-foto-servidor");
     const ruta = detalleGrupo?.imagen_ruta ?? grupoActual.imagen_ruta ?? null;
     resumenFoto.innerHTML = ruta
         ? `<img src="${escapeHtml(ruta)}" alt="">`
         : `<span aria-hidden="true">${escapeHtml(nombre.charAt(0).toUpperCase())}</span>`;
 
-    // La descripción se muestra solo en los servidores de chat único. En los
-    // que tienen canales no se enseña, pero se conserva por si se vuelve.
     const bloqueDescripcion = document.getElementById("bloque-descripcion-servidor");
     const textoDescripcion = document.getElementById("resumen-descripcion-servidor");
     const entradaDescripcion = document.getElementById("editar-descripcion-servidor");
@@ -5370,7 +4838,6 @@ document.getElementById("boton-ver-grupo").addEventListener("click", abrirAccion
 
 document.getElementById("boton-cerrar-acciones-servidor").addEventListener("click", cerrarAccionesServidor);
 
-// Al pulsar fuera se cierra, igual que en las demás pantallas.
 modalAccionesServidor.addEventListener("click", (evento) => {
     if (evento.target === modalAccionesServidor) {
         cerrarAccionesServidor();
@@ -5418,7 +4885,6 @@ document.getElementById("boton-activar-canales-acciones").addEventListener("clic
         await refrescarListaServidores();
         cerrarAccionesServidor();
 
-        // En móvil la lista de canales pasa a ser la pantalla de entrada.
         if (!esPantallaAncha()) {
             mostrarFaseServidor("canales");
         } else if (vistaServidorActual === "chat") {
@@ -5429,7 +4895,6 @@ document.getElementById("boton-activar-canales-acciones").addEventListener("clic
     }
 });
 
-/* ---------- Descripción del servidor ---------- */
 
 document.getElementById("boton-guardar-descripcion-servidor").addEventListener("click", async (evento) => {
     if (!grupoActual) return;
@@ -5457,17 +4922,13 @@ document.getElementById("boton-guardar-descripcion-servidor").addEventListener("
     }
 });
 
-/* ---------- Foto del servidor desde la cabecera ---------- */
 
-// La foto se cambia pulsando la imagen de la cabecera, pero solo quien la
-// gestiona: el resto solo puede verla en grande.
 document.getElementById("boton-foto-servidor").addEventListener("click", () => {
     if (!grupoActual) return;
 
     const esGestor = detalleGrupo?.mi_rol === "creador" || detalleGrupo?.mi_rol === "moderador";
     const ruta = detalleGrupo?.imagen_ruta ?? grupoActual.imagen_ruta ?? null;
 
-    // Sin foto solo hay una opción posible: ponerla, y solo si se puede.
     if (!ruta) {
         if (esGestor) {
             abrirCambioFotoServidor();
@@ -5477,7 +4938,6 @@ document.getElementById("boton-foto-servidor").addEventListener("click", () => {
         return;
     }
 
-    // Con foto, quien gestiona elige entre verla o cambiarla.
     if (esGestor && !confirm("¿Quieres cambiar la foto del servidor?")) {
         return;
     }
@@ -5490,16 +4950,13 @@ document.getElementById("boton-foto-servidor").addEventListener("click", () => {
     }
 });
 
-// Reutiliza el selector que ya usa el modal de ajustes.
 function abrirCambioFotoServidor() {
     const selector = document.getElementById("archivo-imagen-servidor");
     selector.value = "";
     selector.click();
 }
 
-// ========================================
 // MIEMBROS Y PANELES
-// ========================================
 
 function cerrarPanelesServidor() {
     document.getElementById("modal-acciones-servidor").hidden = true;
@@ -5509,7 +4966,6 @@ function cerrarPanelesServidor() {
     document.getElementById("modal-gestion-canales").hidden = true;
     document.getElementById("modal-crear-servidor").hidden = true;
 
-    // Al salir del servidor se sueltan el micro y el adjunto pendiente.
     composerServidor?.limpiar();
 }
 
@@ -5648,9 +5104,7 @@ document.getElementById("lista-miembros-servidor").addEventListener("click", asy
     }
 });
 
-// ========================================
 // AJUSTES DEL SERVIDOR
-// ========================================
 
 function renderizarInvitacion() {
     const texto = document.getElementById("codigo-invitacion-servidor");
@@ -5680,8 +5134,6 @@ async function abrirAjustesServidor(focoCanal = false) {
     }
 }
 
-// La previa del ajuste refleja la foto actual del servidor, sea del modelo que
-// sea. Si no hay, se avisa con la inicial para no dejar el hueco vacío.
 function renderizarPreviaImagenServidor() {
     const previa = document.getElementById("previa-imagen-servidor");
     const quitar = document.getElementById("boton-quitar-imagen-servidor");
@@ -5952,9 +5404,6 @@ document.getElementById("boton-eliminar-canal").addEventListener("click", async 
     }
 });
 
-// ========================================
-// UNIRSE POR CÓDIGO DE INVITACIÓN
-// ========================================
 
 document.getElementById("formulario-invitacion").addEventListener("submit", async (evento) => {
     evento.preventDefault();
@@ -6000,9 +5449,7 @@ document.getElementById("vista-invitacion").addEventListener("click", async (eve
     }
 });
 
-// ========================================
 // TIEMPO REAL (WEBSOCKET)
-// ========================================
 
 function socketAbierto() {
     return Boolean(socketTiempoReal && socketTiempoReal.readyState === WebSocket.OPEN);
@@ -6018,7 +5465,6 @@ async function conectarTiempoReal() {
 
     let socket;
     try {
-        // El token nunca viaja por la URL: se cambia por un ticket de un solo uso.
         const datos = await solicitarGrupo("/api/ws/ticket");
         const protocolo = location.protocol === "https:" ? "wss" : "ws";
         socket = new WebSocket(`${protocolo}://${location.host}/ws?ticket=${encodeURIComponent(datos.ticket)}`);
@@ -6083,7 +5529,6 @@ function agregarMensajeServidor(mensaje) {
     const vacio = mensajesServidor.querySelector("p.estado-amigos");
     if (vacio) vacio.remove();
 
-    // El cabecera depende del último autor ya pintado para no repetir el nombre.
     const ultimo = mensajesServidor.querySelector(".mensaje-chat:last-of-type");
     const mismoAutor = ultimo && ultimo.dataset.autorId === (mensaje.autor_id ?? "");
     const conCabecera = !mismoAutor || mensaje.tipo !== "texto";
@@ -6094,8 +5539,6 @@ function agregarMensajeServidor(mensaje) {
     if (!elemento) return;
     elemento.dataset.autorId = mensaje.autor_id ?? "";
 
-    // Separador de día: si este mensaje lleva hora y su día difiere del último
-    // mensaje con hora que ya está en pantalla, se abre el separador antes.
     if (elemento.dataset.conHora === "1") {
         const ultimoConHora = [...mensajesServidor.querySelectorAll(".mensaje-chat[data-con-hora='1']")].pop();
         const diaUltimo = ultimoConHora?.dataset.creado ? claveDia(ultimoConHora.dataset.creado) : null;
@@ -6142,8 +5585,6 @@ async function manejarEventoTiempoReal(evento) {
             return;
         }
         case "ubicacion_actualizada": {
-            // La tarjeta se repinta entera: el mapa cambia de posición y el
-            // estado puede haber pasado de "en vivo" a "terminada".
             if (canalActual && evento.canalId !== canalActual.id) return;
             const mensaje = mensajesServidor.querySelector(`[data-mensaje-id="${CSS.escape(evento.mensaje.id)}"]`);
             if (!mensaje) {
@@ -6193,9 +5634,7 @@ async function manejarEventoTiempoReal(evento) {
     }
 }
 
-// ========================================
 // BUSCAR PERSONAS
-// ========================================
 
 
 
@@ -6214,7 +5653,6 @@ async function buscarPersonas(texto) {
 
     const textoLimpio = (texto || "").trim();
 
-    // Sin texto se enseña la lista entera de personas; con texto se filtra.
     estadoBusquedaAmigos.textContent =
         textoLimpio ? "Buscando..." : "Cargando personas...";
 
@@ -6251,9 +5689,6 @@ async function buscarPersonas(texto) {
             return;
         }
 
-        // Arriba va el número de cuentas en la web. Cuando no hay filtro el
-        // backend devuelve las activas; con filtro hace falta aparte porque
-        // el total del filtro solo cuenta lo que coincide.
         let totalCuentas = Number(datos.total ?? 0) || datos.usuarios.length;
         if (textoLimpio) {
             try {
@@ -6266,7 +5701,6 @@ async function buscarPersonas(texto) {
                 const cuentas = await conteo.json().catch(() => ({}));
                 totalCuentas = Number(cuentas.total ?? 0) || totalCuentas;
             } catch {
-                // Sin el total exacto se enseña el de esta búsqueda.
             }
         }
         estadoBusquedaAmigos.textContent =
@@ -6329,8 +5763,6 @@ async function buscarPersonas(texto) {
                     ".boton-enviar-solicitud"
                 );
 
-            // Pulsar la tarjeta abre el perfil (así el Creador puede meterse a
-            // ver cualquier cuenta); el botón AGREGAR no abre nada.
             elemento.addEventListener("click", (evento) => {
                 if (pulsacionCuentaConsumida) return;
                 if (evento.target.closest(".boton-enviar-solicitud")) return;
@@ -6382,9 +5814,7 @@ buscadorPersonas.addEventListener(
     }
 );
 
-// ========================================
 // ENVIAR SOLICITUD DE AMISTAD
-// ========================================
 
 async function enviarSolicitudAmistad(
     usuarioId,
@@ -6447,9 +5877,7 @@ async function enviarSolicitudAmistad(
     }
 }
 
-// ========================================
 // CARGAR SOLICITUDES RECIBIDAS
-// ========================================
 
 async function cargarSolicitudesRecibidas() {
     const token =
@@ -6591,9 +6019,7 @@ async function cargarSolicitudesRecibidas() {
     }
 }
 
-// ========================================
 // ACEPTAR SOLICITUD
-// ========================================
 
 async function aceptarSolicitud(
     solicitudId,
@@ -6649,9 +6075,7 @@ async function aceptarSolicitud(
 }
 
 
-// ========================================
 // RECHAZAR SOLICITUD
-// ========================================
 
 async function rechazarSolicitud(
     solicitudId,
@@ -6706,9 +6130,7 @@ async function rechazarSolicitud(
     }
 }
 
-/* ==============================
-   COMPROBAR SESIÓN
-   ============================== */
+/* COMPROBAR SESIÓN */
 
 async function comprobarSesion() {
 
@@ -6768,9 +6190,7 @@ async function comprobarSesion() {
 }
 
 
-/* ==============================
-   ENTRAR
-   ============================== */
+/* ENTRAR */
 
 botonEntrar.addEventListener(
     "click",
@@ -6785,9 +6205,7 @@ botonEntrar.addEventListener(
 );
 
 
-/* ==============================
-   LOGIN
-   ============================== */
+/* LOGIN */
 
 formularioLogin.addEventListener(
     "submit",
@@ -6852,8 +6270,6 @@ formularioLogin.addEventListener(
 
             if (!respuesta.ok) {
 
-                // La cuenta de este código fue eliminada: se le enseña
-                // quién la borró y con qué rol, sin dejar entrar.
                 if (datos.cuenta_eliminada) {
                     mostrarAvisoCuentaEliminada(datos.cuenta_eliminada);
                     return;
@@ -6893,9 +6309,7 @@ formularioLogin.addEventListener(
 );
 
 
-/* ==============================
-   CREAR CUENTA
-   ============================== */
+/* CREAR CUENTA */
 
 botonCrearCuenta.addEventListener(
     "click",
@@ -6910,9 +6324,7 @@ botonCrearCuenta.addEventListener(
 );
 
 
-/* ==============================
-   VOLVER DESDE LOGIN
-   ============================== */
+/* VOLVER DESDE LOGIN */
 
 botonVolverLogin.addEventListener(
     "click",
@@ -6925,9 +6337,7 @@ botonVolverLogin.addEventListener(
 );
 
 
-/* ==============================
-   VOLVER DESDE REGISTRO
-   ============================== */
+/* VOLVER DESDE REGISTRO */
 
 botonVolverRegistro.addEventListener(
     "click",
@@ -6940,9 +6350,7 @@ botonVolverRegistro.addEventListener(
 );
 
 
-/* ==============================
-   REGISTRO
-   ============================== */
+/* REGISTRO */
 
 formularioRegistro.addEventListener(
     "submit",
@@ -7033,9 +6441,7 @@ formularioRegistro.addEventListener(
 );
 
 
-/* ==============================
-   CONTINUAR DESPUÉS DEL REGISTRO
-   ============================== */
+/* CONTINUAR DESPUÉS DEL REGISTRO */
 
 botonContinuarRegistro.addEventListener(
     "click",
@@ -7051,9 +6457,7 @@ botonContinuarRegistro.addEventListener(
 );
 
 
-/* ==============================
-   COPIAR CÓDIGO DE REGISTRO
-   ============================== */
+/* COPIAR CÓDIGO DE REGISTRO */
 
 botonCopiarCodigo.addEventListener(
     "click",
@@ -7108,9 +6512,7 @@ botonCopiarCodigo.addEventListener(
 );
 
 
-/* ==============================
-   NAVEGACIÓN PRINCIPAL
-   ============================== */
+/* NAVEGACIÓN PRINCIPAL */
 
 botonEntrarApp.addEventListener(
     "click",
@@ -7127,15 +6529,12 @@ botonAmigos.addEventListener(
     () => {
 
         mostrarSeccion("amigos");
-        // Al abrir Amigos ya se enseña la lista entera con el total arriba.
         buscarPersonas(buscadorPersonas.value);
 
     }
 );
 
-// ========================================
 // PESTAÑAS DE AGREGAR AMIGOS
-// ========================================
 
 botonEncontrarPersonas.addEventListener("click", () => {
     seccionEncontrarPersonas.hidden = false;
@@ -7154,7 +6553,6 @@ botonEncontrarPersonas.addEventListener("click", () => {
         "false"
     );
 
-    // Si la lista está vacía se rellena ahora, con el total arriba.
     if (!listaResultadosAmigos.children.length) {
         buscarPersonas(buscadorPersonas.value);
     }
@@ -7200,9 +6598,7 @@ botonCuenta.addEventListener(
 );
 
 
-/* ==============================
-   ABRIR OPCIONES DE FOTO
-   ============================== */
+/* ABRIR OPCIONES DE FOTO */
 
 botonFotoPerfil.addEventListener(
     "click",
@@ -7214,9 +6610,7 @@ botonFotoPerfil.addEventListener(
 );
 
 
-/* ==============================
-   CERRAR OPCIONES DE FOTO
-   ============================== */
+/* CERRAR OPCIONES DE FOTO */
 
 botonCerrarOpcionesFoto.addEventListener(
     "click",
@@ -7228,9 +6622,7 @@ botonCerrarOpcionesFoto.addEventListener(
 );
 
 
-/* ==============================
-   VER FOTO GRANDE
-   ============================== */
+/* VER FOTO GRANDE */
 
 botonVerFoto.addEventListener(
     "click",
@@ -7254,9 +6646,7 @@ botonVerFoto.addEventListener(
 );
 
 
-/* ==============================
-   CERRAR FOTO GRANDE
-   ============================== */
+/* CERRAR FOTO GRANDE */
 
 botonCerrarFotoGrande.addEventListener(
     "click",
@@ -7268,9 +6658,7 @@ botonCerrarFotoGrande.addEventListener(
 );
 
 
-/* ==============================
-   CAMBIAR FOTO
-   ============================== */
+/* CAMBIAR FOTO */
 
 botonCambiarFoto.addEventListener(
     "click",
@@ -7284,9 +6672,7 @@ botonCambiarFoto.addEventListener(
 );
 
 
-/* ==============================
-   CAMBIAR FOTO DE PERFIL
-   ============================== */
+/* CAMBIAR FOTO DE PERFIL */
 
 inputFotoPerfil.addEventListener(
     "change",
@@ -7325,13 +6711,6 @@ inputFotoPerfil.addEventListener(
         }
 
 
-        /*
-         * EDITOR ANTES DE SUBIR
-         * La foto pasa por el editor universal (recortar, pintar, texto) y
-         * solo lo que se confirma aquí se sube al servidor. El input se
-         * limpia ya, para que cancelar no impida volver a elegir la misma
-         * imagen.
-         */
 
         inputFotoPerfil.value = "";
 
@@ -7341,10 +6720,7 @@ inputFotoPerfil.addEventListener(
 );
 
 
-/* ==============================
-   SUBIDA DE LA FOTO DE PERFIL
-   Recibe la imagen ya editada, la previsualiza en la cuenta y la sube.
-   ============================== */
+/* SUBIDA DE LA FOTO DE PERFIL */
 
 async function subirAvatarEditada(archivo) {
     const url = URL.createObjectURL(archivo);
@@ -7386,9 +6762,7 @@ async function subirAvatarEditada(archivo) {
 }
 
 
-/* ==============================
-   CERRAR MODALES AL PULSAR FUERA
-   ============================== */
+/* CERRAR MODALES AL PULSAR FUERA */
 
 modalOpcionesFoto.addEventListener(
     "click",
@@ -7424,9 +6798,7 @@ modalFotoGrande.addEventListener(
 );
 
 
-/* ==============================
-   CARGAR CUENTA
-   ============================== */
+/* CARGAR CUENTA */
 
 async function cargarCuenta() {
 
@@ -7475,11 +6847,8 @@ async function cargarCuenta() {
         actualizarTarjetaMiEstado();
 
 
-        /* ==============================
-           DATOS BÁSICOS
-           ============================== */
+        /* DATOS BÁSICOS */
 
-        // Punto de partida del guardado automático: lo que hay en el servidor.
         cuentaGuardada = {
             nombre: usuario.nombre,
             descripcion: usuario.descripcion || "",
@@ -7488,7 +6857,6 @@ async function cargarCuenta() {
 
         mostrarGuardadoCuenta("");
 
-        // El interruptor de la hora refleja el ajuste personal guardado.
         if (switchVerHora) switchVerHora.checked = verHoraActivado();
 
         nombreCuentaEditar.value =
@@ -7510,9 +6878,7 @@ async function cargarCuenta() {
                 : "";
 
 
-        /* ==============================
-           FOTO DE PERFIL
-           ============================== */
+        /* FOTO DE PERFIL */
 
         if (usuario.avatar_ruta) {
 
@@ -7527,11 +6893,8 @@ async function cargarCuenta() {
 
         }
 
-        // Anillo del avatar del mismo color que el nombre.
         aplicarAnilloAvatar(botonFotoPerfil, usuario.color_nombre);
 
-        // Fondo del perfil: se muestra en cuanto se carga la cuenta (antes
-        // el img se quedaba oculto y nunca se veia ni tras subirlo).
         if (fondoPerfil) {
             if (usuario.fondo_ruta) {
                 fondoPerfil.src = "/" + String(usuario.fondo_ruta).replace(/\\/g, "/");
@@ -7545,9 +6908,7 @@ async function cargarCuenta() {
         }
 
 
-        /* ==============================
-           CÓDIGO DE VINCULACIÓN
-           ============================== */
+        /* CÓDIGO DE VINCULACIÓN */
 
         codigoCuentaTexto.textContent =
             usuario.codigo_vinculacion || "Código no disponible. Regenera uno para vincular otros dispositivos.";
@@ -7565,15 +6926,8 @@ async function cargarCuenta() {
 }
 
 
-/* ==============================
-   GUARDADO AUTOMÁTICO DE LA CUENTA
-   El nombre, la descripción y el color se guardan solos: al salir del campo,
-   al cambiar el color y al cerrar la pestaña de Cuenta. Ya no hay botón.
-   ============================== */
+/* GUARDADO AUTOMÁTICO DE LA CUENTA */
 
-// Últimos valores confirmados por el servidor. Si algo se rechaza (por ejemplo
-// un nombre ya ocupado) la interfaz vuelve a estos para no dejar en pantalla
-// un nombre que en realidad no está guardado.
 let cuentaGuardada = { nombre: "", descripcion: "", color_nombre: "#FFFFFF" };
 
 let temporizadorCuenta = null;
@@ -7588,12 +6942,7 @@ function leerCacheCuenta() {
     }
 }
 
-/* ==============================
-   CHATS FIJADOS + ACCIONES DE CUENTA
-   Fijados solo en el móvil (localStorage del móvil entero): varios
-   arriba del todo por orden de fijado (último fijado arriba), con
-   chincheta. Mantener pulsado abre opciones en chats y Buscar Amigos.
-   ============================== */
+/* CHATS FIJADOS + ACCIONES DE CUENTA */
 
 const CLAVE_CHATS_FIJADOS = "atuistas_chats_fijados";
 
@@ -7601,7 +6950,6 @@ function leerChatsFijados() {
     try {
         const lista = JSON.parse(localStorage.getItem(CLAVE_CHATS_FIJADOS) || "[]");
         if (!Array.isArray(lista)) return [];
-        // [{id, fijado_en}] ordenado por fijado_en DESC (último arriba).
         return lista
             .filter((item) => item && typeof item.id === "string")
             .map((item) => ({
@@ -7618,7 +6966,6 @@ function guardarChatsFijados(lista) {
     try {
         localStorage.setItem(CLAVE_CHATS_FIJADOS, JSON.stringify(lista));
     } catch {
-        // Sin almacenamiento no se puede fijar: se sigue sin romper nada.
     }
 }
 
@@ -7642,7 +6989,6 @@ function ordenarAmigosConFijados(amigos) {
     const fijados = leerChatsFijados();
     const posicion = new Map(fijados.map((item, indice) => [item.id, indice]));
     const copia = [...amigos];
-    // Fijados primero por orden de fijado; el resto conserva su orden.
     copia.sort((a, b) => {
         const posA = posicion.has(a.id) ? posicion.get(a.id) : Number.MAX_SAFE_INTEGER;
         const posB = posicion.has(b.id) ? posicion.get(b.id) : Number.MAX_SAFE_INTEGER;
@@ -7656,7 +7002,6 @@ function miEtiquetaEsModeradora() {
     return etiqueta === "Creador" || etiqueta === "Admin";
 }
 
-// Cuenta objetivo del menú de mantener pulsado.
 let cuentaAccionActual = null;
 
 function abrirAccionesCuenta(cuenta, desdeChats) {
@@ -7696,9 +7041,6 @@ function cerrarAccionesCuenta() {
     cuentaAccionActual = null;
 }
 
-/* Motor de mantener pulsado para cuentas (chats y Buscar Amigos):
-   550ms quieto abre el menú, vibrar, y el clic que viene detrás no abre
-   nada. Botón derecho en PC también abre el menú. */
 let pulsacionCuenta = null;
 let pulsacionCuentaConsumida = false;
 
@@ -7751,7 +7093,6 @@ function engancharPulsacionCuenta(elemento, cuenta, desdeChats) {
 document.addEventListener("scroll", terminarPulsacionCuenta, true);
 window.addEventListener("blur", terminarPulsacionCuenta);
 
-/* ---------- Botones del menú de acciones de la cuenta ---------- */
 
 function cerrarModalPorId(id) {
     const modal = document.getElementById(id);
@@ -7888,8 +7229,6 @@ document.getElementById("boton-confirmar-bloqueo-cuenta")?.addEventListener("cli
         cerrarModalPorId("modal-bloquear-cuenta");
         const bloqueado = cuentaAccionActual;
         cuentaAccionActual = null;
-        // El bloqueo rompe la amistad: el chat desaparece de la lista y
-        // también su fijado, para no dejar una tarjeta sin amigo.
         if (bloqueado) {
             guardarChatsFijados(
                 leerChatsFijados().filter((item) => item.id !== bloqueado.id)
@@ -7957,7 +7296,6 @@ document.getElementById("boton-confirmar-eliminar-cuenta")?.addEventListener("cl
     }
 });
 
-/* ---------- Aviso al reentrar: la cuenta fue eliminada ---------- */
 
 function mostrarAvisoCuentaEliminada(tumba) {
     const modal = document.getElementById("modal-cuenta-eliminada");
@@ -7971,7 +7309,6 @@ function mostrarAvisoCuentaEliminada(tumba) {
 
 document.getElementById("boton-aceptar-cuenta-eliminada")?.addEventListener("click", () => {
     cerrarModalPorId("modal-cuenta-eliminada");
-    // Se limpia el código para que no se repita el aviso al recargar.
     codigoLogin.value = "";
     codigoLogin.focus();
 });
@@ -7986,8 +7323,6 @@ function pintarNombreCuenta(nombre, color) {
         vistaNombreCuenta.setAttribute("style", estiloNombre(color));
     }
     if (colorNombreCuenta) {
-        // El botón del color se rodea de un borde claro cuando el color elegido
-        // es oscuro, para que no se pierda sobre el fondo de la aplicación.
         colorNombreCuenta.style.borderColor = colorDeAnillo(color);
     }
 }
@@ -7998,30 +7333,18 @@ function mostrarGuardadoCuenta(mensaje, esError = false) {
     guardadoCuenta.classList.toggle("error", esError);
 }
 
-/* ==============================
-   INTERRUPTOR DE LA HORA EN MENSAJES
-   Ajuste de vista personal guardado en el navegador. Está activado por
-   defecto. Al desactivar se avisa (es solo para esta persona) y, al reactivar,
-   se fija un corte para que las horas antiguas no vuelvan: solo los mensajes
-   nuevos enviados a partir de entonces muestran su hora.
-   ============================== */
+/* INTERRUPTOR DE LA HORA EN MENSAJES */
 
-// Repinta lo que esté abierto para que el cambio se vea al instante. Desde
-// Cuenta no suele haber nada abierto, así que el ajuste se aplicará al entrar
-// de nuevo en un chat o un servidor.
 function repintarConversacionesVisibles() {
     if (amigoChatActual) cargarMensajesChat();
     if (grupoActual) cargarMensajesServidor();
 }
 
-// Reactivar fija el corte: desde este instante solo los mensajes nuevos
-// muestran hora; los anteriores se quedan sin ella.
 function activarVerHora() {
     localStorage.setItem(CLAVE_HORA_DESDE, new Date().toISOString());
     localStorage.setItem(CLAVE_VER_HORA, "1");
 }
 
-// Desactivar solo apaga la vista. El corte se fija al reactivar.
 function desactivarVerHora() {
     localStorage.setItem(CLAVE_VER_HORA, "0");
 }
@@ -8033,8 +7356,6 @@ switchVerHora?.addEventListener("change", () => {
         return;
     }
 
-    // Quiere desactivar: se avisa antes. Mientras se decide, el interruptor
-    // vuelve a su estado activo para no reflejar un cambio aún no confirmado.
     switchVerHora.checked = true;
     if (modalConfirmarHora) modalConfirmarHora.hidden = false;
 });
@@ -8063,8 +7384,6 @@ async function guardarCuenta() {
         return;
     }
 
-    // Si ya hay una petición en vuelo, el cambio se aplica al terminar en vez
-    // de lanzar otra: así nunca se pisan dos guardados.
     if (guardandoCuenta) {
         cambioPendienteCuenta = true;
         return;
@@ -8079,7 +7398,6 @@ async function guardarCuenta() {
     const colorNombre =
         colorNombreCuenta.value;
 
-    // Si no ha cambiado nada, no se molesta al servidor.
     if (
         nombre === cuentaGuardada.nombre &&
         descripcion === cuentaGuardada.descripcion &&
@@ -8137,7 +7455,6 @@ async function guardarCuenta() {
                 color_nombre: datos.usuario.color_nombre || "#FFFFFF"
             };
 
-            // Manda el servidor: puede haber recortado el nombre.
             nombreCuentaEditar.value =
                 datos.usuario.nombre;
 
@@ -8188,9 +7505,6 @@ async function guardarCuenta() {
         );
 
 
-        // Lo escrito se queda tal cual: si se borrase, escribir acentos,
-        // simbolos o emoji pareceria que estan prohibidos. El motivo del
-        // rechazo se muestra arriba y el siguiente cambio vuelve a intentarlo.
         pintarNombreCuenta(nombreCuentaEditar.value.trim(), colorNombreCuenta.value);
 
 
@@ -8209,7 +7523,6 @@ async function guardarCuenta() {
 
 }
 
-// Espera a que el usuario deje de escribir para no mandar una petición por
 // tecla.
 function programarGuardadoCuenta() {
 
@@ -8225,9 +7538,7 @@ function programarGuardadoCuenta() {
 }
 
 
-/* ==============================
-   COPIAR CÓDIGO DE CUENTA
-   ============================== */
+/* COPIAR CÓDIGO DE CUENTA */
 
 botonCopiarCodigoCuenta.addEventListener(
     "click",
@@ -8289,9 +7600,7 @@ botonCopiarCodigoCuenta.addEventListener(
 );
 
 
-/* ==============================
-   REGENERAR CÓDIGO
-   ============================== */
+/* REGENERAR CÓDIGO */
 
 botonRegenerarCodigo.addEventListener(
     "click",
@@ -8382,11 +7691,7 @@ botonRegenerarCodigo.addEventListener(
 );
 
 
-/* ==============================
-   GUARDADO AUTOMÁTICO DE LA CUENTA
-   No hay botón: se guarda al salir del campo, al cambiar el color y al cerrar
-   la pestaña de Cuenta.
-   ============================== */
+/* GUARDADO AUTOMÁTICO DE LA CUENTA */
 
 nombreCuentaEditar.addEventListener("input", programarGuardadoCuenta);
 nombreCuentaEditar.addEventListener("blur", guardarCuenta);
@@ -8394,7 +7699,6 @@ nombreCuentaEditar.addEventListener("blur", guardarCuenta);
 descripcionCuenta.addEventListener("input", programarGuardadoCuenta);
 descripcionCuenta.addEventListener("blur", guardarCuenta);
 
-// El color se previsualiza al momento y se guarda en cuanto se suelta.
 colorNombreCuenta.addEventListener("input", () => {
     pintarNombreCuenta(nombreCuentaEditar.value.trim(), colorNombreCuenta.value);
     programarGuardadoCuenta();
@@ -8403,9 +7707,7 @@ colorNombreCuenta.addEventListener("input", () => {
 colorNombreCuenta.addEventListener("change", guardarCuenta);
 
 
-/* ==============================
-   CERRAR SESIÓN
-   ============================== */
+/* CERRAR SESIÓN */
 
 botonCerrarSesion.addEventListener(
     "click",
@@ -8469,7 +7771,6 @@ async function cargarContenidoInicio() {
     ]);
 }
 
-// Cada foto de un estado se ve como una historia suelta en el visor: el número cuenta fotos, no estados.
 function contarHistoriasEstado(estados = []) {
     return estados.reduce((total, estado) => total + Math.max(1, (estado.multimedia || []).length), 0);
 }
@@ -8573,16 +7874,7 @@ function renderizarMedios(multimedia = []) {
     return (multimedia || []).map((medio) => renderizarMedio(medio)).join("");
 }
 
-/* ---------- Reproductor de audio propio (estados, publicaciones, historias)
-   Sustituye al <audio controls> nativo con un reproductor que lleva ondas
-   animadas al reproducir y una barra de progreso con brillo, usando el color
-   de acento y el fondo oscuro de la web. Se controla con delegación de
-   eventos en el documento para funcionar también con el contenido que se
-   repinta (el <audio> real queda oculto dentro y es el que suena). */
 function reproductorAudioHTML(ruta) {
-    // 30 barras con altura fija variada (forma de onda): al sonar se van
-    // encendiendo en color de acento según el avance. La tira entera ES el
-    // audio y se rellena al terminar. El tiempo muestra la duración total.
     const alturas = [38, 62, 45, 80, 55, 92, 48, 70, 35, 66, 84, 50, 74, 42, 95, 58, 68, 40, 78, 52, 88, 46, 64, 36, 72, 56, 82, 44, 60, 76];
     const ondas = alturas.map((h) => `<span style="height:${h}%"></span>`).join("");
     return `
@@ -8612,13 +7904,9 @@ function pintarProgresoReproductor(audio) {
     const avance = dur ? Math.min(audio.currentTime / dur, 1) : 0;
     const relleno = contenedor.querySelector(".reproductor-audio-relleno");
     if (relleno) relleno.style.width = `${avance * 100}%`;
-    // Las ondas se encienden con el avance: lo ya sonado en acento, lo que
-    // falta apagado. Al acabar queda la tira entera encendida.
     const barras = contenedor.querySelectorAll(".reproductor-audio-ondas span");
     const encendidas = Math.round(avance * barras.length);
     barras.forEach((barra, indice) => barra.classList.toggle("encendida", indice < encendidas));
-    // El tiempo enseña la duración total (no 00:00): mientras suena muestra
-    // lo que queda por escuchar.
     const tiempo = contenedor.querySelector(".reproductor-audio-tiempo");
     if (tiempo) {
         const mostrar = dur && (audio.currentTime > 0 || !audio.paused) ? Math.max(0, dur - audio.currentTime) : dur;
@@ -8627,19 +7915,14 @@ function pintarProgresoReproductor(audio) {
 }
 
 function alternarReproductorAudio(destino) {
-    // Acepta el boton o el contenedor: el toque puede venir de cualquier parte.
     const contenedor = destino?.closest?.(".reproductor-audio") ?? destino;
     const audio = contenedor?.querySelector("audio");
     if (!audio) return;
-    // El src va con / delante siempre: si llegara sin ella (datos viejos), el
-    // navegador pediria una ruta relativa que no existe y el play no sonaria.
     const fuente = audio.getAttribute("src") || "";
     if (fuente && !fuente.startsWith("/") && !fuente.startsWith("http") && !fuente.startsWith("blob:") && !fuente.startsWith("data:")) {
         audio.src = `/${fuente}`;
     }
     const avisarFallo = (motivo) => {
-        // En movil el error de consola no lo ve nadie: se enseña dentro de la
-        // propia pastilla para que se vea que paso y no parezca que no hace nada.
         const tiempo = contenedor.querySelector(".reproductor-audio-tiempo");
         if (tiempo) {
             tiempo.textContent = "NO SE PUEDE";
@@ -8652,13 +7935,10 @@ function alternarReproductorAudio(destino) {
         if (motivo) console.error("No se pudo reproducir el audio:", motivo);
     };
     if (audio.paused || audio.ended) {
-        // Que solo suene uno a la vez.
         document.querySelectorAll(".reproductor-audio audio").forEach((otro) => { if (otro !== audio) otro.pause(); });
         const intento = audio.play();
         if (intento && typeof intento.catch === "function") {
             intento.catch(() => {
-                // En movil el play necesita gesto directo: se reintenta cargando
-                // primero el audio y sonando despues.
                 try { audio.load(); } catch {}
                 const segundo = audio.play();
                 if (segundo && typeof segundo.catch === "function") {
@@ -8671,15 +7951,7 @@ function alternarReproductorAudio(destino) {
     }
 }
 
-// El reproductor responde a tocar (touchstart) y a soltar (touchend).
-// touchstart funciona siempre en Android; el click no, por el gesto del
-// mensaje que lo impide. Con el audio parado: tocar es play. Sonando y se
-// suelta el dedo sin desplazar: pausa. Si el dedo se desplazó, se deja
-// pasar (el usuario no soltó en el mismo punto).
 let tactoInicio = null;
-// Sello del último toque atendido por touchend. Sirve para ignorar el click
-// sintético que el navegador dispara justo después en móvil: sin esto, un toque
-// hacía play (touchend) y acto seguido pause (click), y no sonaba nada.
 let ultimoToqueReproductor = 0;
 
 document.addEventListener("touchstart", (evento) => {
@@ -8706,12 +7978,8 @@ document.addEventListener("touchend", (evento) => {
     const { contenedor, x, y, movido, audio, boton, pista } = tactoInicio;
     tactoInicio = null;
     if (movido) return;
-    // Toque atendido aquí: marca la hora para que el click sintético de después
-    // no vuelva a alternar (play y pause seguidos).
     ultimoToqueReproductor = Date.now();
     if (boton) {
-        // Reusa alternarReproductorAudio: si el play falla en el movil enseña
-        // "NO SE PUEDE" en la propia pastilla en vez de quedarse en silencio.
         alternarReproductorAudio(contenedor);
         return;
     }
@@ -8732,20 +8000,12 @@ document.addEventListener("touchcancel", (evento) => {
     }
 }, true);
 
-// En escritorio (y por si el navegador no envía touchend), el click es el
-// fallback: repite exactamente lo mismo que el toque.
 document.addEventListener("click", (evento) => {
-    // La pulsacion larga de desarrollador se traga su propio clic:
     // no jugar.
     let clicTragado = false;
     try { clicTragado = pulsacionConsumida; } catch { clicTragado = false; }
     if (clicTragado) return;
-    // Si un toque se acaba de atender por touchend, este click es el sintético
-    // que genera el navegador en móvil: se ignora para no alternar dos veces.
     if (Date.now() - ultimoToqueReproductor < 700) return;
-    // El reproductor suele venir ya como target del click. Si no (algún overlay
-    // encima o un ancestro con pointer-events distinto), se busca también bajo
-    // el puntero con elementFromPoint, igual que al abrir una foto del chat.
     let destino = evento.target;
     let contenedor = destino.closest?.(".reproductor-audio");
     if (!contenedor && typeof document.elementFromPoint === "function"
@@ -8775,7 +8035,6 @@ document.addEventListener("click", (evento) => {
 
 
 
-// timeupdate/play/pause no burbujean, así que se escuchan en fase de captura.
 document.addEventListener("timeupdate", (e) => { if (e.target instanceof HTMLAudioElement) pintarProgresoReproductor(e.target); }, true);
 document.addEventListener("loadedmetadata", (e) => { if (e.target instanceof HTMLAudioElement) pintarProgresoReproductor(e.target); }, true);
 document.addEventListener("play", (e) => {
@@ -8793,7 +8052,6 @@ document.addEventListener("ended", (e) => {
     contenedor?.classList.remove("sonando");
     const relleno = contenedor?.querySelector(".reproductor-audio-relleno");
     if (relleno) relleno.style.width = "100%";
-    // Al acabar, la tira entera queda encendida: se ve que se rellenó del todo.
     contenedor?.querySelectorAll(".reproductor-audio-ondas span").forEach((barra) => barra.classList.add("encendida"));
 }, true);
 
@@ -8819,11 +8077,8 @@ function renderizarMediosPublicacion(multimedia = []) {
     `;
 }
 
-// Carrusel de fotos de las publicaciones: en táctil se desliza con el scroll nativo
-// (scroll-snap) y en escritorio arrastrando con el ratón.
 let arrastreCarruselFoto = null;
 
-// Última foto vista en cada publicación, para no volver a la primera al recargar el feed.
 const posicionesCarruselFoto = new Map();
 
 function medirCarruselFoto(carrusel) {
@@ -8856,7 +8111,6 @@ function irADiapositivaCarruselFoto(carrusel, indice) {
     actualizarPuntosCarruselFoto(carrusel);
 }
 
-// Igual que irADiapositivaCarruselFoto, pero sin animación: se usa al recargar el feed.
 function moverCarruselFotoADiapositiva(carrusel, indice) {
     const pista = carrusel?.querySelector("[data-carrusel-pista]");
     const diapositivas = carrusel?.querySelectorAll("[data-carrusel-diapositiva]");
@@ -8880,21 +8134,16 @@ function restaurarPosicionesCarruselFoto(contenedor) {
     contenedor?.querySelectorAll("[data-carrusel-publicacion]").forEach((carrusel) => {
         const publicacionId = carrusel.closest("[data-publicacion]")?.dataset.publicacion;
         const indice = posicionesCarruselFoto.get(publicacionId);
-        // El índice 0 es la primera foto: no hay nada que mover.
         if (!indice) return;
         moverCarruselFotoADiapositiva(carrusel, indice);
     });
 }
 
-// El corazón se rellena en cuanto se pulsa y, si la petición falla, vuelve a su estado.
 function reflejarCorazonPublicacion(boton, activo) {
     boton.classList.toggle("boton-corazon-publicacion-activo", activo);
     boton.setAttribute("aria-pressed", String(activo));
 }
 
-// Partiendo de la clave de una persona del feed, devuelve la lista de claves de
-// su sección empezando por esa persona y siguiendo por las siguientes: así, al
-// acabarse los estados de una persona se pasa a los de la siguiente.
 function expandirClaveSecuencia(clave) {
     for (const claves of ordenClavesEstados.values()) {
         const indice = claves.indexOf(clave);
@@ -8949,7 +8198,6 @@ function cerrarVisorHistorias() {
     document.getElementById("visor-historias-pantalla").hidden = true;
     document.getElementById("contenido-historia-pantalla").replaceChildren();
     secuenciaHistoriaActual = [];
-    // Si los comentarios estaban abiertos, se cierran con el estado.
     const comentariosEstado = document.getElementById("modal-comentarios-estado");
     if (comentariosEstado) comentariosEstado.hidden = true;
 }
@@ -8958,8 +8206,6 @@ function mostrarHistoriaActual() {
     if (temporizadorHistoria) clearTimeout(temporizadorHistoria);
     temporizadorHistoria = null;
     const visor = document.getElementById("visor-historias-pantalla");
-    // Cada estado arranca con la interfaz visible (por si venía despejado por
-    // una pulsación larga). El modo cine del menú se respeta entre estados.
     visor.classList.remove("historia-despejada");
     const estado = secuenciaHistoriaActual[indiceHistoriaActual];
     if (!estado) {
@@ -8967,8 +8213,6 @@ function mostrarHistoriaActual() {
         return;
     }
 
-    // Se deduce a qué persona pertenece el índice actual, para que la barra de
-    // progreso y el avance entre personas sean coherentes incluso al retroceder.
     personaActual = Math.max(0, limitesPersonas.findIndex((lim) => indiceHistoriaActual < lim.fin));
 
     const avatar = document.getElementById("avatar-autor-historia");
@@ -8980,14 +8224,10 @@ function mostrarHistoriaActual() {
     nombreAutorHistoria.textContent = nombreVisible(estado.autor_id, estado.autor_nombre);
     nombreAutorHistoria.setAttribute("style", estiloNombre(estado.color_nombre));
 
-    // El botón de comentarios enseña cuántos tiene este estado.
     pintarCantidadComentariosEstado(estado.comentarios || 0);
-    // El corazón refleja si esta persona ya le había dado like y cuántos lleva.
     pintarLikeEstado(Boolean(estado.me_gusta), estado.likes || 0);
 
     const progreso = document.getElementById("progreso-historias");
-    // Solo se pintan las barras de la persona que se está viendo: al pasar a la
-    // siguiente persona la barra empieza de nuevo desde su primer estado.
     const rango = limitesPersonas[personaActual] ?? { inicio: 0, fin: secuenciaHistoriaActual.length };
     progreso.innerHTML = secuenciaHistoriaActual.slice(rango.inicio, rango.fin).map((_, i) => {
         const indice = rango.inicio + i;
@@ -8999,8 +8239,6 @@ function mostrarHistoriaActual() {
     }).join("");
 
     const contenido = document.getElementById("contenido-historia-pantalla");
-    // Si el estado lleva texto y además multimedia, el texto se muestra como
-    // título sobre el contenido; si es solo texto, ocupa la pantalla centrado.
     const hayMultimedia = (estado.multimedia || []).length > 0;
     const claseTexto = hayMultimedia ? "titulo-historia-pantalla" : "texto-historia-pantalla";
     contenido.innerHTML = `${renderizarMedios(estado.multimedia)}${estado.texto ? `<p class="${claseTexto}">${escapeHtml(estado.texto)}</p>` : ""}`;
@@ -9036,9 +8274,6 @@ function mostrarHistoriaActual() {
 }
 
 function pasarHistoriaSiguiente() {
-    // La secuencia es plana e incluye los estados de todas las personas en
-    // orden: al acabarse los de una, el índice siguiente ya es el primero de
-    // la siguiente persona. Al final del todo, se cierra el visor.
     if (indiceHistoriaActual < secuenciaHistoriaActual.length - 1) {
         indiceHistoriaActual += 1;
         mostrarHistoriaActual();
@@ -9064,10 +8299,6 @@ document.addEventListener("keydown", (evento) => {
     else if (evento.key === "ArrowLeft") pasarHistoriaAnterior();
 });
 
-/* Mantener pulsado el centro del visor despeja la pantalla (se ocultan la
-   cabecera, el progreso y la barra de comentarios) y se para el vídeo o el
-   audio; al soltar, vuelve todo como estaba. Si la persona es desarrolladora,
-   esta pulsación anula la de borrar: en el centro manda despejar. */
 let temporizadorDespejeHistoria = null;
 let toqueSimplePendiente = false;
 
@@ -9078,15 +8309,10 @@ function despejarHistoria() {
     const visor = document.getElementById("visor-historias-pantalla");
     visor.classList.remove("historia-limpia");
     visor.classList.add("historia-despejada");
-    // Se para del todo la reproducción: el vídeo o el audio, y también la
-    // cuenta atrás del texto o la foto, para que nada avance mientras está
     // despejada la pantalla.
     pausarReproduccionHistorias();
 }
 
-// "Despejar pantalla" del menú (modo cine): oculta solo la cabecera y la barra
-// de comentarios, MANTIENE la barra de avance a la vista y NO para la
-// reproducción. Es un interruptor: otra pulsación devuelve la interfaz.
 function despejarPantallaMenu() {
     const visor = document.getElementById("visor-historias-pantalla");
     visor.classList.remove("historia-despejada");
@@ -9095,12 +8321,9 @@ function despejarPantallaMenu() {
 
 function pausarReproduccionHistorias() {
     const visor = document.getElementById("visor-historias-pantalla");
-    // Vídeo o audio: se pausa el medio.
     visor.querySelectorAll("#contenido-historia-pantalla video, #contenido-historia-pantalla audio").forEach((medio) => {
         if (!medio.paused) medio.pause();
     });
-    // Texto o imagen: se congela la barra de progreso y se anula el avance
-    // automático, para que la persona pueda escribir sin que el estado cambie.
     if (temporizadorHistoria) {
         clearTimeout(temporizadorHistoria);
         temporizadorHistoria = null;
@@ -9109,18 +8332,12 @@ function pausarReproduccionHistorias() {
     if (fill) fill.style.animationPlayState = "paused";
 }
 
-// Inverso de pausarReproduccionHistorias: reanuda el vídeo o el audio y, en el
-// caso del texto o la foto, vuelve a poner en marcha la barra de progreso y
-// reprograma el avance con el tiempo que le quedaba a la cuenta atrás.
 function reanudarReproduccionHistorias() {
     const visor = document.getElementById("visor-historias-pantalla");
     if (!visor || visor.hidden) return;
-    // Vídeo o audio: se reanuda el medio desde donde se había quedado.
     visor.querySelectorAll("#contenido-historia-pantalla video, #contenido-historia-pantalla audio").forEach((medio) => {
         if (medio.paused) medio.play().catch(() => {});
     });
-    // Texto o foto: se reanuda la barra de progreso y se reprograma el avance
-    // con el tiempo restante de la cuenta atrás (aproximado por la animación).
     const fill = document.querySelector("#progreso-historias .progreso-historia i.activo");
     if (fill && fill.classList.contains("avanzar") && !temporizadorHistoria) {
         fill.style.animationPlayState = "running";
@@ -9145,10 +8362,6 @@ function restaurarHistoria() {
     }
     toqueSimplePendiente = false;
     const visor = document.getElementById("visor-historias-pantalla");
-    // Venía de una pulsación larga (despejarHistoria): se recupera la interfaz y
-    // se reanuda la reproducción (vídeo/audio y la cuenta atrás del texto o la
-    // foto). Un toque simple no cambia nada: el modo cine solo se maneja desde
-    // el menú de opciones para que sea predecible.
     if (visor.classList.contains("historia-despejada")) {
         visor.classList.remove("historia-despejada");
         reanudarReproduccionHistorias();
@@ -9157,24 +8370,15 @@ function restaurarHistoria() {
 
 const contenidoVisorHistorias = document.getElementById("contenido-historia-pantalla");
 contenidoVisorHistorias.addEventListener("contextmenu", (evento) => {
-    // Ni con el botón derecho ni dejando pulsado debe salir el menú de
-    // copiar imagen / descargar imagen sobre el estado.
     evento.preventDefault();
 });
 contenidoVisorHistorias.addEventListener("pointerdown", (evento) => {
-    // Evita el menú contextual (copiar imagen / descargar imagen) al mantener
-    // pulsado: solo se deja quitar la pantalla y parar el estado.
     evento.preventDefault();
     if (evento.pointerType === "mouse" && evento.button !== 0) return;
     if (temporizadorDespejeHistoria) clearTimeout(temporizadorDespejeHistoria);
-    // 450 ms: es una pulsación sostenida a propósito, no un toque normal, y
-    // sigue por debajo de la de borrar (550 ms) para que en el centro mande
-    // despejar cuando la persona es desarrolladora.
     toqueSimplePendiente = true;
     temporizadorDespejeHistoria = setTimeout(despejarHistoria, 450);
 });
-// Al soltar (o cancelar, o sacar el puntero) se recupera la interfaz de la
-// pulsación larga y se reanuda la reproducción; un toque simple no hace nada.
 for (const tipoFinal of ["pointerup", "pointercancel", "pointerleave"]) {
     contenidoVisorHistorias.addEventListener(tipoFinal, () => restaurarHistoria());
 }
@@ -9248,7 +8452,6 @@ document.getElementById("boton-mi-estado").addEventListener("click", async () =>
 document.getElementById("boton-ver-mis-estados").addEventListener("click", mostrarMisEstados);
 document.getElementById("boton-anadir-estado").addEventListener("click", mostrarFormularioEstado);
 document.getElementById("boton-cerrar-modal-estado").addEventListener("click", () => { modalEstado.hidden = true; });
-// Publicaciones: ahora se suben desde el boton central "+".
 function abrirFormularioPublicacion() {
     const form = document.getElementById("formulario-publicacion");
     form.reset();
@@ -9277,20 +8480,13 @@ function configurarSelectorMedio(formId, fileLabelId, fileInputId, typeName, tex
     const textArea = document.getElementById(textAreaId);
     const audioControls = audioControlsId ? document.getElementById(audioControlsId) : null;
     const vistaPrevia = vistaPreviaId ? document.getElementById(vistaPreviaId) : null;
-    // Fotos ya comprimidas o editadas que sustituyen a lo elegido en el input.
-    // Clave: nombre original del archivo. Sin esto, el input seguiría subiendo
-    // el original pesado aunque la vista previa muestre la versión comprimida.
     let fotosProcesadas = new Map();
     const actualizar = () => {
         const mode = form.querySelector(`input[name="${typeName}"]:checked`).value;
         const audioMode = mode === "audio";
         const needsFile = ["imagen", "imagenes", "video", "audio"].includes(mode);
         const soloTexto = !needsFile;
-        // El botón de subir archivos se ve siempre, incluso en modo Texto: si
-        // se pulsa ahí, el tipo pasa a fotos y el texto deja de ser obligatorio.
         fileLabel.hidden = false;
-        // El texto acompaña a la foto, vídeo o audio: nunca se oculta,
-        // solo deja de ser obligatorio cuando ya hay archivo.
         textArea.hidden = false;
         textArea.required = soloTexto;
         if (audioControls) audioControls.hidden = !audioMode;
@@ -9326,8 +8522,6 @@ function configurarSelectorMedio(formId, fileLabelId, fileInputId, typeName, tex
         pintarVistaPrevia();
         actualizar();
     }));
-    // Pulsar el botón estando en modo Texto pasa a fotos: es lo que espera
-    // quien quiere "subir archivos" sin cambiar antes el tipo a mano.
     fileLabel.addEventListener("click", (evento) => {
         const marcada = form.querySelector(`input[name="${typeName}"]:checked`);
         if (!marcada || marcada.value !== "texto") return;
@@ -9419,17 +8613,11 @@ function configurarSelectorMedio(formId, fileLabelId, fileInputId, typeName, tex
         return [...data.files];
     }
 
-    // Punto único de verdad para publicar: devuelve los archivos procesados
-    // (comprimidos o editados). Sin esto, el envío usaría fileInput.files, que
-    // sigue siendo el original pesado.
     fileInput.archivosFinales = archivosFinales;
 
     return { archivosFinales, repintarVistaPrevia: pintarVistaPrevia };
 }
 
-// Los dos formularios, el de estado y el de publicación, comparten este
-// comportamiento. Sin estas llamadas el botón de archivos se quedaba oculto
-// y el texto seguía siendo obligatorio aunque se subiera una foto o un vídeo.
 configurarSelectorMedio(
     "formulario-estado",
     "etiqueta-archivo-estado",
@@ -9633,9 +8821,6 @@ function editorTerminarTrazo() {
     editorUltimo = null;
 }
 
-// Cierre y botones del editor: sin esto, el modal se abría pero ningún botón
-// respondía (ni herramientas, ni deshacer, ni usar foto). El lienzo también
-// se queda sin puntero si no se conectan los eventos táctiles y de ratón.
 if (modalEditorFoto) {
     modalEditorFoto.addEventListener("click", (evento) => {
         if (evento.target === modalEditorFoto) modalEditorFoto.hidden = true;
@@ -9707,8 +8892,6 @@ if (modalEditorFoto) {
         lienzoEditor.addEventListener("pointercancel", editorTerminarTrazo);
     }
 }
-// Pinta los botones del grabador de audio según el estado de la grabación:
-// mientras suena aparecen PAUSAR (o REANUDAR) y BORRAR, sin necesidad de
 // haber terminado de grabar.
 function pintarControlesGrabacion() {
     const activo = Boolean(grabadoraAudio) && grabadoraAudio.state !== "inactive";
@@ -9771,7 +8954,6 @@ document.getElementById("boton-detener-audio").addEventListener("click", () => {
     pintarControlesGrabacion();
 });
 
-// Pausar y reanudar sin tener que terminar la grabación.
 document.getElementById("boton-pausar-audio").addEventListener("click", () => {
     if (!grabadoraAudio || grabadoraAudio.state === "inactive") return;
     if (grabadoraAudio.state === "recording") grabadoraAudio.pause();
@@ -9779,7 +8961,6 @@ document.getElementById("boton-pausar-audio").addEventListener("click", () => {
     pintarControlesGrabacion();
 });
 
-// Borrar la grabación en cualquier momento, sin terminarla si está en marcha.
 document.getElementById("boton-borrar-audio").addEventListener("click", () => {
     if (limiteGrabacionAudio) clearTimeout(limiteGrabacionAudio);
     if (grabadoraAudio && grabadoraAudio.state !== "inactive") {
@@ -9815,8 +8996,6 @@ document.getElementById("formulario-estado").addEventListener("submit", async (e
             const files = mode === "audio" && blobAudioEstado
                 ? [new File([blobAudioEstado], `estado-audio.${blobAudioEstado.type.includes("ogg") ? "ogg" : "webm"}`, { type: blobAudioEstado.type })]
                 : (typeof inputEstado.archivosFinales === "function" ? inputEstado.archivosFinales() : [...inputEstado.files]);
-            // El texto acompaña al archivo, pero no lo sustituye: sin archivo
-            // no hay nada que publicar.
             if (!files.length) {
                 throw new Error("Selecciona al menos un archivo o graba un audio.");
             }
@@ -9840,7 +9019,6 @@ document.getElementById("formulario-estado").addEventListener("submit", async (e
     }
 });
 
-/* ---------- Comentarios del reel ---------- */
 
 async function abrirComentariosReel(reelId, contador) {
     const lista = document.getElementById("lista-comentarios-reel");
@@ -9862,12 +9040,9 @@ async function abrirComentariosReel(reelId, contador) {
         const total = await solicitarGrupo(`/api/reels/${reelId}`);
         if (total.reel) contador.textContent = total.reel.comentarios ?? 0;
     }
-    // El visor se queda detrás: los comentarios se leen encima y el vídeo
-    // sigue sonando de fondo sin perder el hilo.
     entrada?.focus();
 }
 
-// El botón solo se activa cuando hay algo escrito.
 const entradaComentarioReel = document.getElementById("texto-comentario-reel");
 const botonComentarReel = document.getElementById("boton-comentar-reel");
 
@@ -9901,10 +9076,7 @@ document.getElementById("formulario-comentario-reel")?.addEventListener("submit"
     }
 });
 
-/* ---------- Comentarios del estado ---------- */
 
-// Mismo funcionamiento que los del reel: se abren desde el visor de estados y
-// se borran en el servidor en cuanto se borra el estado (borrado en cascada).
 let estadoComentariosAbierto = null;
 
 function pintarCantidadComentariosEstado(total) {
@@ -9914,7 +9086,6 @@ function pintarCantidadComentariosEstado(total) {
     marca.textContent = total ? String(total) : "";
 }
 
-// Pinta el corazón del estado y su contador según el estado que se está viendo.
 function pintarLikeEstado(meGusta, likes) {
     const like = document.getElementById("boton-like-estado");
     if (!like) return;
@@ -9954,9 +9125,7 @@ async function abrirComentariosEstado(estadoId) {
     entrada?.focus();
 }
 
-// Botón de tres puntos: menú de opciones del estado (denunciar / despejar).
 let menuOpcionesHistoriaAbierto = false;
-// El botón de arriba a la derecha; se usa para marcar el aria-expanded.
 botonOpcionesHistoria = document.getElementById("boton-opciones-historia");
 
 document.getElementById("boton-opciones-historia")?.addEventListener("click", (evento) => {
@@ -9981,26 +9150,20 @@ document.getElementById("opcion-despejar-pantalla")?.addEventListener("click", (
     cerrarMenuOpcionesHistoria();
 });
 
-// El botón de abajo abre los comentarios del estado (mismo comportamiento que la 💬).
 document.getElementById("boton-ver-comentarios-estado")?.addEventListener("click", () => {
     const estado = secuenciaHistoriaActual[indiceHistoriaActual];
     abrirComentariosEstado(estado?.id);
 });
 
-// Al empezar a escribir en la caja de abajo, se para la reproducción del estado
-// para que la persona pueda escribir sin prisa.
 const entradaComentarioBarra = document.getElementById("entrada-comentario-estado");
 const botonEnviarBarra = document.getElementById("boton-enviar-comentario-estado");
 entradaComentarioBarra?.addEventListener("input", () => {
-    // Mientras haya texto se para la reproducción; al vaciar la caja (porque
-    // se ha borrado lo escrito) el estado vuelve a reproducirse.
     const vacio = entradaComentarioBarra.value.trim().length === 0;
     if (botonEnviarBarra) botonEnviarBarra.disabled = vacio;
     if (vacio) reanudarReproduccionHistorias();
     else pausarReproduccionHistorias();
 });
 
-// Enviar el comentario desde la barra de abajo del visor de estados.
 document.getElementById("barra-comentario-estado")?.addEventListener("submit", async (evento) => {
     evento.preventDefault();
     const estado = secuenciaHistoriaActual[indiceHistoriaActual];
@@ -10013,11 +9176,8 @@ document.getElementById("barra-comentario-estado")?.addEventListener("submit", a
             body: JSON.stringify({ texto })
         });
         if (entradaComentarioBarra) entradaComentarioBarra.value = "";
-        // Vaciar la caja por código no dispara "input", así que hay que reanudar
-        // la reproducción a mano: el comentario ya se ha enviado.
         if (botonEnviarBarra) botonEnviarBarra.disabled = true;
         reanudarReproduccionHistorias();
-        // Refresca el contador de comentarios del estado que se está viendo.
         estado.comentarios = (estado.comentarios || 0) + 1;
         pintarCantidadComentariosEstado(estado.comentarios);
     } catch (fallo) {
@@ -10027,7 +9187,6 @@ document.getElementById("barra-comentario-estado")?.addEventListener("submit", a
     }
 });
 
-// Se ha pulsado el like del estado.
 document.getElementById("boton-like-estado")?.addEventListener("click", async () => {
     const estado = secuenciaHistoriaActual[indiceHistoriaActual];
     if (!estado?.id) return;
@@ -10043,9 +9202,7 @@ document.getElementById("boton-cerrar-comentarios-estado")?.addEventListener("cl
     document.getElementById("modal-comentarios-estado").hidden = true;
 });
 
-/* =============================
-   DENUNCIA DE ESTADOS
-   ============================= */
+/* DENUNCIA DE ESTADOS */
 
 function abrirDenunciaEstado() {
     const estado = secuenciaHistoriaActual[indiceHistoriaActual];
@@ -10127,9 +9284,7 @@ document.getElementById("formulario-comentario-estado")?.addEventListener("submi
     }
 });
 
-/* ==============================
-   CUENTA: HISTORIAS Y PUBLICACIONES
-   ============================== */
+/* CUENTA: HISTORIAS Y PUBLICACIONES */
 
 async function actualizarBurbujasHistorias() {
     const contenedor = document.getElementById("burbujas-historias");
@@ -10173,7 +9328,6 @@ async function actualizarListaPublicacionesCuenta() {
     if (!lista) return;
     try {
         const datos = await solicitarGrupo("/api/publicaciones?seccion=amigos");
-        // En Cuenta solo interesan las propias: las de los amigos ya salen en
         // el feed de Entrar.
         const mias = (datos.publicaciones || []).filter((publicacion) => publicacion.es_mia);
         lista.innerHTML = mias.map((publicacion) => renderizarPublicacion(publicacion)).join("")
@@ -10206,9 +9360,7 @@ document.getElementById("boton-cuenta-publicaciones")?.addEventListener("click",
 document.getElementById("boton-cerrar-mi-contenido")?.addEventListener("click", () => {
     modalMiContenido.hidden = true;
 });
-/* ==============================
-   HISTORIAS (pantalla)
-   ============================== */
+/* HISTORIAS (pantalla) */
 
 const modalHistoria = document.getElementById("modal-historia");
 let historiaAbierta = null;
@@ -10372,9 +9524,7 @@ function abrirModalHistoria(historia = null, soloLectura = false) {
     modalHistoria.hidden = false;
     pintarItemsHistoria();
 }
-/* ==============================
-   REELS
-   ============================== */
+/* REELS */
 
 const modalCrear = document.getElementById("modal-crear");
 const modalReel = document.getElementById("modal-reel");
@@ -10385,7 +9535,6 @@ const modalMiContenido = document.getElementById("modal-mi-contenido");
 let reelsVisor = [];
 let reelAbierto = null;
 
-// Un producto del menú central abre el modal correspondiente.
 document.getElementById("boton-crear")?.addEventListener("click", () => {
     modalCrear.hidden = false;
 });
@@ -10423,7 +9572,6 @@ modalReel?.addEventListener("click", (evento) => {
     if (evento.target === modalReel) modalReel.hidden = true;
 });
 
-/* ---------- Subir un reel ---------- */
 
 document.getElementById("formulario-reel")?.addEventListener("submit", async (evento) => {
     evento.preventDefault();
@@ -10448,7 +9596,6 @@ document.getElementById("formulario-reel")?.addEventListener("submit", async (ev
     }
 });
 
-/* ---------- Tiras horizontales de reels ---------- */
 
 function pintarPistaReels(contenedor, reels) {
     if (!contenedor) return;
@@ -10467,7 +9614,6 @@ function pintarPistaReels(contenedor, reels) {
             <video src="${escapeHtml(reel.video_url)}" muted playsinline preload="metadata" aria-hidden="true"></video>
             <span class="miniatura-reel-titulo">${escapeHtml(reel.titulo)}</span>
         `;
-        // Se pasa la tira entera: en el visor se desliza de un reel al siguiente.
         boton.addEventListener("click", () => abrirVisorReels(reels, reel.id));
         contenedor.appendChild(boton);
     });
@@ -10478,11 +9624,9 @@ async function cargarPistaReels(seccion, contenedor) {
         const datos = await solicitarGrupo(`/api/reels?seccion=${seccion}`);
         pintarPistaReels(contenedor, datos.reels || []);
     } catch {
-        // Sin reels todavia: se deja el hueco vacio.
     }
 }
 
-/* ---------- Visor a pantalla completa ---------- */
 
 function abrirVisorReels(reels, reelId) {
     reelsVisor = reels;
@@ -10560,8 +9704,6 @@ function abrirVisorReels(reels, reelId) {
     pintarCorazonReels();
     if (destino) {
         destino.scrollIntoView({ block: "start" });
-        // El evento pone el reel en marcha con el sonido que se haya pedido: si
-        // el navegador no deja, se queda en silencio en vez de quedarse parado.
         destino.dispatchEvent(new Event("reel-en-pantalla"));
     }
 }
@@ -10571,11 +9713,6 @@ function cerrarVisorReels() {
     document.querySelectorAll("#pista-reels-visor video").forEach((video) => video.pause());
 }
 
-/* ---------- El sonido de los reels ----------
-   Los navegadores no dejan reproducir con sonido sin que la persona haya
-   pulsado algo, así que los reels arrancan en silencio (como en Instagram) y
-   hay un botón para quitarlo. La decisión se recuerda: si lo quitas una vez,
-   los siguientes reels suenan solos. */
 
 const PREF_SONIDO_REELS = "atuistas_reels_sonido";
 
@@ -10591,13 +9728,10 @@ function guardarPreferenciaSonido(activo) {
     try {
         localStorage.setItem(PREF_SONIDO_REELS, activo ? "1" : "0");
     } catch {
-        // Sin almacenamiento se suena solo en esta visita.
     }
 }
 
-// ---------- Tocar para pausar y barra de avance ----------
 
-// El tiempo se ve corto y claro: 0:07.
 function tiempoReel(segundos) {
     const total = Math.max(0, Math.floor(Number(segundos) || 0));
     const minutos = Math.floor(total / 60);
@@ -10605,8 +9739,6 @@ function tiempoReel(segundos) {
     return `${minutos}:${String(resto).padStart(2, "0")}`;
 }
 
-// Cada pantalla del visor trae su barra y su botón de pausa: se configuran al
-// pintarse, para no tener que buscarlos después.
 function configurarPantallaReel(pantalla) {
     const video = pantalla.querySelector(".video-reel");
     if (!video) return;
@@ -10631,8 +9763,6 @@ function configurarPantallaReel(pantalla) {
         if (aviso) aviso.hidden = !pausado;
     };
 
-    // El icono del botón refleja siempre el estado real del vídeo: con ondas
-    // cuando suena, con la raya cuando está en silencio.
     const pintarSonido = () => {
         if (!botonSonido) return;
         const sonando = !video.muted;
@@ -10645,8 +9775,6 @@ function configurarPantallaReel(pantalla) {
         if (raya) raya.style.display = sonando ? "none" : "";
     };
 
-    // Reproducir con sonido puede estar bloqueado por el navegador (política de
-    // reproducción automática). Si pasa, se queda en silencio antes que quedarse
     // parado sin explicar nada.
     const reproducir = async () => {
         try {
@@ -10666,7 +9794,6 @@ function configurarPantallaReel(pantalla) {
             video.muted = !queriendo;
             guardarPreferenciaSonido(!video.muted);
             pintarSonido();
-            // Es un toque de la persona: aquí el navegador sí deja sonar.
             if (video.paused) {
                 video.play().catch(() => {
                     video.muted = true;
@@ -10681,8 +9808,6 @@ function configurarPantallaReel(pantalla) {
     video.addEventListener("loadedmetadata", pintar);
     video.addEventListener("ended", pintar);
 
-    // Un toque en el vídeo lo pausa o lo reanuda. Los botones y la barra
-    // tienen su propia función y no cuentan como toque en el vídeo.
     pantalla.addEventListener("click", (evento) => {
         if (evento.target.closest(".acciones-reel, .barra-reel, .titulo-reel, .aviso-reproduccion")) {
             return;
@@ -10702,8 +9827,6 @@ function configurarPantallaReel(pantalla) {
         mostrarAviso(false);
     });
 
-    // Al pasar a otro reel no se queda pausado: cada uno arranca en marcha y
-    // con el sonido que se haya pedido.
     pantalla.addEventListener("reel-en-pantalla", () => {
         video.currentTime = 0;
         reproducir();
@@ -10743,7 +9866,6 @@ function configurarPantallaReel(pantalla) {
     pista.addEventListener("pointerup", soltar);
     pista.addEventListener("pointercancel", soltar);
 
-    // Con teclado también se puede mover: flechas de 5 segundos, inicio y fin.
     pista.addEventListener("keydown", (evento) => {
         const saltos = { ArrowRight: 5, ArrowUp: 5, ArrowLeft: -5, ArrowDown: -5 };
         if (evento.key in saltos) {
@@ -10762,7 +9884,6 @@ function configurarPantallaReel(pantalla) {
 
 document.getElementById("boton-cerrar-visor-reels")?.addEventListener("click", cerrarVisorReels);
 
-// Al deslizar se reproduce el reel que queda en pantalla.
 document.getElementById("pista-reels-visor")?.addEventListener("scroll", () => {
     const pista = document.getElementById("pista-reels-visor");
     const pantalla = pista.firstElementChild?.clientHeight || 1;
@@ -10770,7 +9891,6 @@ document.getElementById("pista-reels-visor")?.addEventListener("scroll", () => {
     pista.querySelectorAll(".pantalla-reel").forEach((panel, posicion) => {
         const video = panel.querySelector("video");
         if (posicion === indice) {
-            // El reel nuevo empieza en marcha y desde el principio.
             if (video && video.paused) panel.dispatchEvent(new Event("reel-en-pantalla"));
         } else if (video) {
             video.pause();
@@ -10809,7 +9929,6 @@ document.getElementById("pista-reels-visor")?.addEventListener("click", async (e
     }
 });
 
-// El corazón relleno se pinta desde el atributo, para que sobreviva al scroll.
 function pintarCorazonReels() {
     document.querySelectorAll("#pista-reels-visor .boton-like").forEach((boton) => {
         boton.classList.toggle("activo", boton.dataset.meGusta === "1");
@@ -10834,7 +9953,6 @@ document.getElementById("formulario-publicacion").addEventListener("submit", asy
         } else {
             const inputPublicacion = document.getElementById("archivo-publicacion");
             const files = typeof inputPublicacion.archivosFinales === "function" ? inputPublicacion.archivosFinales() : [...inputPublicacion.files];
-            // Con fotos o vídeo el texto es opcional; el archivo es lo que no
             // puede faltar.
             if (!files.length) {
                 throw new Error("Selecciona al menos un archivo.");
@@ -10889,9 +10007,6 @@ async function cargarComentariosPublicacion(publicacionId, contenedor) {
 
 function conectarFeed(contenedor) {
     contenedor.addEventListener("click", async (evento) => {
-        // El reproductor de audio se maneja por su cuenta (play, pausa y barra
-        // de progreso): un clic suyo no debe abrir el estado ni la publicación
-        // en la que va dentro, aunque comparta la tarjeta con data-ver-historias.
         if (evento.target.closest?.(".reproductor-audio")) return;
         const perfil = evento.target.closest("[data-abrir-perfil]");
         const corazon = evento.target.closest("[data-corazon-publicacion]");
@@ -10907,7 +10022,6 @@ function conectarFeed(contenedor) {
             } else if (perfil) {
                 abrirPerfil(perfil.dataset.abrirPerfil);
             } else if (corazon) {
-                // Se actualiza solo el botón: recargar el feed devolvería el carrusel a la primera foto.
                 const meGusta = !corazon.classList.contains("boton-corazon-publicacion-activo");
                 const contador = corazon.querySelector("[data-contador-corazon]");
                 const corazonesPrevios = Number(contador?.textContent);
@@ -10950,7 +10064,6 @@ function conectarFeed(contenedor) {
         }
     });
 
-    // El punto activo sigue el deslizamiento: "scroll" no burbujea, se escucha en captura.
     contenedor.addEventListener("scroll", (evento) => {
         const carrusel = evento.target.closest?.("[data-carrusel-publicacion]");
         if (carrusel) actualizarPuntosCarruselFoto(carrusel);
@@ -10973,7 +10086,6 @@ function conectarFeed(contenedor) {
         try {
             pista.setPointerCapture(evento.pointerId);
         } catch {
-            // Si el navegador no permite capturar el puntero, el arrastre se completa igualmente.
         }
     });
 
@@ -11031,9 +10143,7 @@ conectarFeed(document.getElementById("lista-estados-publicos"));
 conectarFeed(document.getElementById("contenido-perfil"));
 
 
-// ========================================
 // PERFIL DE USUARIO
-// ========================================
 
 let perfilActual = null;
 
@@ -11094,9 +10204,6 @@ async function abrirPerfil(usuarioId) {
 function renderizarPerfil(datos) {
     const perfil = datos.perfil;
     const conteos = datos.conteos || {};
-    // Con poderes de desarrollador los tres datos del perfil (nombre, etiqueta
-    // y descripción) se pulsan y se editan ahí mismo, sin ventanas de por
-    // medio. Para el resto de cuentas son texto normal.
     const editable = perfil.soy_desarrollador === true;
     const campo = (tipo, clase, contenido, etiqueta) => editable
         ? `<button class="campo-perfil editable ${clase}" type="button" data-editar-campo="${tipo}"
@@ -11105,7 +10212,6 @@ function renderizarPerfil(datos) {
 
     const nombreMarkup = `<strong class="nombre-perfil" style="${estiloNombre(perfil.color_nombre)}">${escapeHtml(perfil.nombre)}</strong>`;
 
-    // La etiqueta va entre el nombre y la descripción, como una pastilla.
     const etiquetaMarkup = `
         ${perfil.etiqueta
             ? `<span class="etiqueta-perfil">${escapeHtml(perfil.etiqueta)}</span>`
@@ -11118,8 +10224,6 @@ function renderizarPerfil(datos) {
         ? `<p class="descripcion-perfil">${escapeHtml(perfil.descripcion)}</p>`
         : '<p class="descripcion-perfil descripcion-perfil-vacia">Sin descripción.</p>';
 
-    // El avatar y el nombre van juntos: centrado en tu propio perfil y a la
-// izquierda en el de otra persona, como en las redes de siempre.
 const clasesCabecera = ["cabecera-perfil", perfil.es_mio ? "propio" : "ajeno"]
     .concat(perfil.fondo_url ? "con-fondo" : "")
     .join(" ");
@@ -11181,8 +10285,6 @@ contenidoPerfil.innerHTML = `
     `;
 }
 
-// Historias y reels de quien se está mirando: las burbujas llevan el nombre
-// de la carpeta debajo y la tira va con los reels más nuevos a la izquierda.
 async function cargarContenidoPerfil(usuarioId) {
     const burbujas = document.getElementById("burbujas-historias-perfil");
     const pista = document.getElementById("pista-reels-perfil");
@@ -11212,15 +10314,12 @@ async function cargarContenidoPerfil(usuarioId) {
 }
 
 document.getElementById("contenido-perfil")?.addEventListener("click", (evento) => {
-    // El apodo se escribe en el perfil de la persona que se está mirando.
     const campoApodo = evento.target.closest("[data-editar-apodo]");
     if (campoApodo) {
         editarApodoDePerfil(campoApodo);
         return;
     }
 
-    // Con poderes de desarrollador, el nombre, la etiqueta y la descripción se
-    // editan ahí mismo, en el sitio.
     const campoEditable = evento.target.closest("[data-editar-campo]");
     if (campoEditable) {
         editarCampoPerfil(campoEditable);
@@ -11233,8 +10332,6 @@ document.getElementById("contenido-perfil")?.addEventListener("click", (evento) 
     abrirModalHistoria({ id: burbuja.dataset.historia, nombre }, true);
 });
 
-// El apodo es el nombre que le pongo yo a esta persona: solo lo veo yo. Se
-// escribe pulsando encima y se guarda al salir del campo o con Enter.
 function campoApodo(perfil) {
     const guardado = apodosPorUsuario.get(perfil.id) || "";
     const etiqueta = guardado
@@ -11252,7 +10349,6 @@ function campoApodo(perfil) {
     `;
 }
 
-// ---------- APODO DE UNA PERSONA ----------
 
 const LIMITE_APODO = 25;
 
@@ -11291,7 +10387,6 @@ async function editarApodoDePerfil(elemento) {
                 `/api/apodos/${encodeURIComponent(personaId)}`,
                 { method: "PUT", body: JSON.stringify({ apodo: valor }) }
             );
-            // Con el apodo vacío el servidor lo quita: se borra de la lista.
             if (respuesta.apodo?.apodo) {
                 apodosPorUsuario.set(personaId, respuesta.apodo.apodo);
             } else {
@@ -11325,7 +10420,6 @@ async function editarApodoDePerfil(elemento) {
     editor.addEventListener("blur", () => terminar(true));
 }
 
-// ---------- TUS APODOS (Cuenta) ----------
 
 const modalApodos = document.getElementById("modal-apodos");
 const listaApodos = document.getElementById("lista-apodos");
@@ -11384,7 +10478,6 @@ modalApodos?.addEventListener("click", (evento) => {
     if (evento.target === modalApodos) modalApodos.hidden = true;
 });
 
-// ---------- FONDO DEL PERFIL (Cuenta) ----------
 
 const fondoPerfil = document.getElementById("fondo-perfil-cuenta");
 
@@ -11430,7 +10523,6 @@ async function quitarFondoPerfil() {
 document.getElementById("entrada-fondo-cuenta")
     ?.addEventListener("change", (evento) => {
         const elegido = evento.target.files?.[0];
-        // Previsualizacion al instante: la imagen se ve mientras se sube.
         if (elegido && fondoPerfil) {
             const lector = new FileReader();
             lector.onload = () => {
@@ -11449,8 +10541,6 @@ document.getElementById("boton-quitar-fondo")
         await quitarFondoPerfil();
     });
 
-// Escribe encima del dato que se ha pulsado y lo guarda al terminar. Se
-// guarda con Enter (o al salir del campo) y se descarta con Escape.
 const LIMITES_CAMPO_PERFIL = { nombre: 25, etiqueta: 24, descripcion: 500 };
 
 function editarCampoPerfil(elemento) {
@@ -11491,7 +10581,6 @@ function editarCampoPerfil(elemento) {
         if (terminado) return;
         terminado = true;
         const valor = editor.value.trim();
-        // Sin cambios (o si se cancela) solo se vuelve a pintar el dato.
         if (!guardar || valor === valorActual) {
             await abrirPerfil(perfil.id);
             return;
@@ -11503,8 +10592,6 @@ function editarCampoPerfil(elemento) {
             );
             await abrirPerfil(perfil.id);
         } catch (error) {
-            // Si el servidor lo rechaza (por ejemplo, nombre repetido) el
-            // campo vuelve a su valor original y se explica el motivo.
             await abrirPerfil(perfil.id);
             mostrarEstado(error.message, true);
         }
@@ -11762,17 +10849,7 @@ document.getElementById("boton-perfil-historia")
     });
 
 
-/* ==============================
-   PODERES DE DESARROLLADOR
-   Solo la cuenta marcada en la base de datos (la que se llama "Iván J.") tiene
-   estas herramientas:
-
-   - Pulsación larga sobre cualquier publicación, reel, estado o historia
-     para borrarla, aunque sea de otra persona.
-   - Editar el nombre, la descripción o la etiqueta de cualquier perfil.
-
-   Si la cuenta no las tiene, no se enseña nada de esto.
-   ============================== */
+/* PODERES DE DESARROLLADOR */
 
 let soyDesarrollador = false;
 
@@ -11789,11 +10866,7 @@ async function comprobarPoderesDesarrollador() {
     }
 }
 
-/* ---------- Borrado con pulsación larga ---------- */
 
-// Se escucha en todo el documento: el contenido se pinta en sitios muy
-// distintos (feed, perfil, tiras de reels, burbujas de historias) y así no hay
-// que engancharlo tarjeta por tarjeta.
 const TIEMPO_PULSACION_LARGA = 550;
 const MARGEN_MOVIMIENTO_PULSACION = 12;
 
@@ -11823,7 +10896,6 @@ function contenidoPulsable(elemento) {
         return { tipo: "estado", id: estado.dataset.eliminarEstado };
     }
 
-    // Dentro del visor de historias el estado actual no lleva atributo: se
     // saca del propio visor.
     if (!document.getElementById("visor-historias-pantalla")?.hidden) {
         const actual = secuenciaHistoriaActual[indiceHistoriaActual];
@@ -11839,11 +10911,9 @@ function terminarPulsacionLarga() {
     pulsacionLarga = null;
 }
 document.addEventListener("pointerdown", (evento) => {
-    // Cada pulsación nueva reinicia el "clic tragado" del anterior.
     pulsacionConsumida = false;
     if (!soyDesarrollador) return;
     if (evento.pointerType === "mouse" && evento.button !== 0) return;
-    // Sobre campos de texto no se hace nada: ahí se está escribiendo.
     if (evento.target.closest("input, textarea, select, [contenteditable]")) return;
 
     const objetivo = contenidoPulsable(evento.target);
@@ -11855,9 +10925,7 @@ document.addEventListener("pointerdown", (evento) => {
             const contenido = pulsacionLarga?.objetivo;
             terminarPulsacionLarga();
             if (!contenido) return;
-            // El clic que viene tras la pulsación no debe abrir nada.
             pulsacionConsumida = true;
-            // Si al final no llega ningún clic, la marca se cae sola para no
             // tragarse el siguiente.
             setTimeout(() => { pulsacionConsumida = false; }, 1200);
             if (navigator.vibrate) navigator.vibrate(20);
@@ -11874,7 +10942,6 @@ document.addEventListener("pointermove", (evento) => {
     if (!pulsacionLarga || evento.pointerId !== pulsacionLarga.idPuntero) return;
     const movidoX = Math.abs(evento.clientX - pulsacionLarga.inicioX);
     const movidoY = Math.abs(evento.clientY - pulsacionLarga.inicioY);
-    // En cuanto se mueve es un deslizar o un scroll, no una pulsación larga.
     if (movidoX > MARGEN_MOVIMIENTO_PULSACION || movidoY > MARGEN_MOVIMIENTO_PULSACION) {
         terminarPulsacionLarga();
     }
@@ -11884,7 +10951,6 @@ for (const eventoFin of ["pointerup", "pointercancel", "pointerleave"]) {
     document.addEventListener(eventoFin, terminarPulsacionLarga, true);
 }
 
-// Deslizar la página o cambiar de ventana cancela la pulsación.
 document.addEventListener("scroll", terminarPulsacionLarga, true);
 window.addEventListener("blur", terminarPulsacionLarga);
 
@@ -11944,7 +11010,6 @@ async function refrescarTrasBorrar(tipo, id) {
         return;
     }
 
-    // Publicaciones y estados se recargan según dónde se estaba mirando.
     const visorHistorias = document.getElementById("visor-historias-pantalla");
     if (tipo === "estado" && visorHistorias && !visorHistorias.hidden) {
         cerrarVisorHistorias();
@@ -11958,23 +11023,15 @@ async function refrescarTrasBorrar(tipo, id) {
 
     await cargarContenidoInicio();
 }
-/* ==============================
-   INICIAR
-   ============================== */
+/* INICIAR */
 
 observarCapas();
 
-// Los botones de emojis viven en cuatro sitios distintos: dos campos fijos y
-// dos formularios que se dibujan al abrir. Se preparan una vez aqui.
 document.addEventListener("click", manejarClicSelector);
-// Al desplazarse solo se cierra si el botón que lo abrió se sale de la
-// pantalla. Antes se cerraba con cualquier scroll y como el evento se escuchaba
-// en fase de captura, deslizar la propia lista de emojis lo cerraba.
 function comprobarSiElSelectorSigueVisible(evento) {
     const panel = document.getElementById("selector-medio");
     if (!panel || panel.hidden) return;
 
-    // Deslizar dentro del panel es justo lo que se quiere hacer con la lista.
     if (evento?.target && panel.contains(evento.target)) return;
 
     const ancla = destinoSelector?.ancla;
@@ -11993,8 +11050,6 @@ asegurarBotonEmoji("entrada-mensaje", "chat");
 asegurarBotonEmoji("entrada-mensaje-servidor", "servidor");
 asegurarBotonEmoji("texto-comentario-reel", "comentario-reel");
 
-// Modal de ubicación: los chips fijan la duración y el deslizador la ajusta
-// fina entre 15 minutos y 8 horas.
 const deslizadorUbicacion = document.getElementById("deslizador-ubicacion");
 const textoDuracion = document.getElementById("texto-duracion");
 

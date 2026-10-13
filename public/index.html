@@ -14,7 +14,7 @@
 
     <link
         rel="stylesheet"
-        href="/style.css?v=47"
+        href="/style.css?v=48"
     >
 
     <link rel="icon" href="/icon.svg" type="image/svg+xml">
@@ -22,7 +22,6 @@
     <link rel="manifest" href="/app.webmanifest">
     <meta name="theme-color" content="#111111">
 
-    <!-- Instalar la app como PWA: hace falta en iOS y mejora el aviso en Android. -->
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -33,11 +32,7 @@
 
 <body>
 
-    <!-- ========================================
-         AVISOS DE LA APLICACION INSTALADA
-         El aviso de actualizacion solo aparece cuando hay version nueva
-         descargada y lista para aplicarse.
-         ======================================== -->
+    <!-- AVISOS DE LA APLICACION INSTALADA -->
     <div id="aviso-actualizacion" class="aviso-actualizacion" hidden role="status">
         <span>Hay una version nueva disponible.</span>
         <button id="boton-actualizar-app" type="button">ACTUALIZAR</button>
@@ -45,9 +40,7 @@
 
     <main id="app">
 
-        <!-- ==============================
-             PANTALLA DE ACCESO
-             ============================== -->
+        <!-- PANTALLA DE ACCESO -->
 
         <section id="pantalla-acceso">
 
@@ -65,10 +58,6 @@
                     CREAR CUENTA
                 </button>
 
-                <!-- Instalar la app. Si el navegador avisa de que se puede
-                     instalar, el boton instala de una vez; en Androides
-                     viejos, que nunca avisan, se muestra igual a los pocos
-                     segundos y explica como instalar desde el menu. -->
                 <button id="boton-instalar-app" class="boton-instalar-app" type="button" hidden>
                     <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
                         <path d="M12 3v11m0 0 4-4m-4 4-4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -189,25 +178,17 @@
         </section>
 
 
-        <!-- ==============================
-             APLICACIÓN
-             ============================== -->
+        <!-- APLICACIÓN -->
 
         <section id="pantalla-app" hidden>
 
-            <!-- ==============================
-                 CABECERA
-                 ============================== -->
+            <!-- CABECERA -->
 
             <header class="barra-superior">
 
                 <h1>Atuistas</h1>
 
-                <!-- ==============================
-                     CAMPANITA DE AVISOS
-                     Va en la cabecera para no tener que entrar en Cuenta
-                     a verlos. Al abrir el panel se marcan leídos solos.
-                     ============================== -->
+                <!-- CAMPANITA DE AVISOS -->
 
                 <button
                     id="boton-campana-notificaciones"
@@ -228,11 +209,7 @@
                     ></span>
                 </button>
 
-                <!-- ==============================
-                     BOTÓN DEL CÓDIGO QR (solo móvil y solo en Cuenta)
-                     En el teclado no hace falta: el atajo es Q y R a la vez
-                     durante cinco segundos.
-                     ============================== -->
+                <!-- BOTÓN DEL CÓDIGO QR (solo móvil y solo en Cuenta) -->
 
                 <button
                     id="boton-qr-cuenta"
@@ -251,9 +228,7 @@
             </header>
 
 
-            <!-- ==============================
-                 CONTENIDO PRINCIPAL
-                 ============================== -->
+            <!-- CONTENIDO PRINCIPAL -->
 
             <main id="contenido-principal">
 
@@ -264,18 +239,14 @@
                         <button id="boton-feed-publico" class="pestana-amigos" type="button" role="tab" aria-selected="false">PÚBLICO</button>
                     </div>
 
-                <!-- ==============================
-                     CONTENEDOR HORIZONTAL
-                     ============================== -->
+                <!-- CONTENEDOR HORIZONTAL -->
 
                 <div
                     id="contenedor-horizontal-entrar"
                     class="contenedor-horizontal-entrar"
                 >
 
-                    <!-- ==============================
-                         PÁGINA — MIS AMIGOS
-                         ============================== -->
+                    <!-- PÁGINA — MIS AMIGOS -->
 
                     <section
                         id="contenido-entrar"
@@ -283,9 +254,7 @@
                     >
 
 
-                        <!-- ==============================
-                             MIS AMIGOS — ESTADOS
-                             ============================== -->
+                        <!-- MIS AMIGOS — ESTADOS -->
 
                         <section class="seccion-estados">
 
@@ -306,11 +275,7 @@
                         </section>
 
 
-                        <!-- ==============================
-                             REELS
-                             Tira horizontal: los ultimos, y al
-                             deslizar se ven los anteriores.
-                             ============================== -->
+                        <!-- REELS -->
 
                         <section class="seccion-reels">
 
@@ -321,19 +286,13 @@
                                 class="pista-reels"
                             >
 
-                                <!--
-                                    Los reels reales se generan
-                                    desde app.js.
-                                -->
 
                             </div>
 
                         </section>
 
 
-                        <!-- ==============================
-                             PUBLICACIONES DE AMIGOS
-                             ============================== -->
+                        <!-- PUBLICACIONES DE AMIGOS -->
 
                         <section class="seccion-publicaciones">
 
@@ -348,10 +307,6 @@
                                 class="lista-publicaciones"
                             >
 
-                                <!--
-                                    Las publicaciones reales se
-                                    generarán desde app.js.
-                                -->
 
                             </div>
 
@@ -361,9 +316,7 @@
 
 
 
-                    <!-- ==============================
-                         PÁGINA — PÚBLICO
-                         ============================== -->
+                    <!-- PÁGINA — PÚBLICO -->
 
                     <section
                         id="contenido-publico"
@@ -371,9 +324,7 @@
                     >
 
 
-                        <!-- ==============================
-                             REELS PÚBLICOS
-                             ============================== -->
+                        <!-- REELS PÚBLICOS -->
 
                         <section class="seccion-reels">
 
@@ -384,19 +335,13 @@
                                 class="pista-reels"
                             >
 
-                                <!--
-                                    Los reels publicos reales se
-                                    generan desde app.js.
-                                -->
 
                             </div>
 
                         </section>
 
 
-                        <!-- ==============================
-                             ESTADOS PÚBLICOS
-                             ============================== -->
+                        <!-- ESTADOS PÚBLICOS -->
 
                         <section class="seccion-estados-publicos">
 
@@ -410,19 +355,13 @@
                                 class="lista-estados"
                             >
 
-                                <!--
-                                    Los estados públicos reales se
-                                    generarán desde app.js.
-                                -->
 
                             </div>
 
                         </section>
 
 
-                        <!-- ==============================
-                             PUBLICACIONES PÚBLICAS
-                             ============================== -->
+                        <!-- PUBLICACIONES PÚBLICAS -->
 
                         <section class="seccion-publicaciones">
 
@@ -436,10 +375,6 @@
                                 class="lista-publicaciones"
                             >
 
-                                <!--
-                                    Las publicaciones públicas reales
-                                    se generarán desde app.js.
-                                -->
 
                             </div>
 
@@ -452,9 +387,7 @@
                 </div>
 
 
-                <!-- ==============================
-                     CUENTA
-                     ============================== -->
+                <!-- CUENTA -->
 
                     <div id="panel-chat" class="panel-chat" hidden>
 
@@ -506,8 +439,6 @@
                                 CANCELAR
                             </button>
 
-                            <!-- Reenviar la selección a otro chat: la flecha
-                                 derecha es el icono de reenvío. -->
                             <button
                                 id="boton-reenviar-seleccion-chat"
                                 class="boton-icono-seleccion"
@@ -670,8 +601,6 @@
                             Mi cuenta
                         </h2>
 
-                        <!-- Versión de la app en uso: siempre visible en la
-                             cabecera de Cuenta para poder comprobarla. -->
                         <span id="version-app-cuenta" class="version-app-cuenta" aria-label="Versión de la app"></span>
 
                     </div>
@@ -705,9 +634,6 @@
                             Color de tu nombre
                         </label>
 
-                        <!-- El propio cuadro de color hace de botón, y al lado
-                             se ve tu nombre con ese color puesto, para que se
-                             vea cómo queda sin salir de aquí. -->
                         <div class="color-nombre-cuenta">
 
                             <input
@@ -723,8 +649,6 @@
 
                         </div>
 
-                        <!-- Ya no hay botón de guardar: se guarda solo al salir
-                             del campo o al cerrar la pestaña de Cuenta. -->
                         <p
                             id="guardado-cuenta"
                             class="guardado-cuenta"
@@ -737,12 +661,7 @@
                     </div>
 
 
-                    <!-- ==============================
-                         HORA EN LOS MENSAJES
-                         Interruptor de vista personal: la hora bajo cada
-                         mensaje y el separador con el día cuando cambia la
-                         fecha. Está activado por defecto.
-                         ============================== -->
+                    <!-- HORA EN LOS MENSAJES -->
 
                     <div class="fila-switch-cuenta">
 
@@ -764,11 +683,7 @@
                     </div>
 
 
-                    <!-- ==============================
-                         FONDO DEL PERFIL
-                         Vista previa de la portada que se vera al abrir el
-                         perfil. Se cambia desde el boton de la foto.
-                         ============================== -->
+                    <!-- FONDO DEL PERFIL -->
 
                     <div class="fondo-cuenta">
                         <img
@@ -783,37 +698,23 @@
                     </div>
 
 
-                    <!-- ==============================
-                         TUS APODOS
-                         El nombre que le has puesto a cada persona. Solo lo
-                         ves tu: la otra persona sigue viendo su nombre real.
-                         ============================== -->
+                    <!-- TUS APODOS -->
 
                     <button id="boton-apodos-cuenta" type="button">
                         TUS APODOS
                     </button>
 
 
-                    <!-- ==============================
-                         HISTORIAS Y PUBLICACIONES
-                         Los dos botones van en la misma fila,
-                         entre el color del nombre y Notificaciones.
-                         ============================== -->
+                    <!-- HISTORIAS Y PUBLICACIONES -->
 
                     <div class="fila-botones-cuenta">
                         <button id="boton-cuenta-historias" type="button">HISTORIAS</button>
                         <button id="boton-cuenta-publicaciones" type="button">PUBLICACIONES</button>
                     </div>
 
-                    <!-- ==============================
-                         NOTIFICACIONES (ventanita)
-                         Ya no hay botón aquí: los avisos se abren con la
-                         campanita de la cabecera, arriba a la derecha.
-                         ============================== -->
+                    <!-- NOTIFICACIONES (ventanita) -->
 
-                    <!-- ==============================
-                         CÓDIGO DE VINCULACIÓN
-                         ============================== -->
+                    <!-- CÓDIGO DE VINCULACIÓN -->
 
                     <div class="codigo-cuenta">
 
@@ -846,9 +747,7 @@
 
                     </div>
 
-                    <!-- ==============================
-                         CERRAR SESIÓN
-                         ============================== -->
+                    <!-- CERRAR SESIÓN -->
 
                     <button
                         id="boton-cerrar-sesion"
@@ -860,9 +759,7 @@
                 </div>
 
 
-                <!-- ==============================
-                     AGREGAR AMIGOS
-                     ============================== -->
+                <!-- AGREGAR AMIGOS -->
 
                 <div
                     id="contenido-amigos"
@@ -878,9 +775,7 @@
                     </div>
 
 
-                    <!-- ==============================
-                         PESTAÑAS
-                         ============================== -->
+                    <!-- PESTAÑAS -->
 
                     <div
                         class="pestanas-amigos"
@@ -911,9 +806,7 @@
                     </div>
 
 
-                    <!-- ==============================
-                         ENCONTRAR PERSONAS
-                         ============================== -->
+                    <!-- ENCONTRAR PERSONAS -->
 
                     <section
                         id="seccion-encontrar-personas"
@@ -953,19 +846,13 @@
                             class="lista-personas"
                         >
 
-                            <!--
-                                Los resultados reales se generarán
-                                desde app.js.
-                            -->
 
                         </div>
 
                     </section>
 
 
-                    <!-- ==============================
-                         SOLICITUDES RECIBIDAS
-                         ============================== -->
+                    <!-- SOLICITUDES RECIBIDAS -->
 
                     <section
                         id="seccion-solicitudes"
@@ -978,10 +865,6 @@
                             class="lista-solicitudes"
                         >
 
-                            <!--
-                                Las solicitudes reales se generarán
-                                desde app.js.
-                            -->
 
                         </div>
 
@@ -998,17 +881,13 @@
                 </div>
 
 
-                <!-- ==============================
-                     SERVIDORES
-                     ============================== -->
+                <!-- SERVIDORES -->
 
                 <div
                     id="contenido-servidores"
                     hidden
                 >
 
-                    <!-- Barra de contexto: la flecha vuelve hacia atrás y el título
-                     indica en qué pantalla estás (servidor o canal). -->
                     <header id="barra-contexto-servidor" class="barra-contexto-servidor">
                         <button id="boton-volver-servidor" class="boton-flecha-contexto" type="button" aria-label="Volver" hidden>
                             <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
@@ -1036,8 +915,6 @@
                                 </span>
                             </button>
                         </div>
-                        <!-- Las acciones del servidor salen en su propia pantalla,
-                             al pulsar el nombre del grupo. -->
                         <div class="barra-contexto-acciones" id="acciones-contexto-servidor" hidden>
                             <button id="boton-miembros-servidor" type="button">MIEMBROS</button>
                             <button id="boton-ajustes-servidor" type="button" hidden>AJUSTES</button>
@@ -1054,9 +931,7 @@
 
                     <p id="estado-servidores" class="estado-amigos" aria-live="polite"></p>
 
-                    <!-- ==============================
-                         CHATS (pestana por defecto)
-                         ============================== -->
+                    <!-- CHATS (pestana por defecto) -->
 
                     <section id="seccion-chats" class="seccion-amigos">
 
@@ -1070,10 +945,6 @@
                                 class="lista-chats"
                             >
 
-                                <!--
-                                    Los chats reales se generan
-                                    desde app.js.
-                                -->
 
                             </div>
 
@@ -1086,7 +957,6 @@
                         <div id="lista-servidores" class="lista-servidores"></div>
                     </section>
 
-                    <!-- Crear servidor se abre desde el botón flotante, no desde una pestaña. -->
                     <button id="boton-crear-servidor" class="boton-flotante-crear" type="button" aria-label="Crear servidor" title="Crear servidor">
                         <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true" focusable="false">
                             <path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
@@ -1109,12 +979,7 @@
                         </div>
                     </section>
 
-                    <!-- ==================================
-                         PANEL DE SERVIDOR
-                         Escritorio: columna de canales a la
-                         izquierda y chat al centro.
-                         Móvil: una cosa a la vez.
-                         ================================== -->
+                    <!-- PANEL DE SERVIDOR -->
 
                     <section id="panel-servidor" class="panel-servidor" hidden>
 
@@ -1206,10 +1071,7 @@
 
             </main>
 
-            <!-- ==============================
-                 MODAL CREAR SERVIDOR
-                 Se abre desde el botón flotante "+"
-                 ============================== -->
+            <!-- MODAL CREAR SERVIDOR -->
 
             <div id="modal-crear-servidor" class="modal modal-contenido-social" hidden>
                 <section class="dialogo-social" role="dialog" aria-modal="true" aria-labelledby="titulo-crear-servidor">
@@ -1241,10 +1103,7 @@
                 </section>
             </div>
 
-            <!-- ==============================
-                 GESTIÓN DE CANALES
-                 Pantalla propia para creadores y moderadores
-                 ============================== -->
+            <!-- GESTIÓN DE CANALES -->
 
             <div id="modal-gestion-canales" class="modal modal-contenido-social" hidden>
                 <section class="dialogo-social" role="dialog" aria-modal="true" aria-labelledby="titulo-gestion-canales">
@@ -1269,9 +1128,7 @@
                 </section>
             </div>
 
-            <!-- ==============================
-                 MODAL MIEMBROS DEL SERVIDOR
-                 ============================== -->
+            <!-- MODAL MIEMBROS DEL SERVIDOR -->
 
             <div id="modal-miembros-servidor" class="modal modal-contenido-social" hidden>
                 <section class="dialogo-social" role="dialog" aria-modal="true" aria-labelledby="titulo-miembros-servidor">
@@ -1284,10 +1141,7 @@
                 </section>
             </div>
 
-            <!-- ==============================
-                 MODAL ACCIONES DEL SERVIDOR
-                 Se abre al pulsar el nombre del grupo
-                 ============================== -->
+            <!-- MODAL ACCIONES DEL SERVIDOR -->
 
             <div id="modal-acciones-servidor" class="modal modal-contenido-social" hidden>
                 <section class="dialogo-social" role="dialog" aria-modal="true" aria-labelledby="titulo-acciones-servidor">
@@ -1302,9 +1156,6 @@
                             <strong id="resumen-nombre-servidor"></strong>
                             <span id="resumen-miembros-servidor" class="estado-amigos"></span>
 
-                            <!-- La descripción se escribe aquí. En los servidores
-                                 con canales no se muestra: la de cada canal va en
-                                 su propia ficha. -->
                             <div id="bloque-descripcion-servidor" class="bloque-ajuste">
                                 <label for="editar-descripcion-servidor">Descripción</label>
                                 <textarea id="editar-descripcion-servidor" rows="3" maxlength="500" placeholder="Cuenta de qué va este servidor..."></textarea>
@@ -1326,9 +1177,7 @@
                 </section>
             </div>
 
-            <!-- ==============================
-                 MODAL AJUSTES DEL SERVIDOR
-                 ============================== -->
+            <!-- MODAL AJUSTES DEL SERVIDOR -->
 
             <div id="modal-ajustes-servidor" class="modal modal-contenido-social" hidden>
                 <section class="dialogo-social dialogo-ajustes-servidor" role="dialog" aria-modal="true" aria-labelledby="titulo-ajustes-servidor">
@@ -1337,8 +1186,6 @@
                         <button id="boton-cerrar-ajustes-servidor" class="boton-cerrar-modal" type="button" aria-label="Cerrar">×</button>
                     </header>
 
-                    <!-- La foto del servidor vale igual para los que tienen
-                         canales y para los de chat único. -->
                     <div class="bloque-ajuste">
                         <h3>Foto del servidor</h3>
                         <div class="fila-imagen-servidor">
@@ -1361,8 +1208,6 @@
                         </div>
                     </div>
 
-                    <!-- La gestión de canales vive ahora en su propia pantalla,
-                         accesible desde el botón GESTIONAR CANALES. -->
                     <div class="bloque-ajuste">
                         <h3>Canales</h3>
                         <button id="boton-gestion-canales" type="button">GESTIONAR CANALES</button>
@@ -1395,9 +1240,7 @@
                 </section>
             </div>
 
-            <!-- ==============================
-                 MODAL EDITAR CANAL
-                 ============================== -->
+            <!-- MODAL EDITAR CANAL -->
 
             <div id="modal-canal-servidor" class="modal modal-contenido-social" hidden>
                 <section class="dialogo-social" role="dialog" aria-modal="true" aria-labelledby="titulo-canal-servidor">
@@ -1424,9 +1267,7 @@
             </div>
 
 
-            <!-- ==============================
-                 MODAL OPCIONES FOTO DE PERFIL
-                 ============================== -->
+            <!-- MODAL OPCIONES FOTO DE PERFIL -->
 
             <div
                 id="modal-opciones-foto"
@@ -1468,8 +1309,6 @@
                         CAMBIAR FOTO
                     </button>
 
-                    <!-- El fondo del perfil se cambia con el mismo botón que la
-                         foto, y se puede quitar cuando ya no se quiera. -->
                     <label
                         id="boton-cambiar-fondo"
                         class="boton-cambiar-fondo"
@@ -1566,9 +1405,6 @@
                 <div id="contenido-historia-pantalla" class="contenido-historia-pantalla"></div>
                 <button id="historia-siguiente" class="zona-historia zona-historia-siguiente" type="button" aria-label="Siguiente estado"></button>
 
-                <!-- Barra fija del visor: corazón y comentario directos, sin
-                     abrir nada. Deslizando hacia arriba se ven todos los
-                     comentarios (igual que la 💬 de la cabecera). -->
                 <form id="barra-comentario-estado" class="barra-comentario-estado" autocomplete="off">
                     <button id="boton-like-estado" class="boton-like-estado" type="button" aria-label="Me gusta" aria-pressed="false">
                         <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
@@ -1626,11 +1462,7 @@
                 </section>
             </div>
 
-            <!-- ==============================
-     MODAL UBICACIÓN
-     Cuánto tiempo se comparte y qué hacer con lo ya compartido. La
-     tarjeta que sale en el chat es la misma para chats y servidores.
-     ============================== -->
+            <!-- MODAL UBICACIÓN -->
 
     <div id="modal-ubicacion" class="modal modal-contenido-social" hidden>
         <section class="dialogo-social dialogo-ubicacion" role="dialog" aria-modal="true" aria-labelledby="titulo-modal-ubicacion">
@@ -1673,11 +1505,7 @@
         </section>
     </div>
 
-    <!-- ==============================
-         MODAL NOTIFICACIONES
-         Ventanita desde Cuenta: avisos recientes, activación del
-         dispositivo y casillas de preferencias (auto-guardado).
-         ============================== -->
+    <!-- MODAL NOTIFICACIONES -->
 
             <div
                 id="modal-notificaciones"
@@ -1739,8 +1567,6 @@
                         <label><input type="checkbox" data-preferencia="corazones"> Corazones</label>
                         <label><input type="checkbox" data-preferencia="comentarios"> Comentarios</label>
 
-                        <!-- Sin botón de guardar: las casillas se guardan solas
-                             al cerrar la ventanita. -->
                         <p id="estado-notificaciones" aria-live="polite"></p>
 
                     </section>
@@ -1749,11 +1575,7 @@
 
             </div>
 
-            <!-- ==============================
-                 TUS APODOS
-                 Ventanita de Cuenta: el apodo que le has puesto a cada
-                 persona y el botón para quitarlo.
-                 ============================== -->
+            <!-- TUS APODOS -->
 
             <div id="modal-apodos" class="modal modal-contenido-social" hidden>
 
@@ -1780,12 +1602,7 @@
 
             </div>
 
-            <!-- ==============================
-                 CONFIRMAR DESACTIVAR HORA
-                 Aviso antes de apagar la hora de los mensajes: es un ajuste
-                 solo para esta persona y, si se reactiva, las horas antiguas
-                 no vuelven.
-                 ============================== -->
+            <!-- CONFIRMAR DESACTIVAR HORA -->
 
             <div id="modal-confirmar-hora" class="modal modal-contenido-social" hidden>
 
@@ -1830,11 +1647,7 @@
             </div>
 
 
-            <!-- ==============================
-                 MENÚ CREAR (botón central)
-                 Tres tipos: reels, historias y
-                 publicaciones.
-                 ============================== -->
+            <!-- MENÚ CREAR (botón central) -->
 
 
             <div id="modal-crear" class="modal modal-contenido-social" hidden>
@@ -1896,10 +1709,7 @@
 
             </div>
 
-            <!-- ==============================
-                 MODAL REEL
-                 Título obligatorio y un vídeo de 90 s.
-                 ============================== -->
+            <!-- MODAL REEL -->
 
             <div id="modal-reel" class="modal modal-contenido-social" hidden>
 
@@ -1963,11 +1773,7 @@
                 </section>
 
             </div>
-            <!-- ==============================
-                 MODAL HISTORIA
-                 Carpeta permanente: nombre y elementos
-                 (texto, fotos, vídeo o audio) editables.
-                 ============================== -->
+            <!-- MODAL HISTORIA -->
 
             <div id="modal-historia" class="modal modal-contenido-social" hidden>
 
@@ -2043,10 +1849,7 @@
 
             </div>
 
-            <!-- ==============================
-                 COMENTARIOS DEL REEL
-                 Ventana centrada sobre el visor.
-                 ============================== -->
+            <!-- COMENTARIOS DEL REEL -->
 
             <div id="modal-comentarios-reel" class="modal modal-contenido-social" hidden>
 
@@ -2090,11 +1893,7 @@
 
             </div>
 
-            <!-- ==============================
-                 COMENTARIOS DEL ESTADO
-                 Mismo aspecto que los del reel;
-                 se borran junto con el estado.
-                 ============================== -->
+            <!-- COMENTARIOS DEL ESTADO -->
 
             <div id="modal-comentarios-estado" class="modal modal-contenido-social" hidden>
 
@@ -2138,12 +1937,7 @@
 
             </div>
 
-            <!-- ==============================
-                 CUENTA: HISTORIAS Y PUBLICACIONES
-                 Historias en burbujas con su nombre;
-                 publicaciones con la tira de reels
-                 arriba y la lista debajo.
-                 ============================== -->
+            <!-- CUENTA: HISTORIAS Y PUBLICACIONES -->
 
             <div id="modal-mi-contenido" class="modal modal-contenido-social" hidden>
 
@@ -2184,10 +1978,7 @@
                 </section>
 
             </div>
-            <!-- ==============================
-                 MODAL EDITOR DE FOTO
-                 Recortar, pintar y poner texto antes de publicar.
-                 ============================== -->
+            <!-- MODAL EDITOR DE FOTO -->
 
             <div
                 id="modal-editor-foto"
@@ -2243,9 +2034,7 @@
 
             </div>
 
-            <!-- ==============================
-                 MODAL FOTO GRANDE
-                 ============================== -->
+            <!-- MODAL FOTO GRANDE -->
 
             <div
                 id="modal-foto-grande"
@@ -2280,11 +2069,7 @@
             </div>
 
 
-            <!-- ==============================
-                 REENVIAR MENSAJES SELECCIONADOS
-                 Se elige a qué chat privado (amigo) se mandan
-                 los mensajes marcados con pulsación larga.
-                 ============================== -->
+            <!-- REENVIAR MENSAJES SELECCIONADOS -->
 
             <div
                 id="modal-reenviar-mensaje"
@@ -2310,18 +2095,12 @@
                     <p id="estado-reenviar-mensaje" class="estado-amigos" aria-live="polite"></p>
 
                     <div id="lista-reenviar-mensaje" class="lista-personas">
-                        <!-- Las personas se generan desde app.js. -->
                     </div>
                 </section>
             </div>
 
 
-            <!-- ==============================
-                 VISOR DE FOTOS DEL CHAT
-                 La foto de un mensaje se abre en
-                 grande, se puede ampliar y se
-                 cambia de foto deslizando.
-                 ============================== -->
+            <!-- VISOR DE FOTOS DEL CHAT -->
 
             <div
                 id="modal-fotos-chat"
@@ -2378,9 +2157,7 @@
             </div>
 
 
-            <!-- ==============================
-                 MODAL PERFIL
-                 ============================== -->
+            <!-- MODAL PERFIL -->
 
             <div
                 id="modal-perfil"
@@ -2428,9 +2205,7 @@
             </div>
 
 
-            <!-- ==============================
-                 MODAL OPCIONES DEL PERFIL
-                 ============================== -->
+            <!-- MODAL OPCIONES DEL PERFIL -->
 
             <div
                 id="modal-acciones-perfil"
@@ -2477,9 +2252,7 @@
             </div>
 
 
-            <!-- ==============================
-                 MODAL AMISTADES DEL PERFIL
-                 ============================== -->
+            <!-- MODAL AMISTADES DEL PERFIL -->
 
             <div
                 id="modal-amigos-perfil"
@@ -2527,9 +2300,7 @@
             </div>
 
 
-            <!-- ==============================
-                 INPUT OCULTO PARA CAMBIAR FOTO
-                 ============================== -->
+            <!-- INPUT OCULTO PARA CAMBIAR FOTO -->
 
             <input
                 type="file"
@@ -2539,15 +2310,10 @@
             >
 
 
-            <!-- ==============================
-                 NAVEGACIÓN
-                 ============================== -->
+            <!-- NAVEGACIÓN -->
 
             <nav class="barra-navegacion" aria-label="Secciones de la aplicación">
 
-                <!-- Los botones son iconos: el texto pasa a aria-label para que
-                     se siga leyendo con lector de pantalla y salga en el
-                     tooltip al pasar el ratón. -->
 
                 <button
                     id="boton-entrar-app"
@@ -2619,11 +2385,7 @@
     </main>
 
 
-            <!-- ==============================
-                 VISOR DE REELS
-                 Pantalla completa: se desliza hacia
-                 abajo para pasar de uno a otro.
-                 ============================== -->
+            <!-- VISOR DE REELS -->
 
             <div id="visor-reels" class="visor-reels" hidden>
 
@@ -2640,7 +2402,6 @@
 
             </div>
 
-            <!-- MODAL CUENTA: mantener pulsado en chats/Buscar Amigos -->
 
             <div
                 id="modal-acciones-cuenta"
@@ -2717,7 +2478,6 @@
 
             </div>
 
-            <!-- MODAL DENUNCIAR: motivo obligatorio 3-500 -->
 
             <div
                 id="modal-denunciar-cuenta"
@@ -2778,7 +2538,6 @@
 
             </div>
 
-            <!-- MODAL DENUNCIAR ESTADO: motivo obligatorio 3-500 -->
 
             <div
                 id="modal-denunciar-estado"
@@ -2839,7 +2598,6 @@
 
             </div>
 
-            <!-- MODAL BLOQUEAR: pregunta si está seguro -->
 
             <div
                 id="modal-bloquear-cuenta"
@@ -2885,7 +2643,6 @@
 
             </div>
 
-            <!-- MODAL ELIMINAR: solo Creador/Admin, pide ELIMINAR -->
 
             <div
                 id="modal-eliminar-cuenta"
@@ -2944,7 +2701,6 @@
 
             </div>
 
-            <!-- AVISO CUENTA ELIMINADA: quién y con qué rol -->
 
             <div
                 id="modal-cuenta-eliminada"
@@ -2981,10 +2737,7 @@
             </div>
 
     <script src="/data/emojis.js"></script>
-    <!-- ?v tiene que subir junto con VERSION en sw.js cada vez que cambie
-         app.js: sin esa firma, la caché del navegador y la del service worker
-         sirven el fichero viejo para siempre y los arreglos no llegan nunca. -->
-    <script src="/app.js?v=47"></script>
+    <script src="/app.js?v=48"></script>
 
 </body>
 
