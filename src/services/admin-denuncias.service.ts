@@ -194,6 +194,13 @@ export async function listarDenuncias(usuarioId: string, tipo: TipoDenuncia) {
             const pub = await db.query(
                 `SELECT p.id, p.texto, p.visibilidad, p.creada_en, p.autor_id,
                         u.nombre AS autor_nombre,
+                        u.color_nombre,
+                        CASE WHEN ar.ruta IS NULL THEN NULL
+                             ELSE REPLACE(ar.ruta, '\\', '/') END AS avatar_url,
+                        (SELECT COUNT(*)::int FROM corazones_publicacion cp
+                          WHERE cp.publicacion_id = p.id) AS corazones,
+                        (SELECT COUNT(*)::int FROM comentarios cm
+                          WHERE cm.publicacion_id = p.id) AS comentarios,
                         COALESCE((
                             SELECT json_agg(json_build_object(
                                 'tipo', mp.tipo,
@@ -204,7 +211,9 @@ export async function listarDenuncias(usuarioId: string, tipo: TipoDenuncia) {
                             WHERE mp.publicacion_id = p.id
                         ), '[]'::json) AS multimedia
                    FROM publicaciones p
-                   INNER JOIN usuarios u ON u.id = p.autor_id WHERE p.id = $1`,
+                   INNER JOIN usuarios u ON u.id = p.autor_id
+                   LEFT JOIN archivos ar ON ar.id = u.avatar_archivo_id
+                  WHERE p.id = $1`,
                 [fila.id]
             );
             if (pub.rowCount !== 1) continue;
@@ -227,10 +236,15 @@ export async function listarDenuncias(usuarioId: string, tipo: TipoDenuncia) {
             const reel = await db.query(
                 `SELECT r.id, r.titulo, r.visibilidad, r.creado_en, r.autor_id,
                         u.nombre AS autor_nombre,
+                        u.color_nombre,
+                        CASE WHEN ar.ruta IS NULL THEN NULL
+                             ELSE REPLACE(ar.ruta, '\\', '/') END AS avatar_url,
                         REPLACE(a.ruta, '\\', '/') AS video_url
                    FROM reels r
                    INNER JOIN usuarios u ON u.id = r.autor_id
-                   INNER JOIN archivos a ON a.id = r.archivo_id WHERE r.id = $1`,
+                   INNER JOIN archivos a ON a.id = r.archivo_id
+                   LEFT JOIN archivos ar ON ar.id = u.avatar_archivo_id
+                  WHERE r.id = $1`,
                 [fila.id]
             );
             if (reel.rowCount !== 1) continue;
@@ -252,6 +266,9 @@ export async function listarDenuncias(usuarioId: string, tipo: TipoDenuncia) {
         const est = await db.query(
             `SELECT s.id, s.texto, s.visibilidad, s.creado_en, s.autor_id,
                     u.nombre AS autor_nombre,
+                    u.color_nombre,
+                    CASE WHEN ar.ruta IS NULL THEN NULL
+                         ELSE REPLACE(ar.ruta, '\\', '/') END AS avatar_url,
                     COALESCE((
                         SELECT json_agg(json_build_object(
                             'tipo', me.tipo,
@@ -262,7 +279,9 @@ export async function listarDenuncias(usuarioId: string, tipo: TipoDenuncia) {
                         WHERE me.estado_id = s.id
                     ), '[]'::json) AS multimedia
                FROM estados s
-               INNER JOIN usuarios u ON u.id = s.autor_id WHERE s.id = $1`,
+               INNER JOIN usuarios u ON u.id = s.autor_id
+               LEFT JOIN archivos ar ON ar.id = u.avatar_archivo_id
+              WHERE s.id = $1`,
             [fila.id]
         );
         if (est.rowCount !== 1) continue;

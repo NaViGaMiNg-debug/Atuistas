@@ -116,7 +116,7 @@ const ICONO_COMPOSER_MICROFONO = `
     </svg>
 `;
 
-const VERSION_APP = "v49";
+const VERSION_APP = "v52";
 
 document.getElementById("version-app-cuenta")?.replaceChildren(VERSION_APP);
 
@@ -11159,18 +11159,35 @@ function enlacePerfilDenuncia(id, nombre, estilo) {
     return `<button type="button" class="enlace-denuncia" data-abrir-perfil="${escapeHtml(id)}"${estilo ? ` style="${estilo}"` : ""}>${texto}</button>`;
 }
 
+function avatarDenunciaHTML(item) {
+    if (!item?.avatar_url) return "";
+    const ruta = "/" + String(item.avatar_url).replace(/\\/g, "/");
+    return `<img class="avatar-denuncia" style="width:34px;height:34px" src="${escapeHtml(ruta)}" alt="">`;
+}
+
 function previsualizacionMultimedia(items) {
     const lista = Array.isArray(items) ? items : [];
     return lista.map((m) => {
         const url = "/" + String(m.url ?? "").replace(/\\/g, "/");
+        // El limite va en linea: aunque el navegador tenga CSS viejo,
+        // la foto no puede salir a tamaño real.
         if (m.tipo === "video") {
-            return `<video class="previa-denuncia" src="${escapeHtml(url)}" controls preload="metadata" playsinline></video>`;
+            return `<video class="previa-denuncia" style="max-width:100%;max-height:220px" src="${escapeHtml(url)}" controls preload="metadata" playsinline></video>`;
         }
         if (m.tipo === "audio") {
             return `<audio class="previa-denuncia-audio" src="${escapeHtml(url)}" controls preload="metadata"></audio>`;
         }
-        return `<img class="previa-denuncia" src="${escapeHtml(url)}" alt="">`;
+        return `<img class="previa-denuncia" style="max-width:100%;max-height:220px" src="${escapeHtml(url)}" alt="">`;
     }).join("");
+}
+
+// La publicación denunciada se pinta con la MISMA tarjeta real del feed
+// (avatar con anillo, nombre de color, fecha, medios). Los botones quedan
+// inerte con pointer-events (ver .previa-real en CSS); solo el nombre y el
+// avatar abren el perfil.
+function renderizarPublicacionPrevia(publicacion) {
+    const html = renderizarPublicacion({ ...publicacion, es_mia: false, me_gusta: false });
+    return `<div class="previa-real">${html}</div>`;
 }
 
 function tarjetaMotivos(denuncias) {
@@ -11202,22 +11219,18 @@ async function cargarDenuncias(tipo) {
             let cuerpo = "";
             if (tipo === "cuentas" && el.cuenta) {
                 const c = el.cuenta;
-                const avatar = c.avatar_url
-                    ? `<img class="avatar-denuncia" src="/${escapeHtml(String(c.avatar_url).replace(/\\/g, "/"))}" alt="">`
-                    : "";
-                cuerpo = `<div class="linea-denunciado">${avatar}${enlacePerfilDenuncia(c.id, c.nombre, estiloNombre(c.color_nombre))}</div>`;
+                cuerpo = `<div class="linea-denunciado">${avatarDenunciaHTML(c)}${enlacePerfilDenuncia(c.id, c.nombre, estiloNombre(c.color_nombre))}</div>`;
             } else if (tipo === "publicaciones" && el.publicacion) {
-                const p = el.publicacion;
-                cuerpo = `<div class="linea-denunciado">${enlacePerfilDenuncia(p.autor_id, p.autor_nombre)}</div><p>${escapeHtml(p.texto ?? "")}</p>${previsualizacionMultimedia(p.multimedia)}`;
+                cuerpo = renderizarPublicacionPrevia(el.publicacion);
             } else if (tipo === "reels" && el.reel) {
                 const r = el.reel;
                 const video = r.video_url
-                    ? `<video class="previa-denuncia" src="/${escapeHtml(String(r.video_url).replace(/\\/g, "/"))}" controls preload="metadata" playsinline></video>`
+                    ? `<video class="previa-denuncia" style="max-width:100%;max-height:220px" src="/${escapeHtml(String(r.video_url).replace(/\\/g, "/"))}" controls preload="metadata" playsinline></video>`
                     : "";
-                cuerpo = `<div class="linea-denunciado">${enlacePerfilDenuncia(r.autor_id, r.autor_nombre)}</div><p>${escapeHtml(r.titulo ?? "")}</p>${video}`;
+                cuerpo = `<div class="linea-denunciado">${avatarDenunciaHTML(r)}${enlacePerfilDenuncia(r.autor_id, r.autor_nombre, estiloNombre(r.color_nombre))}</div><p>${escapeHtml(r.titulo ?? "")}</p>${video}`;
             } else if (tipo === "estados" && el.estado) {
                 const s = el.estado;
-                cuerpo = `<div class="linea-denunciado">${enlacePerfilDenuncia(s.autor_id, s.autor_nombre)}</div><p>${escapeHtml(s.texto ?? "")}</p>${previsualizacionMultimedia(s.multimedia)}`;
+                cuerpo = `<div class="linea-denunciado">${avatarDenunciaHTML(s)}${enlacePerfilDenuncia(s.autor_id, s.autor_nombre, estiloNombre(s.color_nombre))}</div><p>${escapeHtml(s.texto ?? "")}</p>${previsualizacionMultimedia(s.multimedia)}`;
             }
             tarjeta.innerHTML = `<div class="cabecera-denuncia"><button type="button" class="boton-revisado${el.revisado ? " activo" : ""}" data-revisar="${el.id}" data-tipo="${tipo}">${el.revisado ? "REVISADO ✓" : "MARCAR REVISADO"}</button></div><div class="cuerpo-denuncia">${cuerpo}${tarjetaMotivos(el.denuncias)}</div><button type="button" class="boton-borrar-denunciado" data-borrar="${el.id}" data-tipo="${tipo}">BORRAR</button>`;
             lista.appendChild(tarjeta);

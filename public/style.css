@@ -3534,30 +3534,32 @@ button.servidor-tarjeta:focus-visible {
     margin-bottom: 8px;
 }
 
-/* Mismo estilo de boton que el resto de la app (casilla #242424, borde #383838) */
+/* Mismo molde que los botones ENTRAR / CREAR CUENTA de la web */
 .boton-revisado,
 #panel-etiquetas-admin button {
-    min-height: 34px;
-    padding: 7px 12px;
-    border: 1px solid #383838;
-    border-radius: 8px;
+    padding: 14px 20px;
+    border: none;
+    border-radius: 12px;
     background: #242424;
     color: #fff;
     font-family: inherit;
-    font-size: 12px;
-    font-weight: 700;
+    font-size: 16px;
+    font-weight: bold;
     cursor: pointer;
 }
 
 .boton-revisado:hover,
 #panel-etiquetas-admin button:hover {
-    background: #2b2b2b;
+    background: #333;
 }
 
 .boton-revisado.activo {
     background: #1f3a24;
-    border-color: #3ba55d;
     color: #b8e6c2;
+}
+
+.boton-revisado.activo:hover {
+    background: #256b3a;
 }
 
 .cuerpo-denuncia {
@@ -3622,15 +3624,14 @@ button.servidor-tarjeta:focus-visible {
 .boton-borrar-denunciado {
     margin-top: 8px;
     width: 100%;
-    min-height: 40px;
-    padding: 9px 14px;
-    border: 1px solid #662929;
-    border-radius: 8px;
+    padding: 14px 20px;
+    border: none;
+    border-radius: 12px;
     background: #451d1d;
     color: #fff;
     font-family: inherit;
-    font-size: 12px;
-    font-weight: 700;
+    font-size: 16px;
+    font-weight: bold;
     cursor: pointer;
 }
 
@@ -3640,34 +3641,33 @@ button.servidor-tarjeta:focus-visible {
 
 /* Hueco para que la barra inferior no tape el contenido del panel */
 #contenido-moderacion {
-    padding-bottom: 84px;
+    padding-bottom: 24px;
 }
 
-/* Fijado abajo en el centro (mismo aire que el fab de servidores) */
+/* Fijado abajo en el centro de la pestana de denuncias */
 #boton-etiquetas-admin {
-    position: fixed;
-    left: 50%;
+    position: sticky;
     bottom: 92px;
-    transform: translateX(-50%);
     z-index: 40;
-    min-height: 44px;
-    padding: 10px 22px;
+    display: block;
+    width: fit-content;
+    margin: 14px auto 0;
+    padding: 14px 24px;
     border: none;
     border-radius: var(--radio-full);
     background: var(--acento);
     color: var(--acento-texto);
     box-shadow: var(--sombra-fab);
     font-family: inherit;
-    font-size: 12px;
-    font-weight: 700;
+    font-size: 16px;
+    font-weight: bold;
     white-space: nowrap;
     cursor: pointer;
-    transition: background var(--transicion-media), transform var(--transicion-media);
+    transition: background var(--transicion-media);
 }
 
 #boton-etiquetas-admin:hover {
     background: var(--acento-claro);
-    transform: translateX(-50%) translateY(-2px);
 }
 
 #panel-etiquetas-admin {
@@ -7067,7 +7067,7 @@ button.servidor-tarjeta:focus-visible {
 
 
 .etiqueta-perfil {
-    align-self: flex-start;
+    align-self: center;
     max-width: 100%;
     margin: 0;
     padding: 2px 9px;
@@ -7120,7 +7120,7 @@ button.servidor-tarjeta:focus-visible {
 }
 
 .campo-etiqueta-perfil.editable {
-    align-self: flex-start;
+    align-self: center;
     width: auto;
 }
 
