@@ -869,6 +869,9 @@ const botonServidores =
 const botonCuenta =
     document.getElementById("boton-cuenta");
 
+const contenidoModeracion =
+    document.getElementById("contenido-moderacion");
+
 const botonFotoPerfil =
     document.getElementById("boton-foto-perfil");
 
@@ -3679,6 +3682,7 @@ function mostrarSeccion(seccion, opciones = {}) {
     contenidoCuenta.hidden = true;
     contenidoAmigos.hidden = true;
     contenidoServidores.hidden = true;
+    if (contenidoModeracion) contenidoModeracion.hidden = true;
 
     document.body.classList.toggle("vista-servidores", seccion === "servidores");
 
@@ -3717,6 +3721,11 @@ function mostrarSeccion(seccion, opciones = {}) {
         contenidoServidores.hidden = false;
         mostrarPestanaServidor("chats");
         cargarAmigos();
+    }
+
+    if (seccion === "moderacion") {
+        if (contenidoModeracion) contenidoModeracion.hidden = false;
+        if (typeof mostrarPestanaModeracion === "function") mostrarPestanaModeracion("cuentas");
     }
 
     seccionActual = seccion;
@@ -10419,7 +10428,7 @@ function renderizarPerfil(datos) {
 
     const etiquetaMarkup = `
         ${perfil.etiqueta
-            ? `<span class="etiqueta-perfil">${escapeHtml(perfil.etiqueta)}</span>`
+            ? `<span class="etiqueta-perfil${perfil.etiqueta === "Creador" ? " etiqueta-perfil-creador" : ""}" style="${perfil.etiqueta === "Creador" ? "" : `border-color:${escapeHtml(perfil.etiqueta_color ?? "#4a4a4a")};color:${escapeHtml(perfil.etiqueta_color ?? "#e8d9a0")}`}">${escapeHtml(perfil.etiqueta)}</span>`
             : editable
                 ? '<span class="etiqueta-perfil vacia">+ Etiqueta</span>'
                 : ""}
@@ -11069,7 +11078,209 @@ async function comprobarPoderesDesarrollador() {
     } catch {
         marcarEstadoDesarrollador(false);
     }
+    await comprobarTrianguloAdmin();
 }
+
+/* TRIANGULO ADMIN: denuncias */
+
+let soyAdminDenuncias = false;
+let pestanaModeracion = "cuentas";
+let etiquetasAdminCache = [];
+
+async function comprobarTrianguloAdmin() {
+    const boton = document.getElementById("boton-triangulo-admin");
+    const punto = document.getElementById("punto-triangulo-admin");
+    if (!boton) return;
+    try {
+        const datos = await solicitarGrupo("/api/admin/estado");
+        soyAdminDenuncias = datos.es_admin === true;
+        boton.hidden = !soyAdminDenuncias;
+        if (punto) punto.hidden = !(soyAdminDenuncias && Number(datos.pendientes ?? 0) > 0);
+    } catch {
+        soyAdminDenuncias = false;
+        boton.hidden = true;
+    }
+}
+
+async function refrescarPuntoTriangulo() {
+    const punto = document.getElementById("punto-triangulo-admin");
+    if (!punto || !soyAdminDenuncias) return;
+    try {
+        const datos = await solicitarGrupo("/api/admin/denuncias-pendientes");
+        punto.hidden = !(Number(datos.pendientes ?? 0) > 0);
+    } catch {
+        punto.hidden = true;
+    }
+}
+
+function mostrarPestanaModeracion(nombre) {
+    pestanaModeracion = nombre;
+    const mapa = {
+        cuentas: ["boton-mod-cuentas", "seccion-mod-cuentas", "lista-mod-cuentas"],
+        reels: ["boton-mod-reels", "seccion-mod-reels", "lista-mod-reels"],
+        estados: ["boton-mod-estados", "seccion-mod-estados", "lista-mod-estados"],
+        publicaciones: ["boton-mod-pubs", "seccion-mod-pubs", "lista-mod-pubs"]
+    };
+    for (const [clave, [botonId, seccionId]] of Object.entries(mapa)) {
+        const boton = document.getElementById(botonId);
+        const seccion = document.getElementById(seccionId);
+        if (boton) {
+            boton.classList.toggle("activa", clave === nombre);
+            boton.setAttribute("aria-selected", clave === nombre ? "true" : "false");
+        }
+        if (seccion) seccion.hidden = clave !== nombre;
+    }
+    cargarDenuncias(nombre);
+}
+
+function tarjetaMotivos(denuncias) {
+    if (!denuncias || denuncias.length === 0) return "<p>Sin motivos.</p>";
+    const items = denuncias.map((d) => `<li><strong>${escapeHtml(d.denunciante)}</strong>: ${escapeHtml(d.motivo)}</li>`).join("");
+    return `<ul class="lista-motivos-denuncia">${items}</ul>`;
+}
+
+async function cargarDenuncias(tipo) {
+    const mapa = {
+        cuentas: "lista-mod-cuentas",
+        reels: "lista-mod-reels",
+        estados: "lista-mod-estados",
+        publicaciones: "lista-mod-pubs"
+    };
+    const lista = document.getElementById(mapa[tipo]);
+    const estado = document.getElementById("estado-moderacion");
+    if (!lista) return;
+    if (estado) estado.textContent = "Cargando denuncias...";
+    lista.innerHTML = "";
+    try {
+        const datos = await solicitarGrupo(`/api/admin/denuncias/${tipo}`);
+        const elementos = datos.elementos ?? [];
+        if (elementos.length === 0 && estado) estado.textContent = "No hay denuncias.";
+        else if (estado) estado.textContent = "";
+        for (const el of elementos) {
+            const tarjeta = document.createElement("article");
+            tarjeta.className = "tarjeta-denuncia" + (el.revisado ? " revisada" : "");
+            let cuerpo = "";
+            if (tipo === "cuentas" && el.cuenta) {
+                cuerpo = `<strong style="${estiloNombre(el.cuenta.color_nombre)}">${escapeHtml(el.cuenta.nombre)}</strong>`;
+            } else if (tipo === "publicaciones" && el.publicacion) {
+                cuerpo = `<strong>${escapeHtml(el.publicacion.autor_nombre ?? "")}</strong><p>${escapeHtml(el.publicacion.texto ?? "")}</p>`;
+            } else if (tipo === "reels" && el.reel) {
+                cuerpo = `<strong>${escapeHtml(el.reel.autor_nombre ?? "")}</strong><p>${escapeHtml(el.reel.titulo ?? "")}</p>`;
+            } else if (tipo === "estados" && el.estado) {
+                cuerpo = `<strong>${escapeHtml(el.estado.autor_nombre ?? "")}</strong><p>${escapeHtml(el.estado.texto ?? "")}</p>`;
+            }
+            tarjeta.innerHTML = `<div class="cabecera-denuncia"><button type="button" class="boton-revisado${el.revisado ? " activo" : ""}" data-revisar="${el.id}" data-tipo="${tipo}">${el.revisado ? "REVISADO ✓" : "MARCAR REVISADO"}</button></div><div class="cuerpo-denuncia">${cuerpo}${tarjetaMotivos(el.denuncias)}</div><button type="button" class="boton-borrar-denunciado" data-borrar="${el.id}" data-tipo="${tipo}">BORRAR</button>`;
+            lista.appendChild(tarjeta);
+        }
+    } catch (error) {
+        if (estado) estado.textContent = error.message;
+    }
+}
+async function cargarEtiquetasAdmin() {
+    const boton = document.getElementById("boton-etiquetas-admin");
+    const lista = document.getElementById("lista-etiquetas-admin");
+    if (!boton) return;
+    const etiquetaMia = (leerCacheCuenta()?.etiqueta ?? "").trim();
+    boton.hidden = etiquetaMia !== "Creador";
+    if (etiquetaMia !== "Creador") return;
+    try {
+        const datos = await solicitarGrupo("/api/admin/etiquetas");
+        etiquetasAdminCache = datos.etiquetas ?? [];
+        if (lista) {
+            lista.innerHTML = "";
+            for (const item of etiquetasAdminCache) {
+                const fila = document.createElement("div");
+                fila.className = "fila-etiqueta-admin";
+                fila.innerHTML = `<span class="etiqueta-admin-dinamica" style="background:${escapeHtml(item.color)}22;color:${escapeHtml(item.color)}">${escapeHtml(item.nombre)}</span><button type="button" data-quitar-etiqueta="${escapeHtml(item.nombre)}">QUITAR</button>`;
+                lista.appendChild(fila);
+            }
+        }
+    } catch {
+        if (lista) lista.innerHTML = "";
+    }
+}
+
+document.getElementById("boton-triangulo-admin")?.addEventListener("click", async () => {
+    mostrarSeccion("moderacion");
+    await cargarEtiquetasAdmin();
+    await refrescarPuntoTriangulo();
+});
+
+document.getElementById("boton-mod-cuentas")?.addEventListener("click", () => mostrarPestanaModeracion("cuentas"));
+document.getElementById("boton-mod-reels")?.addEventListener("click", () => mostrarPestanaModeracion("reels"));
+document.getElementById("boton-mod-estados")?.addEventListener("click", () => mostrarPestanaModeracion("estados"));
+document.getElementById("boton-mod-pubs")?.addEventListener("click", () => mostrarPestanaModeracion("publicaciones"));
+
+document.getElementById("contenido-moderacion")?.addEventListener("click", async (evento) => {
+    const revisar = evento.target.closest("[data-revisar]");
+    if (revisar) {
+        const tarjeta = revisar.closest(".tarjeta-denuncia");
+        const esRevisada = tarjeta?.classList.contains("revisada");
+        try {
+            await solicitarGrupo(`/api/admin/denuncias/${revisar.dataset.tipo}/${revisar.dataset.revisar}/revisado`, {
+                method: "PATCH",
+                body: JSON.stringify({ revisado: !esRevisada })
+            });
+            await cargarDenuncias(revisar.dataset.tipo);
+            await refrescarPuntoTriangulo();
+        } catch (error) {
+            const estado = document.getElementById("estado-moderacion");
+            if (estado) estado.textContent = error.message;
+        }
+        return;
+    }
+    const borrar = evento.target.closest("[data-borrar]");
+    if (borrar) {
+        if (!confirm("¿Borrar esto? No se puede deshacer.")) return;
+        try {
+            await solicitarGrupo(`/api/admin/denuncias/${borrar.dataset.tipo}/${borrar.dataset.borrar}`, { method: "DELETE" });
+            await cargarDenuncias(borrar.dataset.tipo);
+            await refrescarPuntoTriangulo();
+        } catch (error) {
+            const estado = document.getElementById("estado-moderacion");
+            if (estado) estado.textContent = error.message;
+        }
+        return;
+    }
+    const quitar = evento.target.closest("[data-quitar-etiqueta]");
+    if (quitar) {
+        etiquetasAdminCache = etiquetasAdminCache.filter((e) => e.nombre !== quitar.dataset.quitarEtiqueta);
+        await guardarEtiquetasAdmin();
+    }
+});
+
+document.getElementById("boton-etiquetas-admin")?.addEventListener("click", () => {
+    const panel = document.getElementById("panel-etiquetas-admin");
+    if (panel) panel.hidden = !panel.hidden;
+});
+
+document.getElementById("boton-anadir-etiqueta")?.addEventListener("click", async () => {
+    const nombre = document.getElementById("input-nombre-etiqueta");
+    const color = document.getElementById("input-color-etiqueta");
+    if (!nombre?.value.trim()) return;
+    etiquetasAdminCache.push({ nombre: nombre.value.trim().slice(0, 24), color: color?.value ?? "#3b82f6" });
+    nombre.value = "";
+    await guardarEtiquetasAdmin();
+});
+
+document.getElementById("boton-guardar-etiquetas")?.addEventListener("click", guardarEtiquetasAdmin);
+
+async function guardarEtiquetasAdmin() {
+    const estado = document.getElementById("estado-moderacion");
+    try {
+        const datos = await solicitarGrupo("/api/admin/etiquetas", {
+            method: "PUT",
+            body: JSON.stringify({ etiquetas: etiquetasAdminCache })
+        });
+        etiquetasAdminCache = datos.etiquetas ?? [];
+        await cargarEtiquetasAdmin();
+        if (estado) estado.textContent = "Etiquetas guardadas.";
+    } catch (error) {
+        if (estado) estado.textContent = error.message;
+    }
+}
+
+
 
 
 const TIEMPO_PULSACION_LARGA = 550;

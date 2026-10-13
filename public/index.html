@@ -14,7 +14,7 @@
 
     <link
         rel="stylesheet"
-        href="/style.css?v=49"
+        href="/style.css?v=50"
     >
 
     <link rel="icon" href="/icon.svg" type="image/svg+xml">
@@ -185,6 +185,27 @@
             <!-- CABECERA -->
 
             <header class="barra-superior">
+
+                <button
+                    id="boton-triangulo-admin"
+                    class="boton-triangulo-admin"
+                    type="button"
+                    aria-label="Denuncias"
+                    title="Denuncias"
+                    hidden
+                >
+                    <svg viewBox="0 0 24 24" width="23" height="23" aria-hidden="true" focusable="false">
+                        <path d="M12 4 21 20H3Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"></path>
+                        <path d="M12 10v4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+                        <circle cx="12" cy="16.6" r="1.1" fill="currentColor"></circle>
+                    </svg>
+
+                    <span
+                        id="punto-triangulo-admin"
+                        class="punto-triangulo-admin"
+                        hidden
+                    >!</span>
+                </button>
 
                 <h1>Atuistas</h1>
 
@@ -1066,6 +1087,54 @@
                         </form>
                         </div>
                     </section>
+
+                </div>
+
+                <!-- MODERACION (triangulo admin) -->
+
+                <div
+                    id="contenido-moderacion"
+                    hidden
+                >
+
+                    <div class="pestanas-amigos" role="tablist" aria-label="Denuncias">
+                        <button id="boton-mod-cuentas" class="pestana-amigos activa" type="button" role="tab" aria-selected="true">CUENTAS</button>
+                        <button id="boton-mod-reels" class="pestana-amigos" type="button" role="tab" aria-selected="false">REELS</button>
+                        <button id="boton-mod-estados" class="pestana-amigos" type="button" role="tab" aria-selected="false">ESTADOS</button>
+                        <button id="boton-mod-pubs" class="pestana-amigos" type="button" role="tab" aria-selected="false">PUBLICACIONES</button>
+                    </div>
+
+                    <p id="estado-moderacion" class="estado-amigos" aria-live="polite"></p>
+
+                    <section id="seccion-mod-cuentas" class="seccion-amigos">
+                        <div id="lista-mod-cuentas" class="lista-moderacion"></div>
+                    </section>
+
+                    <section id="seccion-mod-reels" class="seccion-amigos" hidden>
+                        <div id="lista-mod-reels" class="lista-moderacion"></div>
+                    </section>
+
+                    <section id="seccion-mod-estados" class="seccion-amigos" hidden>
+                        <div id="lista-mod-estados" class="lista-moderacion"></div>
+                    </section>
+
+                    <section id="seccion-mod-pubs" class="seccion-amigos" hidden>
+                        <div id="lista-mod-pubs" class="lista-moderacion"></div>
+                    </section>
+
+                    <button id="boton-etiquetas-admin" type="button" hidden>ETIQUETAS DE ADMIN</button>
+
+                    <div id="panel-etiquetas-admin" hidden>
+                        <h3>Etiquetas de admin</h3>
+                        <p class="texto-ajuste">Las cuentas con estas etiquetas ven el triangulo. Creador siempre lo ve.</p>
+                        <div id="lista-etiquetas-admin"></div>
+                        <div class="fila-etiqueta-admin">
+                            <input id="input-nombre-etiqueta" type="text" maxlength="24" placeholder="Nombre (ej: Admin)">
+                            <input id="input-color-etiqueta" type="color" value="#3b82f6">
+                            <button id="boton-anadir-etiqueta" type="button">AÑADIR</button>
+                        </div>
+                        <button id="boton-guardar-etiquetas" type="button">GUARDAR</button>
+                    </div>
 
                 </div>
 
@@ -2857,7 +2926,7 @@
             </div>
 
     <script src="/data/emojis.js"></script>
-    <script src="/app.js?v=49"></script>
+    <script src="/app.js?v=50"></script>
 
 </body>
 

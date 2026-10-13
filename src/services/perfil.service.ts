@@ -14,6 +14,11 @@ export async function obtenerPerfilVisible(
             u.color_nombre,
             u.etiqueta,
             (u.es_desarrollador) AS es_desarrollador,
+            COALESCE(
+                CASE WHEN TRIM(COALESCE(u.etiqueta, '')) = 'Creador' THEN '#a855f7' END,
+                (SELECT c.color FROM config_admin_etiquetas c WHERE c.nombre = u.etiqueta),
+                '#e8d9a0'
+            ) AS etiqueta_color,
             u.creado_en,
             CASE
                 WHEN ar.ruta IS NOT NULL
@@ -55,6 +60,7 @@ export async function obtenerPerfilVisible(
         descripcion: string | null;
         color_nombre: string;
         etiqueta: string | null;
+        etiqueta_color: string | null;
         es_desarrollador: boolean;
         creado_en: string;
         avatar_url: string | null;
@@ -117,6 +123,7 @@ export async function obtenerPerfilVisible(
             color_nombre: perfil.color_nombre,
             // El texto corto va entre el nombre y la descripción.
             etiqueta: perfil.etiqueta,
+            etiqueta_color: perfil.etiqueta_color ?? "#e8d9a0",
             es_desarrollador: perfil.es_desarrollador === true,
             soy_desarrollador: soyDesarrollador,
             avatar_url: perfil.avatar_url,

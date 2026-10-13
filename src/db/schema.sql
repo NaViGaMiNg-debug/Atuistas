@@ -398,6 +398,10 @@ CREATE TABLE denuncias_cuentas (
     CONSTRAINT denuncias_cuentas_motivo_check
         CHECK (length(trim(motivo)) BETWEEN 3 AND 500),
 
+    revisado_en TIMESTAMPTZ,
+
+    revisado_por UUID REFERENCES usuarios(id) ON DELETE SET NULL,
+
     UNIQUE (denunciado_id, denunciante_id)
 );
 
@@ -988,6 +992,10 @@ CREATE TABLE denuncias_publicaciones (
     CONSTRAINT denuncias_publicaciones_motivo_check
         CHECK (length(trim(motivo)) BETWEEN 3 AND 500),
 
+    revisado_en TIMESTAMPTZ,
+
+    revisado_por UUID REFERENCES usuarios(id) ON DELETE SET NULL,
+
     UNIQUE (publicacion_id, denunciante_id)
 );
 
@@ -1015,6 +1023,10 @@ CREATE TABLE denuncias_reels (
 
     CONSTRAINT denuncias_reels_motivo_check
         CHECK (length(trim(motivo)) BETWEEN 3 AND 500),
+
+    revisado_en TIMESTAMPTZ,
+
+    revisado_por UUID REFERENCES usuarios(id) ON DELETE SET NULL,
 
     UNIQUE (reel_id, denunciante_id)
 );
@@ -1146,8 +1158,35 @@ CREATE TABLE denuncias_estados (
     CONSTRAINT denuncias_estados_motivo_check
         CHECK (length(trim(motivo)) BETWEEN 3 AND 500),
 
+    revisado_en TIMESTAMPTZ,
+
+    revisado_por UUID REFERENCES usuarios(id) ON DELETE SET NULL,
+
     UNIQUE (estado_id, denunciante_id)
 );
+
+
+-- ============================================================
+-- CONFIG DE ETIQUETAS DE ADMIN
+-- El panel del triangulo deja al Creador elegir que etiquetas
+-- dan poder de admin y de que color salen. "Creador" siempre
+-- cuenta, aunque no este en la lista.
+-- ============================================================
+
+CREATE TABLE config_admin_etiquetas (
+    nombre VARCHAR(24) PRIMARY KEY,
+
+    color VARCHAR(7) NOT NULL DEFAULT '#3b82f6',
+
+    creado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT config_admin_etiquetas_color_check
+        CHECK (color ~ '^#[0-9A-Fa-f]{6}$')
+);
+
+INSERT INTO config_admin_etiquetas (nombre, color)
+    VALUES ('Admin', '#3b82f6')
+    ON CONFLICT (nombre) DO NOTHING;
 
 
 -- ============================================================

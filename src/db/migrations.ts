@@ -132,6 +132,7 @@ export async function migrarEsquema() {
             CREATE INDEX IF NOT EXISTS apodos_usuario
                 ON apodos (usuario_id);
 
+
             -- Avisos agrupados: los mensajes seguidos de la misma persona
             -- se suman al aviso sin leer que ya exista en lugar de crear otro.
             ALTER TABLE notificaciones
@@ -680,6 +681,36 @@ export async function migrarEsquema() {
 
             CREATE INDEX IF NOT EXISTS idx_denuncias_reels_denunciante
                 ON denuncias_reels(denunciante_id);
+
+            -- Panel del triangulo: revisado + etiquetas configurables.
+            ALTER TABLE denuncias_cuentas
+                ADD COLUMN IF NOT EXISTS revisado_en TIMESTAMPTZ;
+            ALTER TABLE denuncias_cuentas
+                ADD COLUMN IF NOT EXISTS revisado_por UUID
+                    REFERENCES usuarios(id) ON DELETE SET NULL;
+            ALTER TABLE denuncias_publicaciones
+                ADD COLUMN IF NOT EXISTS revisado_en TIMESTAMPTZ;
+            ALTER TABLE denuncias_publicaciones
+                ADD COLUMN IF NOT EXISTS revisado_por UUID
+                    REFERENCES usuarios(id) ON DELETE SET NULL;
+            ALTER TABLE denuncias_reels
+                ADD COLUMN IF NOT EXISTS revisado_en TIMESTAMPTZ;
+            ALTER TABLE denuncias_reels
+                ADD COLUMN IF NOT EXISTS revisado_por UUID
+                    REFERENCES usuarios(id) ON DELETE SET NULL;
+            ALTER TABLE denuncias_estados
+                ADD COLUMN IF NOT EXISTS revisado_en TIMESTAMPTZ;
+            ALTER TABLE denuncias_estados
+                ADD COLUMN IF NOT EXISTS revisado_por UUID
+                    REFERENCES usuarios(id) ON DELETE SET NULL;
+            CREATE TABLE IF NOT EXISTS config_admin_etiquetas (
+                nombre VARCHAR(24) PRIMARY KEY,
+                color VARCHAR(7) NOT NULL DEFAULT '#3b82f6',
+                creado_en TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            );
+            INSERT INTO config_admin_etiquetas (nombre, color)
+                VALUES ('Admin', '#3b82f6')
+                ON CONFLICT (nombre) DO NOTHING;
 
 
         `);
