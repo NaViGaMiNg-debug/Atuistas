@@ -13,6 +13,7 @@ import {
     crearEstado,
     crearPublicacion,
     denunciarEstado,
+    denunciarPublicacion,
     eliminarEstado,
     eliminarPublicacion,
     obtenerComentarios,
@@ -125,6 +126,26 @@ export async function contenidoRoutes(app: FastifyInstance) {
             return reply.code(400).send({ error: message });
         }
     });
+
+    // Denuncia oculta de una publicación: solo puede denunciar quien puede verla.
+    app.post<{ Params: { publicacionId: string }; Body: { motivo?: string } }>(
+        "/api/publicaciones/:publicacionId/denuncias",
+        { preHandler: autenticar },
+        async (request, reply) => {
+            try {
+                const resultado = await denunciarPublicacion(
+                    request.usuario!.id,
+                    request.params.publicacionId,
+                    request.body.motivo ?? ""
+                );
+                return reply.code(201).send(resultado);
+            } catch (error) {
+                const message = error instanceof Error ? error.message : "No se pudo denunciar la publicación";
+                const codigo = message === "Ya has denunciado esta publicación" ? 409 : 400;
+                return reply.code(codigo).send({ error: message });
+            }
+        }
+    );
 
     app.get<{ Querystring: { seccion?: string } }>("/api/estados", { preHandler: autenticar }, async (request) => ({
         estados: await obtenerEstados(request.usuario!.id, seccionValida(request.query.seccion))

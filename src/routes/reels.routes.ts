@@ -5,6 +5,7 @@ import {
     alternarLikeReel,
     comentarReel,
     crearReel,
+    denunciarReel,
     eliminarReel,
     obtenerComentariosReel,
     obtenerMisReels,
@@ -124,4 +125,24 @@ export async function reelsRoutes(app: FastifyInstance) {
             return reply.code(400).send({ error: message });
         }
     });
+
+    // Denuncia oculta de un reel: solo puede denunciar quien puede verlo.
+    app.post<{ Params: { reelId: string }; Body: { motivo?: string } }>(
+        "/api/reels/:reelId/denuncias",
+        { preHandler: autenticar },
+        async (request, reply) => {
+            try {
+                const resultado = await denunciarReel(
+                    request.usuario!.id,
+                    request.params.reelId,
+                    request.body.motivo ?? ""
+                );
+                return reply.code(201).send(resultado);
+            } catch (error) {
+                const message = error instanceof Error ? error.message : "No se pudo denunciar el reel";
+                const codigo = message === "Ya has denunciado este reel" ? 409 : 400;
+                return reply.code(codigo).send({ error: message });
+            }
+        }
+    );
 }

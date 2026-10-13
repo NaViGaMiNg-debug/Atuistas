@@ -179,6 +179,35 @@ export async function eliminarPublicacion(usuarioId: string, publicacionId: stri
     return { mensaje: "Publicación eliminada" };
 }
 
+// Denuncia oculta de publicaciones: igual que en las cuentas, lo visible
+// NO se toca. Solo se guarda en denuncias_publicaciones para que en un
+// futuro Creador/Admin las revisen. Solo denuncia quien puede verla.
+export async function denunciarPublicacion(
+    usuarioId: string,
+    publicacionId: string,
+    motivo: string
+) {
+    const motivoLimpio = (motivo ?? "").trim();
+    if (motivoLimpio.length < 3 || motivoLimpio.length > 500) {
+        throw new Error("El motivo debe tener entre 3 y 500 caracteres");
+    }
+    await puedeVerPublicacion(usuarioId, publicacionId);
+    try {
+        await db.query(
+            `INSERT INTO denuncias_publicaciones (publicacion_id, denunciante_id, motivo)
+             VALUES ($1, $2, $3)`,
+            [publicacionId, usuarioId, motivoLimpio]
+        );
+    } catch (error) {
+        const codigo = (error as { code?: string }).code;
+        if (codigo === "23505") {
+            throw new Error("Ya has denunciado esta publicación");
+        }
+        throw error;
+    }
+    return { mensaje: "Publicación denunciada" };
+}
+
 export async function obtenerEstados(usuarioId: string, seccion: "amigos" | "publica") {
     const resultado = await db.query(
         `

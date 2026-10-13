@@ -1,13 +1,13 @@
 /* SERVICE WORKER */
 
-const VERSION = "v48";
+const VERSION = "v49";
 const CACHE = `atuistas-${VERSION}`;
 
 const RECURSOS = [
     "/",
     "/index.html",
-    "/style.css?v=48",
-    "/app.js?v=48",
+    "/style.css?v=49",
+    "/app.js?v=49",
     "/data/emojis.js",
     "/qratuistas.png",
     "/app.webmanifest",

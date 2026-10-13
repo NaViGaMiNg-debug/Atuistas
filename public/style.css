@@ -5364,6 +5364,67 @@ button.servidor-tarjeta:focus-visible {
     display: flex;
     align-items: center;
     gap: 10px;
+    position: relative;
+}
+
+/* Botón de 3 puntos arriba a la derecha de cada publicación. */
+.boton-opciones-publicacion {
+    flex: 0 0 auto;
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: #aaa;
+    cursor: pointer;
+}
+
+.boton-opciones-publicacion:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+/* Menú desplegable de la publicación (solo Denunciar). */
+.menu-opciones-publicacion {
+    position: absolute;
+    top: 40px;
+    right: 0;
+    z-index: 20;
+    min-width: 180px;
+    background: rgba(0, 0, 0, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    padding: 6px 0;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.menu-opciones-publicacion[hidden] {
+    display: none;
+}
+
+.menu-opciones-publicacion ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.menu-opciones-publicacion button {
+    width: 100%;
+    text-align: left;
+    padding: 11px 16px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: #fff;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.menu-opciones-publicacion button:hover {
+    background: rgba(255, 255, 255, 0.12);
 }
 
 .cabecera-publicacion-actual img,
@@ -7414,7 +7475,7 @@ button.estadistica-perfil:hover {
     position: absolute;
     top: 16px;
     left: 56px;
-    right: 16px;
+    right: 60px;
     margin: 0;
     padding: 8px 12px;
     border-radius: 10px;
@@ -7501,6 +7562,64 @@ button.estadistica-perfil:hover {
     font-size: 26px;
     line-height: 1;
     cursor: pointer;
+}
+
+/* Botón de 3 puntos arriba a la derecha de cada reel. */
+.boton-opciones-reel {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 2;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.55);
+    color: #fff;
+    cursor: pointer;
+}
+
+/* Menú desplegable del reel (solo Denunciar). */
+.menu-opciones-reel {
+    position: absolute;
+    top: 58px;
+    right: 12px;
+    z-index: 3;
+    min-width: 180px;
+    background: rgba(0, 0, 0, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    padding: 6px 0;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.menu-opciones-reel[hidden] {
+    display: none;
+}
+
+.menu-opciones-reel ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.menu-opciones-reel button {
+    width: 100%;
+    text-align: left;
+    padding: 11px 16px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: #fff;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.menu-opciones-reel button:hover {
+    background: rgba(255, 255, 255, 0.12);
 }
 
 .dialogo-comentarios {

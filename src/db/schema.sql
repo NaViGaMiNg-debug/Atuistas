@@ -964,6 +964,63 @@ CREATE TABLE corazones_publicacion (
 
 
 -- ============================================================
+-- DENUNCIAS DE PUBLICACIONES
+-- Igual que las de cuentas y estados: marca oculta para que en
+-- un futuro Creador/Admin vean las publicaciones denunciadas.
+-- No toca lo que se ve. Solo puede denunciar quien puede verla.
+-- ============================================================
+
+CREATE TABLE denuncias_publicaciones (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    publicacion_id UUID NOT NULL
+        REFERENCES publicaciones(id)
+        ON DELETE CASCADE,
+
+    denunciante_id UUID NOT NULL
+        REFERENCES usuarios(id)
+        ON DELETE CASCADE,
+
+    motivo VARCHAR(500) NOT NULL,
+
+    creado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT denuncias_publicaciones_motivo_check
+        CHECK (length(trim(motivo)) BETWEEN 3 AND 500),
+
+    UNIQUE (publicacion_id, denunciante_id)
+);
+
+
+-- ============================================================
+-- DENUNCIAS DE REELS
+-- Igual que las de publicaciones: marca oculta, no toca lo que
+-- se ve. Solo puede denunciar quien puede ver el reel.
+-- ============================================================
+
+CREATE TABLE denuncias_reels (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    reel_id UUID NOT NULL
+        REFERENCES reels(id)
+        ON DELETE CASCADE,
+
+    denunciante_id UUID NOT NULL
+        REFERENCES usuarios(id)
+        ON DELETE CASCADE,
+
+    motivo VARCHAR(500) NOT NULL,
+
+    creado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT denuncias_reels_motivo_check
+        CHECK (length(trim(motivo)) BETWEEN 3 AND 500),
+
+    UNIQUE (reel_id, denunciante_id)
+);
+
+
+-- ============================================================
 -- ESTADOS
 -- ============================================================
 
@@ -1264,6 +1321,18 @@ CREATE INDEX idx_denuncias_cuentas_denunciado
 
 CREATE INDEX idx_denuncias_cuentas_denunciante
     ON denuncias_cuentas(denunciante_id);
+
+CREATE INDEX idx_denuncias_publicaciones_publicacion
+    ON denuncias_publicaciones(publicacion_id);
+
+CREATE INDEX idx_denuncias_publicaciones_denunciante
+    ON denuncias_publicaciones(denunciante_id);
+
+CREATE INDEX idx_denuncias_reels_reel
+    ON denuncias_reels(reel_id);
+
+CREATE INDEX idx_denuncias_reels_denunciante
+    ON denuncias_reels(denunciante_id);
 
 CREATE INDEX idx_conversaciones_usuario_a
     ON conversaciones_privadas(usuario_a_id);

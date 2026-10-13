@@ -641,6 +641,46 @@ export async function migrarEsquema() {
                 ON tumbas_cuentas(codigo_vinculacion_hash)
                 WHERE codigo_vinculacion_hash IS NOT NULL;
 
+            -- Denuncia oculta de publicaciones: igual que cuentas/estados.
+            CREATE TABLE IF NOT EXISTS denuncias_publicaciones (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                publicacion_id UUID NOT NULL
+                    REFERENCES publicaciones(id) ON DELETE CASCADE,
+                denunciante_id UUID NOT NULL
+                    REFERENCES usuarios(id) ON DELETE CASCADE,
+                motivo VARCHAR(500) NOT NULL,
+                creado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                CONSTRAINT denuncias_publicaciones_motivo_check
+                    CHECK (length(trim(motivo)) BETWEEN 3 AND 500),
+                UNIQUE (publicacion_id, denunciante_id)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_denuncias_publicaciones_publicacion
+                ON denuncias_publicaciones(publicacion_id);
+
+            CREATE INDEX IF NOT EXISTS idx_denuncias_publicaciones_denunciante
+                ON denuncias_publicaciones(denunciante_id);
+
+            -- Denuncia oculta de reels: igual que publicaciones.
+            CREATE TABLE IF NOT EXISTS denuncias_reels (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                reel_id UUID NOT NULL
+                    REFERENCES reels(id) ON DELETE CASCADE,
+                denunciante_id UUID NOT NULL
+                    REFERENCES usuarios(id) ON DELETE CASCADE,
+                motivo VARCHAR(500) NOT NULL,
+                creado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                CONSTRAINT denuncias_reels_motivo_check
+                    CHECK (length(trim(motivo)) BETWEEN 3 AND 500),
+                UNIQUE (reel_id, denunciante_id)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_denuncias_reels_reel
+                ON denuncias_reels(reel_id);
+
+            CREATE INDEX IF NOT EXISTS idx_denuncias_reels_denunciante
+                ON denuncias_reels(denunciante_id);
+
 
         `);
         await client.query("COMMIT");

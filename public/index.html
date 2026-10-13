@@ -14,7 +14,7 @@
 
     <link
         rel="stylesheet"
-        href="/style.css?v=48"
+        href="/style.css?v=49"
     >
 
     <link rel="icon" href="/icon.svg" type="image/svg+xml">
@@ -2600,6 +2600,126 @@
 
 
             <div
+                id="modal-denunciar-publicacion"
+                class="modal modal-contenido-social"
+                hidden
+            >
+
+                <div
+                    class="modal-contenido"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="titulo-denunciar-publicacion"
+                >
+
+                    <button
+                        id="boton-cerrar-denunciar-publicacion"
+                        class="boton-cerrar-modal"
+                        type="button"
+                        aria-label="Cerrar"
+                    >
+                        ×
+                    </button>
+
+                    <h2 id="titulo-denunciar-publicacion">
+                        Denunciar publicación
+                    </h2>
+
+                    <p
+                        id="nombre-denunciar-publicacion"
+                        class="estado-amigos"
+                        aria-live="polite"
+                    ></p>
+
+                    <label for="motivo-denuncia-publicacion">
+                        Motivo (obligatorio, 3-500 caracteres)
+                    </label>
+
+                    <textarea
+                        id="motivo-denuncia-publicacion"
+                        rows="4"
+                        maxlength="500"
+                    ></textarea>
+
+                    <p
+                        id="estado-denunciar-publicacion"
+                        class="estado-amigos"
+                        aria-live="polite"
+                    ></p>
+
+                    <button
+                        id="boton-confirmar-denuncia-publicacion"
+                        type="button"
+                    >
+                        ENVIAR DENUNCIA
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <div
+                id="modal-denunciar-reel"
+                class="modal modal-contenido-social"
+                hidden
+            >
+
+                <div
+                    class="modal-contenido"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="titulo-denunciar-reel"
+                >
+
+                    <button
+                        id="boton-cerrar-denunciar-reel"
+                        class="boton-cerrar-modal"
+                        type="button"
+                        aria-label="Cerrar"
+                    >
+                        ×
+                    </button>
+
+                    <h2 id="titulo-denunciar-reel">
+                        Denunciar reel
+                    </h2>
+
+                    <p
+                        id="nombre-denunciar-reel"
+                        class="estado-amigos"
+                        aria-live="polite"
+                    ></p>
+
+                    <label for="motivo-denuncia-reel">
+                        Motivo (obligatorio, 3-500 caracteres)
+                    </label>
+
+                    <textarea
+                        id="motivo-denuncia-reel"
+                        rows="4"
+                        maxlength="500"
+                    ></textarea>
+
+                    <p
+                        id="estado-denunciar-reel"
+                        class="estado-amigos"
+                        aria-live="polite"
+                    ></p>
+
+                    <button
+                        id="boton-confirmar-denuncia-reel"
+                        type="button"
+                    >
+                        ENVIAR DENUNCIA
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <div
                 id="modal-bloquear-cuenta"
                 class="modal modal-contenido-social"
                 hidden
@@ -2737,7 +2857,7 @@
             </div>
 
     <script src="/data/emojis.js"></script>
-    <script src="/app.js?v=48"></script>
+    <script src="/app.js?v=49"></script>
 
 </body>
 

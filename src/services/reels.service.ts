@@ -263,6 +263,35 @@ export async function comentarReel(usuarioId: string, reelId: string, texto: str
     return resultado.rows[0];
 }
 
+// Denuncia oculta de reels: igual que en publicaciones, lo visible NO se
+// toca. Solo se guarda en denuncias_reels para que en un futuro
+// Creador/Admin las revisen. Solo denuncia quien puede ver el reel.
+export async function denunciarReel(
+    usuarioId: string,
+    reelId: string,
+    motivo: string
+) {
+    const motivoLimpio = (motivo ?? "").trim();
+    if (motivoLimpio.length < 3 || motivoLimpio.length > 500) {
+        throw new Error("El motivo debe tener entre 3 y 500 caracteres");
+    }
+    await puedeVerReel(usuarioId, reelId);
+    try {
+        await db.query(
+            `INSERT INTO denuncias_reels (reel_id, denunciante_id, motivo)
+             VALUES ($1, $2, $3)`,
+            [reelId, usuarioId, motivoLimpio]
+        );
+    } catch (error) {
+        const codigo = (error as { code?: string }).code;
+        if (codigo === "23505") {
+            throw new Error("Ya has denunciado este reel");
+        }
+        throw error;
+    }
+    return { mensaje: "Reel denunciado" };
+}
+
 export async function eliminarReel(usuarioId: string, reelId: string) {
     const puedeBorrar = await puedeEditarComoDesarrollador(usuarioId, null);
     const resultado = await db.query(

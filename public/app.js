@@ -116,7 +116,7 @@ const ICONO_COMPOSER_MICROFONO = `
     </svg>
 `;
 
-const VERSION_APP = "v48";
+const VERSION_APP = "v49";
 
 document.getElementById("version-app-cuenta")?.replaceChildren(VERSION_APP);
 
@@ -7847,6 +7847,18 @@ function renderizarPublicacion(publicacion) {
                     </span>
                 </button>
                 ${publicacion.es_mia ? `<button type="button" data-eliminar-publicacion="${escapeHtml(publicacion.id)}">ELIMINAR</button>` : ""}
+                <button class="boton-opciones-publicacion" type="button" data-opciones-publicacion="${escapeHtml(publicacion.id)}" aria-label="Opciones de la publicación" aria-expanded="false">
+                    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+                        <circle cx="12" cy="5" r="1.8" fill="currentColor"/>
+                        <circle cx="12" cy="12" r="1.8" fill="currentColor"/>
+                        <circle cx="12" cy="19" r="1.8" fill="currentColor"/>
+                    </svg>
+                </button>
+                <div class="menu-opciones-publicacion" hidden>
+                    <ul>
+                        <li><button type="button" data-denunciar-publicacion="${escapeHtml(publicacion.id)}">Denunciar publicación</button></li>
+                    </ul>
+                </div>
             </header>
             ${publicacion.texto ? `<p class="texto-publicacion-actual">${escapeHtml(publicacion.texto)}</p>` : ""}
             ${renderizarMediosPublicacion(publicacion.multimedia)}
@@ -9259,6 +9271,142 @@ document.getElementById("boton-cerrar-denunciar-estado")?.addEventListener("clic
     cerrarModalPorId("modal-denunciar-estado");
 });
 
+/* DENUNCIA DE PUBLICACIONES (menú de 3 puntos, igual que cuentas/estados) */
+
+let publicacionDenunciaActual = null;
+
+function abrirDenunciaPublicacion(publicacionId) {
+    if (!publicacionId) return;
+    publicacionDenunciaActual = publicacionId;
+    const modal = document.getElementById("modal-denunciar-publicacion");
+    const nombre = document.getElementById("nombre-denunciar-publicacion");
+    const estadoInfo = document.getElementById("estado-denunciar-publicacion");
+    if (nombre) nombre.textContent = "Denunciar esta publicación";
+    if (estadoInfo) estadoInfo.textContent = "";
+    const motivo = document.getElementById("motivo-denuncia-publicacion");
+    if (motivo) motivo.value = "";
+    document.querySelectorAll(".menu-opciones-publicacion").forEach((menu) => {
+        menu.hidden = true;
+    });
+    if (modal) modal.hidden = false;
+}
+
+document.getElementById("boton-confirmar-denuncia-publicacion")?.addEventListener("click", async () => {
+    if (!publicacionDenunciaActual) return;
+    const motivo = document.getElementById("motivo-denuncia-publicacion")?.value?.trim() ?? "";
+    if (motivo.length < 3 || motivo.length > 500) {
+        const estadoInfo = document.getElementById("estado-denunciar-publicacion");
+        if (estadoInfo) estadoInfo.textContent = "El motivo debe tener entre 3 y 500 caracteres.";
+        return;
+    }
+    const token = localStorage.getItem("atuistas_token");
+    try {
+        const respuesta = await fetch(`/api/publicaciones/${encodeURIComponent(publicacionDenunciaActual)}/denuncias`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify({ motivo })
+        });
+        const datos = await respuesta.json().catch(() => ({}));
+        if (respuesta.ok) {
+            cerrarModalPorId("modal-denunciar-publicacion");
+            publicacionDenunciaActual = null;
+        } else {
+            const estadoInfo = document.getElementById("estado-denunciar-publicacion");
+            if (estadoInfo) estadoInfo.textContent = datos.error || "No se pudo enviar la denuncia.";
+        }
+    } catch (fallo) {
+        console.warn("No se pudo denunciar la publicación:", fallo);
+        const estadoInfo = document.getElementById("estado-denunciar-publicacion");
+        if (estadoInfo) estadoInfo.textContent = "No se pudo conectar con el servidor.";
+    }
+});
+
+document.getElementById("boton-cerrar-denunciar-publicacion")?.addEventListener("click", () => {
+    cerrarModalPorId("modal-denunciar-publicacion");
+    publicacionDenunciaActual = null;
+});
+
+/* DENUNCIA DE REELS (menú de 3 puntos, igual que publicaciones) */
+
+let reelDenunciaActual = null;
+
+function abrirDenunciaReel(reelId) {
+    if (!reelId) return;
+    reelDenunciaActual = reelId;
+    const modal = document.getElementById("modal-denunciar-reel");
+    const nombre = document.getElementById("nombre-denunciar-reel");
+    const estadoInfo = document.getElementById("estado-denunciar-reel");
+    if (nombre) nombre.textContent = "Denunciar este reel";
+    if (estadoInfo) estadoInfo.textContent = "";
+    const motivo = document.getElementById("motivo-denuncia-reel");
+    if (motivo) motivo.value = "";
+    document.querySelectorAll("#pista-reels-visor .menu-opciones-reel").forEach((menu) => {
+        menu.hidden = true;
+    });
+    if (modal) modal.hidden = false;
+}
+
+document.getElementById("boton-confirmar-denuncia-reel")?.addEventListener("click", async () => {
+    if (!reelDenunciaActual) return;
+    const motivo = document.getElementById("motivo-denuncia-reel")?.value?.trim() ?? "";
+    if (motivo.length < 3 || motivo.length > 500) {
+        const estadoInfo = document.getElementById("estado-denunciar-reel");
+        if (estadoInfo) estadoInfo.textContent = "El motivo debe tener entre 3 y 500 caracteres.";
+        return;
+    }
+    const token = localStorage.getItem("atuistas_token");
+    try {
+        const respuesta = await fetch(`/api/reels/${encodeURIComponent(reelDenunciaActual)}/denuncias`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify({ motivo })
+        });
+        const datos = await respuesta.json().catch(() => ({}));
+        if (respuesta.ok) {
+            cerrarModalPorId("modal-denunciar-reel");
+            reelDenunciaActual = null;
+        } else {
+            const estadoInfo = document.getElementById("estado-denunciar-reel");
+            if (estadoInfo) estadoInfo.textContent = datos.error || "No se pudo enviar la denuncia.";
+        }
+    } catch (fallo) {
+        console.warn("No se pudo denunciar el reel:", fallo);
+        const estadoInfo = document.getElementById("estado-denunciar-reel");
+        if (estadoInfo) estadoInfo.textContent = "No se pudo conectar con el servidor.";
+    }
+});
+
+document.getElementById("boton-cerrar-denunciar-reel")?.addEventListener("click", () => {
+    cerrarModalPorId("modal-denunciar-reel");
+    reelDenunciaActual = null;
+});
+
+// Cerrar los menús de 3 puntos al pulsar fuera, igual que en estados.
+document.addEventListener("click", (evento) => {
+    if (!evento.target.closest?.(".menu-opciones-publicacion, [data-opciones-publicacion]")) {
+        document.querySelectorAll(".menu-opciones-publicacion").forEach((menu) => {
+            menu.hidden = true;
+        });
+        document.querySelectorAll("[data-opciones-publicacion]").forEach((boton) => {
+            boton.setAttribute("aria-expanded", "false");
+        });
+    }
+    if (!evento.target.closest?.(".menu-opciones-reel, [data-opciones-reel]")) {
+        document.querySelectorAll("#pista-reels-visor .menu-opciones-reel").forEach((menu) => {
+            menu.hidden = true;
+        });
+        document.querySelectorAll("#pista-reels-visor [data-opciones-reel]").forEach((boton) => {
+            boton.setAttribute("aria-expanded", "false");
+        });
+    }
+});
+
 const entradaComentarioEstado = document.getElementById("texto-comentario-estado");
 const botonComentarEstado = document.getElementById("boton-comentar-estado");
 
@@ -9641,6 +9789,18 @@ function abrirVisorReels(reels, reelId) {
             <video class="video-reel" src="${escapeHtml(reel.video_url)}" loop muted playsinline
                 preload="metadata"></video>
             <h3 class="titulo-reel">${escapeHtml(reel.titulo)}</h3>
+            <button class="boton-opciones-reel" type="button" data-opciones-reel="${escapeHtml(reel.id)}" aria-label="Opciones del reel" aria-expanded="false">
+                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+                    <circle cx="12" cy="5" r="1.8" fill="currentColor"/>
+                    <circle cx="12" cy="12" r="1.8" fill="currentColor"/>
+                    <circle cx="12" cy="19" r="1.8" fill="currentColor"/>
+                </svg>
+            </button>
+            <div class="menu-opciones-reel" hidden>
+                <ul>
+                    <li><button type="button" data-denunciar-reel="${escapeHtml(reel.id)}">Denunciar reel</button></li>
+                </ul>
+            </div>
             <div class="acciones-reel">
                 <div class="acciones-reel-contador">
                     <strong class="cuenta-likes">${reel.likes ?? 0}</strong>
@@ -9809,7 +9969,7 @@ function configurarPantallaReel(pantalla) {
     video.addEventListener("ended", pintar);
 
     pantalla.addEventListener("click", (evento) => {
-        if (evento.target.closest(".acciones-reel, .barra-reel, .titulo-reel, .aviso-reproduccion")) {
+        if (evento.target.closest(".acciones-reel, .barra-reel, .titulo-reel, .aviso-reproduccion, .boton-opciones-reel, .menu-opciones-reel")) {
             return;
         }
         if (video.paused) {
@@ -9902,6 +10062,30 @@ document.getElementById("pista-reels-visor")?.addEventListener("click", async (e
     const pantalla = evento.target.closest(".pantalla-reel");
     if (!pantalla) return;
     const reelId = pantalla.dataset.reelId;
+
+    const opciones = evento.target.closest("[data-opciones-reel]");
+    if (opciones) {
+        evento.stopPropagation();
+        const menu = pantalla.querySelector(".menu-opciones-reel");
+        if (!menu) return;
+        const abierto = menu.hidden;
+        document.querySelectorAll("#pista-reels-visor .menu-opciones-reel").forEach((otro) => {
+            otro.hidden = true;
+        });
+        document.querySelectorAll("#pista-reels-visor [data-opciones-reel]").forEach((boton) => {
+            boton.setAttribute("aria-expanded", "false");
+        });
+        menu.hidden = !abierto;
+        opciones.setAttribute("aria-expanded", String(abierto));
+        return;
+    }
+
+    const denunciar = evento.target.closest("[data-denunciar-reel]");
+    if (denunciar) {
+        evento.stopPropagation();
+        abrirDenunciaReel(denunciar.dataset.denunciarReel);
+        return;
+    }
 
     const like = evento.target.closest(".boton-like");
     if (like) {
@@ -10008,6 +10192,27 @@ async function cargarComentariosPublicacion(publicacionId, contenedor) {
 function conectarFeed(contenedor) {
     contenedor.addEventListener("click", async (evento) => {
         if (evento.target.closest?.(".reproductor-audio")) return;
+        const opciones = evento.target.closest("[data-opciones-publicacion]");
+        const denunciar = evento.target.closest("[data-denunciar-publicacion]");
+        if (opciones) {
+            const articulo = opciones.closest(".publicacion-actual");
+            const menu = articulo?.querySelector(".menu-opciones-publicacion");
+            if (!menu) return;
+            const abierto = menu.hidden;
+            contenedor.querySelectorAll(".menu-opciones-publicacion").forEach((otro) => {
+                otro.hidden = true;
+            });
+            contenedor.querySelectorAll("[data-opciones-publicacion]").forEach((boton) => {
+                boton.setAttribute("aria-expanded", "false");
+            });
+            menu.hidden = !abierto;
+            opciones.setAttribute("aria-expanded", String(abierto));
+            return;
+        }
+        if (denunciar) {
+            abrirDenunciaPublicacion(denunciar.dataset.denunciarPublicacion);
+            return;
+        }
         const perfil = evento.target.closest("[data-abrir-perfil]");
         const corazon = evento.target.closest("[data-corazon-publicacion]");
         const comentarios = evento.target.closest("[data-comentarios-publicacion]");
