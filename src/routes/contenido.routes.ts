@@ -12,6 +12,7 @@ import {
     comentarPublicacion,
     crearEstado,
     crearPublicacion,
+    denunciarEstado,
     eliminarEstado,
     eliminarPublicacion,
     obtenerComentarios,
@@ -206,6 +207,26 @@ export async function contenidoRoutes(app: FastifyInstance) {
             } catch (error) {
                 const message = error instanceof Error ? error.message : "No se pudo comentar";
                 return reply.code(400).send({ error: message });
+            }
+        }
+    );
+
+    // Denuncia oculta de un estado: solo puede denunciar quien puede verlo.
+    app.post<{ Params: { estadoId: string }; Body: { motivo?: string } }>(
+        "/api/estados/:estadoId/denuncias",
+        { preHandler: autenticar },
+        async (request, reply) => {
+            try {
+                const resultado = await denunciarEstado(
+                    request.usuario!.id,
+                    request.params.estadoId,
+                    request.body.motivo ?? ""
+                );
+                return reply.code(201).send(resultado);
+            } catch (error) {
+                const message = error instanceof Error ? error.message : "No se pudo denunciar el estado";
+                const codigo = message === "Ya has denunciado este estado" ? 409 : 400;
+                return reply.code(codigo).send({ error: message });
             }
         }
     );

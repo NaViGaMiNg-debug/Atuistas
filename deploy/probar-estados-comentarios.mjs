@@ -84,7 +84,7 @@ comprobar(
 /* ---------- El cliente los pinta ---------- */
 
 comprobar(html.includes('id="modal-comentarios-estado"'), "El visor de estados tiene su ventana");
-comprobar(html.includes('id="boton-comentarios-estado"'), "El visor de estados tiene su boton");
+comprobar(html.includes('id="boton-ver-comentarios-estado"'), "El visor de estados tiene su boton de comentarios");
 comprobar(
     html.includes('id="texto-comentario-estado"') && html.includes('id="boton-comentar-estado"'),
     "La ventana tiene caja y boton para escribir"

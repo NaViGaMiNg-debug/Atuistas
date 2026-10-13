@@ -6615,23 +6615,69 @@ button.servidor-tarjeta:focus-visible {
     cursor: pointer;
 }
 
-/* El boton de comentarios va justo a la izquierda del de cerrar. */
-.cabecera-historia-pantalla #boton-comentarios-estado {
+/* Botón de opciones del estado: tres puntos verticales. */
+.cabecera-historia-pantalla #boton-opciones-historia {
     right: 48px;
-    font-size: 16px;
-    display: inline-flex;
+    width: 40px;
+    height: 40px;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.42);
+    color: #fff;
+    cursor: pointer;
+    display: flex;
     align-items: center;
     justify-content: center;
-    gap: 2px;
 }
 
-.cantidad-comentarios-estado {
-    font-size: 11px;
-    font-weight: 700;
+.cabecera-historia-pantalla #boton-opciones-historia svg circle {
+    fill: currentColor;
 }
 
-.cantidad-comentarios-estado[hidden] {
-    display: none;
+/* Menú emergente con las opciones del estado (denunciar / despejar). */
+.menu-opciones-historia {
+    position: absolute;
+    top: 48px;
+    right: 48px;
+    z-index: 20;
+    min-width: 180px;
+    background: rgba(0, 0, 0, 0.82);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    padding: 6px 0;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    display: flex;
+    flex-direction: column;
+}
+
+.menu-opciones-historia ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.menu-opciones-historia button {
+    width: 100%;
+    text-align: left;
+    padding: 11px 16px;
+    border: 0;
+    background: transparent;
+    color: #fff;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.menu-opciones-historia button:hover {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.menu-opciones-historia button .icono-popup {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
 }
 
 .contenido-historia-pantalla {
@@ -6644,6 +6690,18 @@ button.servidor-tarjeta:focus-visible {
     place-items: center;
     overflow: hidden;
     background: #161616;
+    /* Al dejar pulsado NO debe salir el menú de copiar/descargar imagen:
+       se desactiva la llamada táctil, la selección y el arrastre. */
+    -webkit-touch-callout: none;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.contenido-historia-pantalla img,
+.contenido-historia-pantalla video {
+    -webkit-user-drag: none;
+    user-drag: none;
+    pointer-events: none;
 }
 
 .contenido-historia-pantalla > img,

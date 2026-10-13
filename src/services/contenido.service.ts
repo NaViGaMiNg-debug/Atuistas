@@ -346,3 +346,32 @@ export async function alternarLikeEstado(usuarioId: string, estadoId: string) {
     );
     return { me_gusta: quitado.rowCount !== 1, likes: cuenta.rows[0].likes };
 }
+
+// Denuncia oculta de estados: igual que en las cuentas, la etiqueta visible
+// NO se toca. Solo se guarda en denuncias_estados para que en un futuro
+// Creador/Admin las revisen. Solo puede denunciar quien puede ver el estado.
+export async function denunciarEstado(
+    usuarioId: string,
+    estadoId: string,
+    motivo: string
+) {
+    const motivoLimpio = (motivo ?? "").trim();
+    if (motivoLimpio.length < 3 || motivoLimpio.length > 500) {
+        throw new Error("El motivo debe tener entre 3 y 500 caracteres");
+    }
+    await puedeVerEstado(usuarioId, estadoId);
+    try {
+        await db.query(
+            `INSERT INTO denuncias_estados (estado_id, denunciante_id, motivo)
+             VALUES ($1, $2, $3)`,
+            [estadoId, usuarioId, motivoLimpio]
+        );
+    } catch (error) {
+        const codigo = (error as { code?: string }).code;
+        if (codigo === "23505") {
+            throw new Error("Ya has denunciado este estado");
+        }
+        throw error;
+    }
+    return { mensaje: "Estado denunciado" };
+}

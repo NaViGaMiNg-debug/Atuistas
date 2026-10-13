@@ -14,7 +14,7 @@
 
     <link
         rel="stylesheet"
-        href="/style.css?v=45"
+        href="/style.css?v=46"
     >
 
     <link rel="icon" href="/icon.svg" type="image/svg+xml">
@@ -1547,7 +1547,19 @@
                         <img id="avatar-autor-historia" alt="" hidden>
                         <strong id="nombre-autor-historia"></strong>
                     </button>
-                    <button id="boton-comentarios-estado" type="button" aria-label="Comentarios del estado">💬<span id="cantidad-comentarios-estado" class="cantidad-comentarios-estado" hidden></span></button>
+                    <button id="boton-opciones-historia" class="boton-opciones-historia" type="button" aria-label="Opciones del estado" aria-expanded="false">
+                        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+                            <circle cx="12" cy="5" r="1.8" fill="currentColor"/>
+                            <circle cx="12" cy="12" r="1.8" fill="currentColor"/>
+                            <circle cx="12" cy="19" r="1.8" fill="currentColor"/>
+                        </svg>
+                    </button>
+                    <div id="menu-opciones-historia" class="menu-opciones-historia" hidden>
+                        <ul>
+                            <li><button type="button" id="opcion-denunciar-estado">Denunciar estado</button></li>
+                            <li><button type="button" id="opcion-despejar-pantalla">Despejar pantalla</button></li>
+                        </ul>
+                    </div>
                     <button id="cerrar-visor-historias" type="button" aria-label="Cerrar estados">×</button>
                 </header>
                 <button id="historia-anterior" class="zona-historia zona-historia-anterior" type="button" aria-label="Estado anterior"></button>
@@ -2766,6 +2778,67 @@
 
             </div>
 
+            <!-- MODAL DENUNCIAR ESTADO: motivo obligatorio 3-500 -->
+
+            <div
+                id="modal-denunciar-estado"
+                class="modal modal-contenido-social"
+                hidden
+            >
+
+                <div
+                    class="modal-contenido"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="titulo-denunciar-estado"
+                >
+
+                    <button
+                        id="boton-cerrar-denunciar-estado"
+                        class="boton-cerrar-modal"
+                        type="button"
+                        aria-label="Cerrar"
+                    >
+                        ×
+                    </button>
+
+                    <h2 id="titulo-denunciar-estado">
+                        Denunciar estado
+                    </h2>
+
+                    <p
+                        id="nombre-denunciar-estado"
+                        class="estado-amigos"
+                        aria-live="polite"
+                    ></p>
+
+                    <label for="motivo-denuncia-estado">
+                        Motivo (obligatorio, 3-500 caracteres)
+                    </label>
+
+                    <textarea
+                        id="motivo-denuncia-estado"
+                        rows="4"
+                        maxlength="500"
+                    ></textarea>
+
+                    <p
+                        id="estado-denunciar-estado"
+                        class="estado-amigos"
+                        aria-live="polite"
+                    ></p>
+
+                    <button
+                        id="boton-confirmar-denuncia-estado"
+                        type="button"
+                    >
+                        ENVIAR DENUNCIA
+                    </button>
+
+                </div>
+
+            </div>
+
             <!-- MODAL BLOQUEAR: pregunta si está seguro -->
 
             <div
@@ -2911,7 +2984,7 @@
     <!-- ?v tiene que subir junto con VERSION en sw.js cada vez que cambie
          app.js: sin esa firma, la caché del navegador y la del service worker
          sirven el fichero viejo para siempre y los arreglos no llegan nunca. -->
-    <script src="/app.js?v=45"></script>
+    <script src="/app.js?v=46"></script>
 
 </body>
 

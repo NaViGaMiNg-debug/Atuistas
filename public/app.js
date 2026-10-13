@@ -128,7 +128,7 @@ const ICONO_COMPOSER_MICROFONO = `
 // Versión de la app que se muestra arriba a la izquierda en tu propio perfil
 // y en la cabecera de Cuenta (dos sitios para que siempre se pueda ver).
 // Se sube junto a VERSION en public/sw.js y a las ?v= de public/index.html.
-const VERSION_APP = "v45";
+const VERSION_APP = "v46";
 
 // La de Cuenta no depende de petición ninguna: se escribe al cargar el script.
 document.getElementById("version-app-cuenta")?.replaceChildren(VERSION_APP);
@@ -1128,9 +1128,18 @@ let limiteGrabacionAudio = null;
 let descartarGrabacionAudio = false;
 let registroServiceWorker = null;
 const secuenciasEstadosFeed = new Map();
+// Orden de las personas vistas en el feed, por sección: al abrir los estados
+// de una persona se recorren también las siguientes cuando se acaben.
+const ordenClavesEstados = new Map();
 let indiceHistoriaActual = 0;
 let temporizadorHistoria = null;
 let secuenciaHistoriaActual = [];
+let personasSecuencia = [];
+let personaActual = 0;
+// Límites [inicio, fin) de cada persona dentro de la secuencia plana, para
+// pintar solo las barras de progreso de la persona que se está viendo.
+let limitesPersonas = [];
+let botonOpcionesHistoria = null;
 
 /* ========================================
    INSTALACIÓN Y ACTUALIZACIÓN DE LA PWA
@@ -8489,6 +8498,8 @@ async function cargarEstados(seccion, contenedor) {
         const tarjetas = [...porPersona.entries()].map(([autorId, estados], indice) => {
             const clave = `${seccion}-${indice}-${autorId}`;
             secuenciasEstadosFeed.set(clave, estados);
+            if (!ordenClavesEstados.has(seccion)) ordenClavesEstados.set(seccion, []);
+            ordenClavesEstados.get(seccion).push(clave);
             const persona = estados[0];
             const historias = contarHistoriasEstado(estados);
             const primerMedio = persona.multimedia?.[0];
@@ -8881,20 +8892,50 @@ function reflejarCorazonPublicacion(boton, activo) {
     boton.setAttribute("aria-pressed", String(activo));
 }
 
-function abrirHistorias(clave) {
-    const estados = secuenciasEstadosFeed.get(clave);
+// Partiendo de la clave de una persona del feed, devuelve la lista de claves de
+// su sección empezando por esa persona y siguiendo por las siguientes: así, al
+// acabarse los estados de una persona se pasa a los de la siguiente.
+function expandirClaveSecuencia(clave) {
+    for (const claves of ordenClavesEstados.values()) {
+        const indice = claves.indexOf(clave);
+        if (indice >= 0) {
+            return [...claves.slice(indice), ...claves.slice(0, indice)];
+        }
+    }
+    return [clave];
+}
+
+function abrirHistorias(claves) {
+    let clavesAUsar = claves;
+    if (typeof claves === "string") {
+        clavesAUsar = [claves];
+    }
+    const primerClave = clavesAUsar[0];
+    const estados = secuenciasEstadosFeed.get(primerClave);
     if (!estados?.length) return;
 
-    secuenciaHistoriaActual = estados.flatMap((estado) => {
-        const medios = estado.multimedia || [];
-        if (medios.length <= 1) return [estado];
-        return medios.map((medio, indice) => ({
-            ...estado,
-            multimedia: [medio],
-            texto: indice === 0 ? estado.texto : ""
-        }));
-    });
+    secuenciaHistoriaActual = [];
+    personasSecuencia = [];
+    limitesPersonas = [];
+    for (const clave of clavesAUsar) {
+        const estadosPersona = secuenciasEstadosFeed.get(clave);
+        if (estadosPersona?.length) {
+            const inicio = secuenciaHistoriaActual.length;
+            personasSecuencia.push(clave);
+            secuenciaHistoriaActual.push(...estadosPersona.flatMap((estado) => {
+                const medios = estado.multimedia || [];
+                if (medios.length <= 1) return [estado];
+                return medios.map((medio, indice) => ({
+                    ...estado,
+                    multimedia: [medio],
+                    texto: indice === 0 ? estado.texto : ""
+                }));
+            }));
+            limitesPersonas.push({ inicio, fin: secuenciaHistoriaActual.length });
+        }
+    }
     indiceHistoriaActual = 0;
+    personaActual = 0;
     document.getElementById("visor-historias-pantalla").hidden = false;
     mostrarHistoriaActual();
 }
@@ -8923,6 +8964,10 @@ function mostrarHistoriaActual() {
         return;
     }
 
+    // Se deduce a qué persona pertenece el índice actual, para que la barra de
+    // progreso y el avance entre personas sean coherentes incluso al retroceder.
+    personaActual = Math.max(0, limitesPersonas.findIndex((lim) => indiceHistoriaActual < lim.fin));
+
     const avatar = document.getElementById("avatar-autor-historia");
     avatar.hidden = !estado.avatar_url;
     if (estado.avatar_url) avatar.src = `/${estado.avatar_url}`;
@@ -8934,13 +8979,21 @@ function mostrarHistoriaActual() {
 
     // El botón de comentarios enseña cuántos tiene este estado.
     pintarCantidadComentariosEstado(estado.comentarios || 0);
+    // El corazón refleja si esta persona ya le había dado like y cuántos lleva.
+    pintarLikeEstado(Boolean(estado.me_gusta), estado.likes || 0);
 
     const progreso = document.getElementById("progreso-historias");
-    progreso.innerHTML = secuenciaHistoriaActual.map((_, indice) => `
+    // Solo se pintan las barras de la persona que se está viendo: al pasar a la
+    // siguiente persona la barra empieza de nuevo desde su primer estado.
+    const rango = limitesPersonas[personaActual] ?? { inicio: 0, fin: secuenciaHistoriaActual.length };
+    progreso.innerHTML = secuenciaHistoriaActual.slice(rango.inicio, rango.fin).map((_, i) => {
+        const indice = rango.inicio + i;
+        return `
         <span class="progreso-historia ${indice < indiceHistoriaActual ? "completado" : ""}">
             <i class="${indice === indiceHistoriaActual ? "activo" : ""}"></i>
         </span>
-    `).join("");
+    `;
+    }).join("");
 
     const contenido = document.getElementById("contenido-historia-pantalla");
     // Si el estado lleva texto y además multimedia, el texto se muestra como
@@ -8980,6 +9033,9 @@ function mostrarHistoriaActual() {
 }
 
 function pasarHistoriaSiguiente() {
+    // La secuencia es plana e incluye los estados de todas las personas en
+    // orden: al acabarse los de una, el índice siguiente ya es el primero de
+    // la siguiente persona. Al final del todo, se cierra el visor.
     if (indiceHistoriaActual < secuenciaHistoriaActual.length - 1) {
         indiceHistoriaActual += 1;
         mostrarHistoriaActual();
@@ -9017,6 +9073,9 @@ function despejarHistoria() {
     if (typeof soyDesarrollador !== "undefined" && soyDesarrollador) terminarPulsacionLarga();
     const visor = document.getElementById("visor-historias-pantalla");
     visor.classList.add("historia-despejada");
+    // Se para del todo la reproducción: el vídeo o el audio, y también la
+    // cuenta atrás del texto o la foto, para que nada avance mientras está
+    // despejada la pantalla.
     mediosDespejados = [];
     visor.querySelectorAll("#contenido-historia-pantalla video, #contenido-historia-pantalla audio").forEach((medio) => {
         if (!medio.paused) {
@@ -9024,6 +9083,35 @@ function despejarHistoria() {
             medio.pause();
         }
     });
+    if (temporizadorHistoria) {
+        clearTimeout(temporizadorHistoria);
+        temporizadorHistoria = null;
+    }
+    const fill = document.querySelector("#progreso-historias .progreso-historia i.activo");
+    if (fill) fill.style.animationPlayState = "paused";
+}
+
+function pausarReproduccionHistorias() {
+    const visor = document.getElementById("visor-historias-pantalla");
+    // Vídeo o audio: se pausa el medio.
+    visor.querySelectorAll("#contenido-historia-pantalla video, #contenido-historia-pantalla audio").forEach((medio) => {
+        if (!medio.paused) medio.pause();
+    });
+    // Texto o imagen: se congela la barra de progreso y se anula el avance
+    // automático, para que la persona pueda escribir sin que el estado cambie.
+    if (temporizadorHistoria) {
+        clearTimeout(temporizadorHistoria);
+        temporizadorHistoria = null;
+    }
+    const fill = document.querySelector("#progreso-historias .progreso-historia i.activo");
+    if (fill) fill.style.animationPlayState = "paused";
+}
+
+function cerrarMenuOpcionesHistoria() {
+    menuOpcionesHistoriaAbierto = false;
+    botonOpcionesHistoria?.setAttribute("aria-expanded", "false");
+    const menu = document.getElementById("menu-opciones-historia");
+    if (menu) menu.hidden = true;
 }
 
 function restaurarHistoria() {
@@ -9039,7 +9127,15 @@ function restaurarHistoria() {
 }
 
 const contenidoVisorHistorias = document.getElementById("contenido-historia-pantalla");
+contenidoVisorHistorias.addEventListener("contextmenu", (evento) => {
+    // Ni con el botón derecho ni dejando pulsado debe salir el menú de
+    // copiar imagen / descargar imagen sobre el estado.
+    evento.preventDefault();
+});
 contenidoVisorHistorias.addEventListener("pointerdown", (evento) => {
+    // Evita el menú contextual (copiar imagen / descargar imagen) al mantener
+    // pulsado: solo se deja quitar la pantalla y parar el estado.
+    evento.preventDefault();
     if (evento.pointerType === "mouse" && evento.button !== 0) return;
     if (temporizadorDespejeHistoria) clearTimeout(temporizadorDespejeHistoria);
     // 450 ms: es una pulsación sostenida a propósito, no un toque normal, y
@@ -9780,10 +9876,24 @@ document.getElementById("formulario-comentario-reel")?.addEventListener("submit"
 let estadoComentariosAbierto = null;
 
 function pintarCantidadComentariosEstado(total) {
-    const marca = document.getElementById("cantidad-comentarios-estado");
+    const marca = document.getElementById("cantidad-comentarios-barra-estado");
     if (!marca) return;
     marca.hidden = !total;
     marca.textContent = total ? String(total) : "";
+}
+
+// Pinta el corazón del estado y su contador según el estado que se está viendo.
+function pintarLikeEstado(meGusta, likes) {
+    const like = document.getElementById("boton-like-estado");
+    if (!like) return;
+    like.dataset.meGusta = meGusta ? "1" : "0";
+    like.classList.toggle("activo", meGusta);
+    like.setAttribute("aria-pressed", String(meGusta));
+    const contador = document.getElementById("contador-likes-estado");
+    if (contador) {
+        contador.textContent = likes ? String(likes) : "";
+        contador.hidden = !likes;
+    }
 }
 
 async function abrirComentariosEstado(estadoId) {
@@ -9812,13 +9922,144 @@ async function abrirComentariosEstado(estadoId) {
     entrada?.focus();
 }
 
-document.getElementById("boton-comentarios-estado")?.addEventListener("click", () => {
+// Botón de tres puntos: menú de opciones del estado (denunciar / despejar).
+let menuOpcionesHistoriaAbierto = false;
+// El botón de arriba a la derecha; se usa para marcar el aria-expanded.
+botonOpcionesHistoria = document.getElementById("boton-opciones-historia");
+
+document.getElementById("boton-opciones-historia")?.addEventListener("click", (evento) => {
+    evento.stopPropagation();
+    const menu = document.getElementById("menu-opciones-historia");
+    menu.hidden = !menu.hidden;
+    menuOpcionesHistoriaAbierto = !menu.hidden;
+    botonOpcionesHistoria?.setAttribute("aria-expanded", String(!menu.hidden));
+});
+
+document.addEventListener("click", (evento) => {
+    if (menuOpcionesHistoriaAbierto && !document.getElementById("menu-opciones-historia").contains(evento.target)) {
+        document.getElementById("menu-opciones-historia").hidden = true;
+        menuOpcionesHistoriaAbierto = false;
+        botonOpcionesHistoria?.setAttribute("aria-expanded", "false");
+    }
+});
+
+document.getElementById("opcion-denunciar-estado")?.addEventListener("click", abrirDenunciaEstado);
+document.getElementById("opcion-despejar-pantalla")?.addEventListener("click", () => {
+    despejarHistoria();
+    cerrarMenuOpcionesHistoria();
+});
+
+// El botón de abajo abre los comentarios del estado (mismo comportamiento que la 💬).
+document.getElementById("boton-ver-comentarios-estado")?.addEventListener("click", () => {
     const estado = secuenciaHistoriaActual[indiceHistoriaActual];
     abrirComentariosEstado(estado?.id);
 });
 
+// Al empezar a escribir en la caja de abajo, se para la reproducción del estado
+// para que la persona pueda escribir sin prisa.
+const entradaComentarioBarra = document.getElementById("entrada-comentario-estado");
+const botonEnviarBarra = document.getElementById("boton-enviar-comentario-estado");
+entradaComentarioBarra?.addEventListener("input", () => {
+    pausarReproduccionHistorias();
+    if (botonEnviarBarra) botonEnviarBarra.disabled = entradaComentarioBarra.value.trim().length === 0;
+});
+
+// Enviar el comentario desde la barra de abajo del visor de estados.
+document.getElementById("barra-comentario-estado")?.addEventListener("submit", async (evento) => {
+    evento.preventDefault();
+    const estado = secuenciaHistoriaActual[indiceHistoriaActual];
+    const texto = entradaComentarioBarra?.value.trim() ?? "";
+    if (!texto || !estado?.id) return;
+    if (botonEnviarBarra) botonEnviarBarra.disabled = true;
+    try {
+        await solicitarGrupo(`/api/estados/${encodeURIComponent(estado.id)}/comentarios`, {
+            method: "POST",
+            body: JSON.stringify({ texto })
+        });
+        if (entradaComentarioBarra) entradaComentarioBarra.value = "";
+        // Refresca el contador de comentarios del estado que se está viendo.
+        estado.comentarios = (estado.comentarios || 0) + 1;
+        pintarCantidadComentariosEstado(estado.comentarios);
+    } catch (fallo) {
+        console.warn("No se pudo comentar desde la barra:", fallo);
+    } finally {
+        if (botonEnviarBarra) botonEnviarBarra.disabled = entradaComentarioBarra?.value.trim().length === 0;
+    }
+});
+
+// Se ha pulsado el like del estado.
+document.getElementById("boton-like-estado")?.addEventListener("click", async () => {
+    const estado = secuenciaHistoriaActual[indiceHistoriaActual];
+    if (!estado?.id) return;
+    try {
+        const datos = await solicitarGrupo(`/api/estados/${encodeURIComponent(estado.id)}/like`, { method: "POST" });
+        pintarLikeEstado(Boolean(datos.me_gusta), datos.likes ?? 0);
+    } catch (fallo) {
+        console.warn("No se pudo guardar el like:", fallo);
+    }
+});
+
 document.getElementById("boton-cerrar-comentarios-estado")?.addEventListener("click", () => {
     document.getElementById("modal-comentarios-estado").hidden = true;
+});
+
+/* =============================
+   DENUNCIA DE ESTADOS
+   ============================= */
+
+function abrirDenunciaEstado() {
+    const estado = secuenciaHistoriaActual[indiceHistoriaActual];
+    if (!estado?.id) return;
+    const modal = document.getElementById("modal-denunciar-estado");
+    const nombre = document.getElementById("nombre-denunciar-estado");
+    const estadoInfo = document.getElementById("estado-denunciar-estado");
+    if (nombre) nombre.textContent = `Denunciar estado de ${estado.autor_nombre ?? ""}`;
+    if (estadoInfo) estadoInfo.textContent = "";
+    const motivo = document.getElementById("motivo-denuncia-estado");
+    if (motivo) motivo.value = "";
+    cerrarMenuOpcionesHistoria();
+    if (modal) modal.hidden = false;
+}
+
+document.getElementById("boton-confirmar-denuncia-estado")?.addEventListener("click", async () => {
+    const estado = secuenciaHistoriaActual[indiceHistoriaActual];
+    if (!estado?.id) return;
+    const motivo = document.getElementById("motivo-denuncia-estado")?.value?.trim() ?? "";
+    if (motivo.length < 3 || motivo.length > 500) {
+        const estadoInfo = document.getElementById("estado-denunciar-estado");
+        if (estadoInfo) estadoInfo.textContent = "El motivo debe tener entre 3 y 500 caracteres.";
+        return;
+    }
+    const token = localStorage.getItem("atuistas_token");
+    try {
+        const respuesta = await fetch(`/api/estados/${encodeURIComponent(estado.id)}/denuncias`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify({ motivo })
+        });
+        const datos = await respuesta.json().catch(() => ({}));
+        if (respuesta.ok) {
+            cerrarModalPorId("modal-denunciar-estado");
+            const estadoInfo = document.getElementById("estado-denunciar-estado");
+            if (estadoInfo) estadoInfo.textContent = "El estado ha sido denunciado. Gracias.";
+        } else {
+            if (datos.error) {
+                const estadoInfo = document.getElementById("estado-denunciar-estado");
+                if (estadoInfo) estadoInfo.textContent = datos.error;
+            }
+        }
+    } catch (fallo) {
+        console.warn("No se pudo denunciar el estado:", fallo);
+        const estadoInfo = document.getElementById("estado-denunciar-estado");
+        if (estadoInfo) estadoInfo.textContent = "No se pudo conectar con el servidor.";
+    }
+});
+
+document.getElementById("boton-cerrar-denunciar-estado")?.addEventListener("click", () => {
+    cerrarModalPorId("modal-denunciar-estado");
 });
 
 const entradaComentarioEstado = document.getElementById("texto-comentario-estado");
@@ -10650,7 +10891,7 @@ function conectarFeed(contenedor) {
                 panel.hidden = !panel.hidden;
                 if (!panel.hidden) await cargarComentariosPublicacion(comentarios.dataset.comentariosPublicacion, panel);
             } else if (historias) {
-                abrirHistorias(historias.dataset.verHistorias);
+                abrirHistorias(expandirClaveSecuencia(historias.dataset.verHistorias));
             } else if (eliminarPublicacion && confirm("¿Eliminar esta publicación?")) {
                 await solicitarGrupo(`/api/publicaciones/${encodeURIComponent(eliminarPublicacion.dataset.eliminarPublicacion)}`, { method: "DELETE" });
                 if (enPerfil) await cargarPublicacionesPerfil();

@@ -505,6 +505,27 @@ export async function migrarEsquema() {
             CREATE INDEX IF NOT EXISTS idx_estados_likes_estado
                 ON estados_likes(estado_id);
 
+            -- Denuncia oculta de estados: no toca lo que se ve. Solo la
+            -- guardamos para que en un futuro Creador/Admin las revisen.
+            CREATE TABLE IF NOT EXISTS denuncias_estados (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                estado_id UUID NOT NULL
+                    REFERENCES estados(id) ON DELETE CASCADE,
+                denunciante_id UUID NOT NULL
+                    REFERENCES usuarios(id) ON DELETE CASCADE,
+                motivo VARCHAR(500) NOT NULL,
+                creado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                CONSTRAINT denuncias_estados_motivo_check
+                    CHECK (length(trim(motivo)) BETWEEN 3 AND 500),
+                UNIQUE (estado_id, denunciante_id)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_denuncias_estados_estado
+                ON denuncias_estados(estado_id);
+
+            CREATE INDEX IF NOT EXISTS idx_denuncias_estados_denunciante
+                ON denuncias_estados(denunciante_id);
+
             -- ==========================================
             -- HISTORIAS
             -- Carpetas permanentes con muchos elementos

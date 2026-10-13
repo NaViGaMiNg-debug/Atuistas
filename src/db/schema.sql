@@ -1065,6 +1065,35 @@ CREATE TABLE estados_likes (
 
 
 -- ============================================================
+-- DENUNCIAS DE ESTADOS
+-- Igual que las de cuentas: marca oculta para que en un futuro
+-- Creador/Admin vean los estados denunciados. No toca lo que se
+-- ve. Solo puede denunciar quien puede ver el estado.
+-- ============================================================
+
+CREATE TABLE denuncias_estados (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    estado_id UUID NOT NULL
+        REFERENCES estados(id)
+        ON DELETE CASCADE,
+
+    denunciante_id UUID NOT NULL
+        REFERENCES usuarios(id)
+        ON DELETE CASCADE,
+
+    motivo VARCHAR(500) NOT NULL,
+
+    creado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT denuncias_estados_motivo_check
+        CHECK (length(trim(motivo)) BETWEEN 3 AND 500),
+
+    UNIQUE (estado_id, denunciante_id)
+);
+
+
+-- ============================================================
 -- REELS
 -- Vídeo corto con título obligatorio: un único archivo de vídeo
 -- y visibilidad de amigos o público.
@@ -1308,6 +1337,12 @@ CREATE INDEX idx_estados_comentarios_estado
 
 CREATE INDEX idx_estados_likes_estado
     ON estados_likes(estado_id);
+
+CREATE INDEX idx_denuncias_estados_estado
+    ON denuncias_estados(estado_id);
+
+CREATE INDEX idx_denuncias_estados_denunciante
+    ON denuncias_estados(denunciante_id);
 
 CREATE INDEX idx_reels_autor
     ON reels(autor_id, creado_en DESC);
