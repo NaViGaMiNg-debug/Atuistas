@@ -14,7 +14,7 @@
 
     <link
         rel="stylesheet"
-        href="/style.css?v=52"
+        href="/style.css?v=53"
     >
 
     <link rel="icon" href="/icon.svg" type="image/svg+xml">
@@ -1130,18 +1130,6 @@
 
                     <button id="boton-etiquetas-admin" type="button" hidden>ETIQUETAS DE ADMIN</button>
 
-                    <div id="panel-etiquetas-admin" hidden>
-                        <h3>Etiquetas de admin</h3>
-                        <p class="texto-ajuste">Las cuentas con estas etiquetas ven el triangulo. Creador siempre lo ve.</p>
-                        <div id="lista-etiquetas-admin"></div>
-                        <div class="fila-etiqueta-admin">
-                            <input id="input-nombre-etiqueta" type="text" maxlength="24" placeholder="Nombre (ej: Admin)">
-                            <input id="input-color-etiqueta" type="color" value="#3b82f6">
-                            <button id="boton-anadir-etiqueta" type="button">AÑADIR</button>
-                        </div>
-                        <button id="boton-guardar-etiquetas" type="button">GUARDAR</button>
-                    </div>
-
                 </div>
 
             </main>
@@ -1175,6 +1163,25 @@
                         </label>
                         <button type="submit">CREAR SERVIDOR</button>
                     </form>
+                </section>
+            </div>
+
+            <!-- MODAL ETIQUETAS DE ADMIN -->
+
+            <div id="panel-etiquetas-admin" class="modal modal-contenido-social" hidden>
+                <section class="dialogo-social" role="dialog" aria-modal="true" aria-labelledby="titulo-etiquetas-admin">
+                    <header class="cabecera-dialogo-social">
+                        <h2 id="titulo-etiquetas-admin">Etiquetas de admin</h2>
+                        <button id="boton-cerrar-etiquetas-admin" class="boton-cerrar-modal" type="button" aria-label="Cerrar">×</button>
+                    </header>
+                    <p class="texto-ajuste">Las cuentas con estas etiquetas ven el triangulo. Creador siempre lo ve.</p>
+                    <div id="lista-etiquetas-admin"></div>
+                    <div class="fila-etiqueta-admin">
+                        <input id="input-nombre-etiqueta" type="text" maxlength="24" placeholder="Nombre (ej: Admin)">
+                        <input id="input-color-etiqueta" type="color" value="#3b82f6">
+                        <button id="boton-anadir-etiqueta" type="button">AÑADIR</button>
+                    </div>
+                    <button id="boton-guardar-etiquetas" type="button">GUARDAR</button>
                 </section>
             </div>
 
@@ -2932,7 +2939,7 @@
             </div>
 
     <script src="/data/emojis.js"></script>
-    <script src="/app.js?v=52"></script>
+    <script src="/app.js?v=53"></script>
 
 </body>
 

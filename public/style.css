@@ -3500,6 +3500,8 @@ button.servidor-tarjeta:focus-visible {
 
 .etiqueta-creador {
     background: #6d28d9;
+    color: #ede9fe;
+}
 
 .etiqueta-admin-dinamica {
     font-style: normal;
@@ -3534,32 +3536,38 @@ button.servidor-tarjeta:focus-visible {
     margin-bottom: 8px;
 }
 
-/* Mismo molde que los botones ENTRAR / CREAR CUENTA de la web */
-.boton-revisado,
-#panel-etiquetas-admin button {
-    padding: 14px 20px;
-    border: none;
-    border-radius: 12px;
-    background: #242424;
-    color: #fff;
+/* Misma estética que las pestañas CUENTAS / REELS / ESTADOS / PUBLICACIONES */
+.boton-revisado {
+    padding: 11px 10px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    background: #181818;
+    color: #888;
     font-family: inherit;
-    font-size: 16px;
-    font-weight: bold;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
     cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
 }
 
-.boton-revisado:hover,
-#panel-etiquetas-admin button:hover {
-    background: #333;
+.boton-revisado:hover {
+    background: #202020;
+    color: #ddd;
+}
+
+.boton-revisado:active {
+    transform: scale(0.98);
 }
 
 .boton-revisado.activo {
-    background: #1f3a24;
-    color: #b8e6c2;
+    background: #242424;
+    border-color: var(--acento);
+    color: #fff;
 }
 
 .boton-revisado.activo:hover {
-    background: #256b3a;
+    background: #2b2b2b;
 }
 
 .cuerpo-denuncia {
@@ -3624,58 +3632,99 @@ button.servidor-tarjeta:focus-visible {
 .boton-borrar-denunciado {
     margin-top: 8px;
     width: 100%;
-    padding: 14px 20px;
-    border: none;
-    border-radius: 12px;
+    padding: 11px 10px;
+    border: 1px solid #451d1d;
+    border-radius: 10px;
     background: #451d1d;
-    color: #fff;
+    color: #ffb3b3;
     font-family: inherit;
-    font-size: 16px;
-    font-weight: bold;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
     cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
 }
 
 .boton-borrar-denunciado:hover {
-    background: #522222;
+    background: #5a2323;
+    border-color: #662929;
+    color: #ffd0d0;
 }
 
-/* Hueco para que la barra inferior no tape el contenido del panel */
+.boton-borrar-denunciado:active {
+    transform: scale(0.98);
+}
+
+/* Hueco para que el boton fijado y la barra inferior no tapen el contenido */
 #contenido-moderacion {
-    padding-bottom: 24px;
+    padding-bottom: 150px;
 }
 
-/* Fijado abajo en el centro de la pestana de denuncias */
+/* Boton fijado abajo en el centro de la pantalla, misma estetica que las pestañas */
 #boton-etiquetas-admin {
-    position: sticky;
-    bottom: 92px;
+    position: fixed;
+    bottom: 88px;
+    left: 50%;
+    transform: translateX(-50%);
     z-index: 40;
-    display: block;
-    width: fit-content;
-    margin: 14px auto 0;
-    padding: 14px 24px;
-    border: none;
-    border-radius: var(--radio-full);
-    background: var(--acento);
-    color: var(--acento-texto);
-    box-shadow: var(--sombra-fab);
+    padding: 11px 18px;
+    border: 1px solid #333;
+    border-radius: 10px;
+    background: #242424;
+    color: #fff;
     font-family: inherit;
-    font-size: 16px;
-    font-weight: bold;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
     white-space: nowrap;
     cursor: pointer;
-    transition: background var(--transicion-media);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
 }
 
 #boton-etiquetas-admin:hover {
-    background: var(--acento-claro);
+    background: #2f2f2f;
+    border-color: var(--acento);
 }
 
-#panel-etiquetas-admin {
-    border: 1px solid #2b2b2b;
-    border-radius: 12px;
+#boton-etiquetas-admin:active {
+    transform: translateX(-50%) scale(0.98);
+}
+
+/* Botones dentro de la ventanita de etiquetas, misma estetica que las pestañas */
+#panel-etiquetas-admin button {
+    padding: 9px 14px;
+    border: 1px solid transparent;
+    border-radius: 10px;
     background: #181818;
-    padding: 12px;
-    margin-bottom: 16px;
+    color: #888;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+#panel-etiquetas-admin button:hover {
+    background: #202020;
+    color: #ddd;
+}
+
+#panel-etiquetas-admin button:active {
+    transform: scale(0.98);
+}
+
+#panel-etiquetas-admin #boton-anadir-etiqueta {
+    background: var(--acento);
+    border-color: var(--acento);
+    color: var(--acento-texto);
+}
+
+#panel-etiquetas-admin #boton-anadir-etiqueta:hover {
+    background: var(--acento-claro);
+    border-color: var(--acento-claro);
+    color: #fff;
 }
 
 .fila-etiqueta-admin {
@@ -3710,10 +3759,6 @@ button.servidor-tarjeta:focus-visible {
 .etiqueta-cuenta {
     align-self: center;
     margin-top: 6px;
-}
-
-
-    color: #ede9fe;
 }
 
 .etiqueta-moderador {

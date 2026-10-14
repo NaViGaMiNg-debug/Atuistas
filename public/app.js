@@ -116,7 +116,7 @@ const ICONO_COMPOSER_MICROFONO = `
     </svg>
 `;
 
-const VERSION_APP = "v52";
+const VERSION_APP = "v53";
 
 document.getElementById("version-app-cuenta")?.replaceChildren(VERSION_APP);
 
@@ -11310,6 +11310,19 @@ document.getElementById("contenido-moderacion")?.addEventListener("click", async
         }
         return;
     }
+});
+
+document.getElementById("boton-etiquetas-admin")?.addEventListener("click", () => {
+    const panel = document.getElementById("panel-etiquetas-admin");
+    if (panel) panel.hidden = !panel.hidden;
+});
+
+// La ventanita de etiquetas: cerrar al pulsar el fondo o la X, y quitar etiquetas.
+document.getElementById("panel-etiquetas-admin")?.addEventListener("click", async (evento) => {
+    if (evento.target.id === "panel-etiquetas-admin") {
+        evento.currentTarget.hidden = true;
+        return;
+    }
     const quitar = evento.target.closest("[data-quitar-etiqueta]");
     if (quitar) {
         etiquetasAdminCache = etiquetasAdminCache.filter((e) => e.nombre !== quitar.dataset.quitarEtiqueta);
@@ -11317,9 +11330,9 @@ document.getElementById("contenido-moderacion")?.addEventListener("click", async
     }
 });
 
-document.getElementById("boton-etiquetas-admin")?.addEventListener("click", () => {
+document.getElementById("boton-cerrar-etiquetas-admin")?.addEventListener("click", () => {
     const panel = document.getElementById("panel-etiquetas-admin");
-    if (panel) panel.hidden = !panel.hidden;
+    if (panel) panel.hidden = true;
 });
 
 document.getElementById("boton-anadir-etiqueta")?.addEventListener("click", async () => {
