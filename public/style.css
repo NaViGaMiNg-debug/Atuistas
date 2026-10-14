@@ -602,7 +602,12 @@ h2 {
     top: 6px;
     right: 6px;
     font-size: 14px;
+    line-height: 0;
     pointer-events: none;
+}
+
+.chat-amigo-pin .icono-pin {
+    display: block;
 }
 
 .chat-amigo-silencio {

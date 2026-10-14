@@ -116,7 +116,7 @@ const ICONO_COMPOSER_MICROFONO = `
     </svg>
 `;
 
-const VERSION_APP = "v53";
+const VERSION_APP = "v54";
 
 document.getElementById("version-app-cuenta")?.replaceChildren(VERSION_APP);
 
@@ -3580,7 +3580,7 @@ async function cargarAmigos() {
                         ? `<span class="chat-amigo-punto" aria-label="Mensajes sin leer"></span>`
                         : ""
                 }
-                ${fijado ? `<span class="chat-amigo-pin" aria-label="Chat fijado">📌</span>` : ""}
+                ${fijado ? `<span class="chat-amigo-pin" aria-label="Chat fijado"><svg class="icono-pin" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg></span>` : ""}
                 ${amigo.es_silenciado ? `<span class="chat-amigo-silencio" aria-label="Chat silenciado">🔕</span>` : ""}
             `;
 
@@ -3765,7 +3765,7 @@ function gastarEntradaPropia() {
     }
     const estado = window.history?.state;
     const esNuestra = estado &&
-        (estado.capa === true || estado.capa === "capa" || estado.capa === "seccion");
+        (estado.capa === true || estado.capa === "capa" || estado.capa === "seccion" || estado.capa === "publico");
     if (!esNuestra) {
         trazaHistorial("back-rechazado", "estado-ajeno");
         capasApiladas = 0;
@@ -3811,7 +3811,108 @@ function sincronizarAtrasSeccion(seccion) {
     }
 }
 
+/* NAVEGACIÓN PASO A PASO DEL BOTÓN ATRÁS */
+
+// El feed Público es un apartado dentro de Entrar: apipla su propia entrada
+// para que el atrás vuelva a Mis Amigos en lugar de salir de la app. Durante
+// el popstate el historial ya se movió, así que no se toca (gestionandoAtras).
+function sincronizarAtrasPublico(publico) {
+    if (gestionandoAtras) return;
+    const hayPublico = window.history?.state?.capa === "publico";
+    if (publico && !hayPublico) {
+        try {
+            window.history?.pushState?.({ capa: "publico" }, "");
+            capasApiladas += 1;
+            trazaHistorial("push", "publico");
+        } catch {
+        }
+        return;
+    }
+    if (!publico && hayPublico && capasApiladas > 0) {
+        backsPendientes = Math.min(backsPendientes + 1, capasApiladas);
+        gastarEntradaPropia();
+    }
+}
+
+function estaEnPublico() {
+    return contenidoPublico?.hidden === false;
+}
+
+// Devuelve true si la sección actual tiene varios apartados y NO está en el
+// principal; en ese caso salta al principal. Así el atrás recorre los pasos.
+function retrocederAApartadoPrincipal() {
+    if (seccionActual === "entrar") {
+        if (estaEnPublico()) {
+            cambiarFeedEntrada(false);
+            return true;
+        }
+        return false;
+    }
+    if (seccionActual === "amigos") {
+        // Encontrar personas es el principal; Solicitudes es el otro apartado.
+        if (seccionSolicitudes?.hidden === false) {
+            botonEncontrarPersonas?.click();
+            return true;
+        }
+        return false;
+    }
+    if (seccionActual === "servidores") {
+        // Chats es el principal; Mis servidores y Buscar son los otros.
+        if (document.getElementById("seccion-chats")?.hidden === false) {
+            return false;
+        }
+        mostrarPestanaServidor("chats");
+        return true;
+    }
+    if (seccionActual === "moderacion") {
+        if (pestanaModeracion !== "cuentas") {
+            mostrarPestanaModeracion("cuentas");
+            return true;
+        }
+        return false;
+    }
+    return false;
+}
+
+// Repone una entrada propia para que el siguiente atrás se quede en la app.
+// Solo se usa al navegar entre apartados/secciones, que no apiplan por sí
+// solos (las capas sí lo hacen con el observador).
+function asegurarEntradaSeccion() {
+    if (window.history?.state?.capa === "seccion") return;
+    try {
+        window.history?.pushState?.({ capa: "seccion" }, "");
+        capasApiladas += 1;
+        trazaHistorial("push", "seccion-repuesta");
+    } catch {
+    }
+}
+
+// Un solo paso de atrás cuando no hay ninguna capa abierta: recorre apartados
+// y secciones. Devuelve true si se movió (hay que seguir dentro de la app) o
+// false si ya está en Entrar > Mis Amigos y debe salir.
+function darPasoAtras() {
+    if (retrocederAApartadoPrincipal()) return true;
+    if (seccionActual !== "entrar") {
+        mostrarSeccion("entrar", { desdeAtras: true });
+        return true;
+    }
+    return false;
+}
+
+
 function cerrarCapaSuperior() {
+    // Las ventanas (modales) tienen prioridad: se cierra la ultima que se
+    // abrio, la que esta encima de todo. Asi una ventana abierta sobre el chat
+    // o sobre el feed se cierra antes que el chat o el feed que tiene debajo.
+    const ventanas = [...document.querySelectorAll(".modal")].filter((ventana) => !ventana.hidden);
+    if (ventanas.length) {
+        const ventana = ventanas[ventanas.length - 1];
+        const boton = ventana.querySelector("[id^='boton-cerrar'], .boton-cerrar-modal");
+        if (boton) boton.click();
+        else ventana.hidden = true;
+        return true;
+    }
+
     const selector = document.getElementById("selector-medio");
     if (selector && selector.hidden === false) {
         cerrarSelector();
@@ -3833,15 +3934,6 @@ function cerrarCapaSuperior() {
     }
     if (document.getElementById("panel-servidor")?.hidden === false && vistaServidorActual !== "lista") {
         mostrarFaseServidor("lista");
-        return true;
-    }
-
-    const ventanas = [...document.querySelectorAll(".modal")].filter((ventana) => !ventana.hidden);
-    if (ventanas.length) {
-        const ventana = ventanas[ventanas.length - 1];
-        const boton = ventana.querySelector("[id^='boton-cerrar'], .boton-cerrar-modal");
-        if (boton) boton.click();
-        else ventana.hidden = true;
         return true;
     }
 
@@ -3870,9 +3962,17 @@ window.addEventListener("popstate", () => {
 
     gestionandoAtras = true;
     try {
-        if (!cerrarCapaSuperior() && seccionActual !== "entrar") {
-            mostrarSeccion("entrar", { desdeAtras: true });
+        // 1) Si hay una ventana, chat o grupo abierto, se cierra el de encima.
+        if (cerrarCapaSuperior()) return;
+
+        // 2) Sin capas: se da un paso por los apartados y secciones.
+        if (darPasoAtras() && seccionActual !== "entrar") {
+            // Seguimos dentro de una sección con varios apartados: reponemos
+            // una entrada propia para que el siguiente atrás no salga de la app.
+            asegurarEntradaSeccion();
         }
+        // Si el paso nos dejó en Entrar (o ya estábamos allí sin nada abierto),
+        // no se repone nada: el siguiente atrás sale de la app, que es lo correcto.
     } finally {
         gestionandoAtras = false;
     }
@@ -3909,6 +4009,7 @@ function cambiarFeedEntrada(publico) {
     botonPublico.classList.toggle("activa", publico);
     botonAmigos.setAttribute("aria-selected", String(!publico));
     botonPublico.setAttribute("aria-selected", String(publico));
+    sincronizarAtrasPublico(publico);
 }
 
 document.getElementById("boton-feed-amigos").addEventListener("click", () => cambiarFeedEntrada(false));
