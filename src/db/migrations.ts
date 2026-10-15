@@ -222,6 +222,26 @@ export async function migrarEsquema() {
                 ADD COLUMN IF NOT EXISTS codigo_invitacion_creado_en TIMESTAMPTZ,
                 ADD COLUMN IF NOT EXISTS codigo_invitacion_creado_por UUID;
 
+            -- Privacidad del servidor: por defecto privado y con el rol
+            -- que reciben quienes entran desde la zona de búsqueda.
+            ALTER TABLE grupos
+                ADD COLUMN IF NOT EXISTS es_publico BOOLEAN NOT NULL DEFAULT FALSE,
+                ADD COLUMN IF NOT EXISTS rol_entrada VARCHAR(20) NOT NULL DEFAULT 'miembro';
+
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM pg_constraint
+                    WHERE conname = 'grupos_rol_entrada_check'
+                      AND conrelid = 'grupos'::regclass
+                ) THEN
+                    ALTER TABLE grupos
+                    ADD CONSTRAINT grupos_rol_entrada_check
+                    CHECK (rol_entrada IN ('lector', 'miembro', 'moderador'));
+                END IF;
+            END
+            $$;
+
             DO $$
             BEGIN
                 IF NOT EXISTS (

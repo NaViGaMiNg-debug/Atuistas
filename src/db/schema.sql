@@ -538,6 +538,12 @@ CREATE TABLE grupos (
     -- Permite enviar mensajes ocultos (sin autor visible para nadie).
     permite_ocultos BOOLEAN NOT NULL DEFAULT FALSE,
 
+    -- Aparece en la zona de búsqueda de servidores (por defecto privado).
+    es_publico BOOLEAN NOT NULL DEFAULT FALSE,
+
+    -- Rol que reciben quienes entran desde la zona de búsqueda.
+    rol_entrada VARCHAR(20) NOT NULL DEFAULT 'miembro',
+
     canales_activado_en TIMESTAMPTZ,
 
     actualizado_en TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -564,6 +570,9 @@ CREATE TABLE grupos (
 
     CONSTRAINT grupos_modelo_check
         CHECK (modelo IN ('chat_unico', 'canales')),
+
+    CONSTRAINT grupos_rol_entrada_check
+        CHECK (rol_entrada IN ('lector', 'miembro', 'moderador')),
 
     CONSTRAINT grupos_retencion_check
         CHECK (

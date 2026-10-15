@@ -147,6 +147,7 @@ export async function buscarGrupos(texto: string, usuarioId: string) {
         LEFT JOIN archivos a ON a.id = g.imagen_archivo_id
         WHERE propio.usuario_id IS NULL
           AND (g.desaparece_en IS NULL OR g.desaparece_en > NOW())
+          AND g.es_publico
           AND g.nombre ILIKE $2
         ORDER BY g.nombre
         LIMIT 20
@@ -169,6 +170,7 @@ export async function descubrirGrupos(usuarioId: string) {
         LEFT JOIN archivos a ON a.id = g.imagen_archivo_id
         WHERE propio.usuario_id IS NULL
           AND (g.desaparece_en IS NULL OR g.desaparece_en > NOW())
+          AND g.es_publico
         ORDER BY g.creado_en DESC
         LIMIT 10
         `,
@@ -265,7 +267,7 @@ export async function crearGrupo(usuarioId: string, opciones: OpcionesGrupo) {
 
 export async function unirseAGrupo(usuarioId: string, grupoId: string) {
     const resultado = await db.query(
-        `SELECT id, creador_id, tipo, nombre FROM grupos
+        `SELECT id, creador_id, tipo, nombre, rol_entrada FROM grupos
          WHERE id = $1 AND (desaparece_en IS NULL OR desaparece_en > NOW())`,
         [grupoId]
     );
@@ -290,10 +292,15 @@ export async function unirseAGrupo(usuarioId: string, grupoId: string) {
         }
     }
 
+    // La entrada desde la zona de búsqueda respeta el rol que eligió el
+    // creador: un lector se une solo para leer, sin poder escribir.
+    const rolEntrada = grupo.rol_entrada === "moderador" ? "moderador" : "miembro";
+    const puedeEscribir = grupo.rol_entrada !== "lector";
+
     await db.query(
-        `INSERT INTO miembros_grupo (grupo_id, usuario_id, origen)
-         VALUES ($1, $2, 'manual') ON CONFLICT (grupo_id, usuario_id) DO NOTHING`,
-        [grupoId, usuarioId]
+        `INSERT INTO miembros_grupo (grupo_id, usuario_id, origen, rol, puede_escribir)
+         VALUES ($1, $2, 'manual', $3, $4) ON CONFLICT (grupo_id, usuario_id) DO NOTHING`,
+        [grupoId, usuarioId, rolEntrada, puedeEscribir]
     );
     return { mensaje: "Te has unido al servidor" };
 }
@@ -320,6 +327,38 @@ export async function eliminarGrupo(usuarioId: string, grupoId: string) {
     return { mensaje: "Servidor eliminado" };
 }
 
+// La privacidad (público/privado) y el rol de entrada solo los decide el creador.
+export async function cambiarPrivacidad(
+    usuarioId: string,
+    grupoId: string,
+    esPublico: boolean,
+    rolEntrada: "lector" | "miembro" | "moderador"
+) {
+    if (typeof esPublico !== "boolean") {
+        throw new Error("La privacidad del servidor no es válida");
+    }
+    if (rolEntrada !== "lector" && rolEntrada !== "miembro" && rolEntrada !== "moderador") {
+        throw new Error("El rol de entrada no es válido");
+    }
+
+    const grupo = await db.query(`SELECT creador_id FROM grupos WHERE id = $1`, [grupoId]);
+    if (grupo.rowCount !== 1) throw new Error("Servidor no encontrado");
+    if (grupo.rows[0].creador_id !== usuarioId) {
+        throw new Error("Solo el creador puede cambiar la privacidad del servidor");
+    }
+
+    const actualizado = await db.query(
+        `UPDATE grupos
+         SET es_publico = $2,
+             rol_entrada = $3,
+             actualizado_en = NOW()
+         WHERE id = $1
+         RETURNING es_publico, rol_entrada`,
+        [grupoId, esPublico, rolEntrada]
+    );
+    return actualizado.rows[0];
+}
+
 export async function obtenerGrupo(usuarioId: string, grupoId: string) {
     const miembro = await comprobarMiembro(usuarioId, grupoId);
 
@@ -328,6 +367,7 @@ export async function obtenerGrupo(usuarioId: string, grupoId: string) {
         SELECT g.id, g.nombre, g.descripcion, g.tipo, g.creador_id,
                g.creado_en, g.desaparece_en, g.modelo, g.retencion_horas,
                g.permite_ocultos, g.canales_activado_en,
+               g.es_publico, g.rol_entrada,
                a.ruta AS imagen_ruta,
                (g.creador_id = $2::uuid) AS es_creador,
                (SELECT COUNT(*)::int FROM miembros_grupo m WHERE m.grupo_id = g.id) AS miembros,

@@ -10,6 +10,7 @@ import {
     bloquearMiembro,
     buscarGrupos,
     cambiarEscrituraMiembro,
+    cambiarPrivacidad,
     cambiarRolMiembro,
     comprobarMiembro,
     crearCanal,
@@ -234,6 +235,31 @@ export async function gruposRoutes(app: FastifyInstance) {
             }
         }
     );
+
+    // Privacidad del servidor: solo el creador decide si aparece en la
+    // zona de búsqueda y con qué rol entran quienes se unan desde allí.
+    app.patch<{
+        Params: { grupoId: string };
+        Body: { es_publico?: boolean; rol_entrada?: "lector" | "miembro" | "moderador" }
+    }>("/api/grupos/:grupoId/privacidad", { preHandler: autenticar }, async (request, reply) => {
+        try {
+            const privacidad = await cambiarPrivacidad(
+                request.usuario!.id,
+                request.params.grupoId,
+                request.body.es_publico ?? false,
+                request.body.rol_entrada ?? "miembro"
+            );
+            return {
+                ...privacidad,
+                mensaje: privacidad.es_publico
+                    ? "El servidor es público y aparece en la zona de búsqueda"
+                    : "El servidor es privado"
+            };
+        } catch (error) {
+            const message = error instanceof Error ? error.message : "No se pudo cambiar la privacidad";
+            return reply.code(400).send({ error: message });
+        }
+    });
 
     app.post<{
         Params: { grupoId: string };

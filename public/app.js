@@ -116,7 +116,7 @@ const ICONO_COMPOSER_MICROFONO = `
     </svg>
 `;
 
-const VERSION_APP = "v50";
+const VERSION_APP = "v56";
 
 document.getElementById("version-app-cuenta")?.replaceChildren(VERSION_APP);
 
@@ -614,6 +614,11 @@ function crearComposer(config) {
         cerrarMenu();
         if (grabando()) detenerGrabacion(true);
 
+        if (clase === "oculto") {
+            abrirModalMensajeOculto();
+            return;
+        }
+
         if (clase === "ubicacion") {
             abrirModalUbicacion(config.compartirUbicacion);
             return;
@@ -994,7 +999,6 @@ let temporizadorBusquedaGrupo = null;
 let detalleGrupo = null;
 let canalesGrupo = [];
 let canalActual = null;
-let ocultoServidorActivo = false;
 let miembrosServidorActual = null;
 let socketTiempoReal = null;
 let temporizadorReconexionWs = null;
@@ -3909,6 +3913,9 @@ function cerrarCapaSuperior() {
         const ventana = ventanas[ventanas.length - 1];
         const boton = ventana.querySelector("[id^='boton-cerrar'], .boton-cerrar-modal");
         if (boton) boton.click();
+        // La cámara ya no tiene X: el botón atrás debe parar la cámara entera,
+        // no solo ocultarla, o el flujo seguiría vivo en segundo plano.
+        else if (ventana.id === "pantalla-camara") cerrarPantallaCamara();
         else ventana.hidden = true;
         return true;
     }
@@ -4247,7 +4254,6 @@ async function abrirServidor(grupo) {
     detalleGrupo = null;
     canalesGrupo = [];
     canalActual = null;
-    ocultoServidorActivo = false;
     miembrosServidorActual = null;
     respuestaGrupoActual = null;
     mensajeRespuestaChat = null;
@@ -4431,7 +4437,6 @@ function volverAListaServidores() {
     detalleGrupo = null;
     canalesGrupo = [];
     canalActual = null;
-    ocultoServidorActivo = false;
     miembrosServidorActual = null;
     cerrarPanelesServidor();
     cargarServidores();
@@ -4500,9 +4505,14 @@ if (formularioMensajeServidor) {
     });
 }
 
-async function enviarMensajeServidor(contenido, adjunto) {
+async function enviarMensajeServidor(contenido, adjunto, opciones = {}) {
+    const esOculto = Boolean(opciones.oculto);
     if (!grupoActual) {
         throw new Error("No hay ningún servidor abierto");
+    }
+
+    if (esOculto && mensajeEdicionChat) {
+        throw new Error("Termina la edición antes de enviar un mensaje oculto");
     }
 
     if (mensajeEdicionChat) {
@@ -4532,16 +4542,53 @@ async function enviarMensajeServidor(contenido, adjunto) {
         body: JSON.stringify({
             contenido,
             canalId: canalActual ? canalActual.id : undefined,
-            respuestaId: mensajeRespuestaChat,
-            oculto: ocultoServidorActivo,
+            respuestaId: esOculto ? undefined : mensajeRespuestaChat,
+            oculto: esOculto,
             tipo: archivoEnviado ? archivoEnviado.tipo : undefined,
             archivoId: archivoEnviado ? archivoEnviado.archivo_id : undefined
         })
     });
 
-    mensajeRespuestaChat = null;
+    if (!esOculto) mensajeRespuestaChat = null;
     await cargarMensajesServidor();
 }
+
+/* MENSAJE OCULTO DEL SERVIDOR
+   Se abre desde el botón OCULTO del menú + y llega al canal sin autor. */
+
+function abrirModalMensajeOculto() {
+    const modal = document.getElementById("modal-mensaje-oculto");
+    const entrada = document.getElementById("entrada-mensaje-oculto");
+    const error = document.getElementById("error-mensaje-oculto");
+    if (!modal || !entrada) return;
+    if (error) error.textContent = "";
+    entrada.value = "";
+    modal.hidden = false;
+    entrada.focus();
+}
+
+document.getElementById("boton-cerrar-mensaje-oculto")?.addEventListener("click", () => {
+    document.getElementById("modal-mensaje-oculto").hidden = true;
+});
+
+document.getElementById("formulario-mensaje-oculto")?.addEventListener("submit", async (evento) => {
+    evento.preventDefault();
+    const entrada = document.getElementById("entrada-mensaje-oculto");
+    const error = document.getElementById("error-mensaje-oculto");
+    const contenido = (entrada?.value ?? "").trim();
+
+    if (!contenido) {
+        if (error) error.textContent = "Escribe un mensaje.";
+        return;
+    }
+
+    try {
+        await enviarMensajeServidor(contenido, null, { oculto: true });
+        document.getElementById("modal-mensaje-oculto").hidden = true;
+    } catch (e) {
+        if (error) error.textContent = e.message || "No se pudo enviar el mensaje oculto";
+    }
+});
 
 function configurarGestoMensajeServidor(elemento, mensaje) {
     if (elemento.dataset.gestoActivo === "1") return;
@@ -4820,16 +4867,12 @@ function renderizarCanales() {
 }
 
 function actualizarControlesComposer() {
-    const botonOculto = document.getElementById("boton-oculto-servidor");
+    const opcionOculto = document.getElementById("opcion-oculto-servidor");
     const entrada = document.getElementById("entrada-mensaje-servidor");
     const permiteOcultos = Boolean(canalActual && canalActual.permite_ocultos);
 
-    botonOculto.hidden = !permiteOcultos;
-    if (!permiteOcultos) {
-        ocultoServidorActivo = false;
-    }
-    botonOculto.classList.toggle("activo", ocultoServidorActivo);
-    botonOculto.setAttribute("aria-pressed", String(ocultoServidorActivo));
+    // El botón OCULTO del menú + solo se muestra donde el canal lo permite.
+    opcionOculto.hidden = !permiteOcultos;
 
     if (!mensajeRespuestaChat && !mensajeEdicionChat) {
         entrada.placeholder = servidorUsaCanales() && canalActual
@@ -4849,7 +4892,6 @@ document.getElementById("lista-canales").addEventListener("click", async (evento
     const cambioDeCanal = !(canalActual && canal.id === canalActual.id);
     canalActual = canal;
     if (cambioDeCanal) {
-        ocultoServidorActivo = false;
         mensajeRespuestaChat = null;
         mensajeEdicionChat = null;
         renderizarCanales();
@@ -4883,13 +4925,6 @@ document.getElementById("boton-gestion-canales").addEventListener("click", async
 
 document.getElementById("boton-cerrar-gestion-canales").addEventListener("click", () => {
     document.getElementById("modal-gestion-canales").hidden = true;
-});
-
-document.getElementById("boton-oculto-servidor").addEventListener("click", () => {
-    ocultoServidorActivo = !ocultoServidorActivo;
-    const boton = document.getElementById("boton-oculto-servidor");
-    boton.classList.toggle("activo", ocultoServidorActivo);
-    boton.setAttribute("aria-pressed", String(ocultoServidorActivo));
 });
 
 // ACCIONES DEL SERVIDOR
@@ -5236,6 +5271,7 @@ async function abrirAjustesServidor(focoCanal = false) {
     renderizarInvitacion();
     renderizarCanalesAjuste();
     renderizarPreviaImagenServidor();
+    renderizarPrivacidadServidor();
     const botonSilencio = document.getElementById("boton-silenciar-servidor");
     botonSilencio.textContent = detalleGrupo.mi_silenciado ? "DEJAR DE SILENCIAR" : "SILENCIAR";
     await Promise.all([cargarBloqueadosServidor(), cargarMiembrosServidor()]);
@@ -5255,6 +5291,57 @@ function renderizarPreviaImagenServidor() {
     previa.classList.toggle("sin-imagen", !ruta);
     quitar.hidden = !ruta;
 }
+
+/* PRIVACIDAD DEL SERVIDOR (PÚBLICO / PRIVADO)
+   Solo el creador ve y cambia este bloque; por defecto Privado. */
+
+function renderizarPrivacidadServidor() {
+    const bloque = document.getElementById("bloque-privacidad-servidor");
+    const esCreador = Boolean(detalleGrupo?.es_creador);
+    bloque.hidden = !esCreador;
+    if (!esCreador) return;
+
+    document.getElementById("switch-publico-servidor").checked = Boolean(detalleGrupo.es_publico);
+    document.getElementById("select-rol-entrada-servidor").value = detalleGrupo.rol_entrada ?? "miembro";
+    reflejarPrivacidadServidor();
+}
+
+function reflejarPrivacidadServidor() {
+    const publico = Boolean(detalleGrupo?.es_publico);
+    const texto = document.getElementById("texto-privacidad-servidor");
+    texto.textContent = publico
+        ? "ACTUALMENTE: Publico, aparecerá en la zona de búsqueda"
+        : "ACTUALMENTE: Privado, solo se podrán unir personas mediante el código de invitación";
+    // El desplegable de rol solo tiene sentido cuando el servidor es público.
+    document.getElementById("bloque-rol-entrada-servidor").hidden = !publico;
+}
+
+async function guardarPrivacidadServidor() {
+    if (!grupoActual || !detalleGrupo) return;
+    const estado = document.getElementById("estado-ajustes-servidor");
+    const interruptor = document.getElementById("switch-publico-servidor");
+    const esPublico = interruptor.checked;
+    const rolEntrada = document.getElementById("select-rol-entrada-servidor").value;
+
+    try {
+        const datos = await solicitarGrupo(`/api/grupos/${encodeURIComponent(grupoActual.id)}/privacidad`, {
+            method: "PATCH",
+            body: JSON.stringify({ es_publico: esPublico, rol_entrada: rolEntrada })
+        });
+        detalleGrupo.es_publico = datos.es_publico;
+        detalleGrupo.rol_entrada = datos.rol_entrada;
+        reflejarPrivacidadServidor();
+        estado.textContent = datos.mensaje || "";
+    } catch (error) {
+        // Ante un error el interruptor vuelve al estado real del servidor.
+        interruptor.checked = Boolean(detalleGrupo.es_publico);
+        reflejarPrivacidadServidor();
+        estado.textContent = error.message;
+    }
+}
+
+document.getElementById("switch-publico-servidor")?.addEventListener("change", guardarPrivacidadServidor);
+document.getElementById("select-rol-entrada-servidor")?.addEventListener("change", guardarPrivacidadServidor);
 
 document.getElementById("boton-cambiar-imagen-servidor").addEventListener("click", () => {
     const selector = document.getElementById("archivo-imagen-servidor");
@@ -10651,7 +10738,6 @@ cam.panelTipo?.querySelectorAll("[data-camara-modo]").forEach((boton) => {
     boton.addEventListener("click", () => cambiarModoCamara(boton.dataset.camaraModo));
 });
 
-document.getElementById("camara-cerrar")?.addEventListener("click", cerrarPantallaCamara);
 document.getElementById("camara-previa-cerrar")?.addEventListener("click", () => {
     cam.previa.hidden = true;
 });

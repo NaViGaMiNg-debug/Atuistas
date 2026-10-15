@@ -14,7 +14,7 @@
 
     <link
         rel="stylesheet"
-        href="/style.css?v=50"
+        href="/style.css?v=56"
     >
 
     <link rel="icon" href="/icon.svg" type="image/svg+xml">
@@ -1048,20 +1048,12 @@
                                     <button type="button" role="menuitem" data-adjunto="video">VÍDEOS</button>
                                     <button type="button" role="menuitem" data-adjunto="audio">AUDIOS</button>
                                     <button type="button" role="menuitem" data-adjunto="ubicacion">UBICACIÓN</button>
+                                    <button type="button" role="menuitem" data-adjunto="oculto" id="opcion-oculto-servidor" hidden>OCULTO</button>
                                 </div>
                                 <input id="archivo-servidor" type="file" hidden>
                             </div>
 
                             <textarea id="entrada-mensaje-servidor" rows="1" maxlength="5000" placeholder="Escribe un mensaje..." autocomplete="off"></textarea>
-
-                            <button id="boton-oculto-servidor" class="pastilla-oculto" type="button" hidden aria-pressed="false" title="Enviar el mensaje de forma oculta">
-                                <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
-                                    <path d="M3 11s3.5-5 9-5 9 5 9 5-3.5 5-9 5-9-5-9-5Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-                                    <circle cx="12" cy="11" r="2.5" fill="currentColor"></circle>
-                                    <path d="M4 19 20 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                </svg>
-                                <span>OCULTO</span>
-                            </button>
 
                             <p id="estado-adjunto-servidor" class="chip-adjunto" hidden></p>
 
@@ -1308,6 +1300,32 @@
 
                     <div class="bloque-ajuste">
                         <h3>Privacidad y propiedad</h3>
+
+                        <!-- SOLO EL CREADOR PUEDE VER ESTO (lo muestra/oculta app.js) -->
+                        <div id="bloque-privacidad-servidor" hidden>
+                            <div class="fila-switch-cuenta">
+                                <div class="texto-switch-cuenta">
+                                    <strong>Visibilidad del servidor</strong>
+                                    <span id="texto-privacidad-servidor">ACTUALMENTE: Privado, solo se podrán unir personas mediante el código de invitación</span>
+                                </div>
+                                <label class="switch" for="switch-publico-servidor">
+                                    <input type="checkbox" id="switch-publico-servidor">
+                                    <span class="switch-pista" aria-hidden="true">
+                                        <span class="switch-boton"></span>
+                                    </span>
+                                </label>
+                            </div>
+
+                            <div id="bloque-rol-entrada-servidor" class="bloque-rol-entrada" hidden>
+                                <label for="select-rol-entrada-servidor">Al unirse serán:</label>
+                                <select id="select-rol-entrada-servidor">
+                                    <option value="lector">Lectores</option>
+                                    <option value="miembro">Miembros</option>
+                                    <option value="moderador">Admins</option>
+                                </select>
+                            </div>
+                        </div>
+
                         <div class="fila-ajuste">
                             <button id="boton-silenciar-servidor" type="button">SILENCIAR</button>
                         </div>
@@ -1344,6 +1362,22 @@
                         </label>
                         <button type="submit">GUARDAR CAMBIOS</button>
                         <button id="boton-eliminar-canal" class="boton-peligro" type="button">ELIMINAR CANAL</button>
+                    </form>
+                </section>
+            </div>
+
+            <!-- MODAL MENSAJE OCULTO DEL SERVIDOR -->
+
+            <div id="modal-mensaje-oculto" class="modal modal-contenido-social" hidden>
+                <section class="dialogo-social" role="dialog" aria-modal="true" aria-labelledby="titulo-mensaje-oculto">
+                    <header class="cabecera-dialogo-social">
+                        <h2 id="titulo-mensaje-oculto">Escribe tu mensaje oculto</h2>
+                        <button id="boton-cerrar-mensaje-oculto" class="boton-cerrar-modal" type="button" aria-label="Cerrar">×</button>
+                    </header>
+                    <form id="formulario-mensaje-oculto" class="formulario-dialogo-social">
+                        <textarea id="entrada-mensaje-oculto" rows="3" maxlength="5000" placeholder="Escribe tu mensaje oculto..."></textarea>
+                        <p id="error-mensaje-oculto" class="error-social" aria-live="polite"></p>
+                        <button class="boton-confirmar-social" type="submit">ENVIAR</button>
                     </form>
                 </section>
             </div>
@@ -2947,10 +2981,6 @@
 
                 <div class="camara-zona camara-zona-izq">
 
-                    <button id="camara-cerrar" class="camara-boton-icono boton-cerrar-modal" type="button" aria-label="Cerrar cámara">
-                        ×
-                    </button>
-
                     <button id="camara-boton-tipo" class="camara-boton-icono" type="button" aria-label="Elegir tipo de contenido" aria-haspopup="true" aria-expanded="false">
                         <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false">
                             <circle cx="12" cy="5" r="1.9" fill="currentColor"/>
@@ -3208,7 +3238,7 @@
             </div>
 
     <script src="/data/emojis.js"></script>
-    <script src="/app.js?v=50"></script>
+    <script src="/app.js?v=56"></script>
 
 </body>
 
