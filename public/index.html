@@ -14,7 +14,7 @@
 
     <link
         rel="stylesheet"
-        href="/style.css?v=54"
+        href="/style.css?v=50"
     >
 
     <link rel="icon" href="/icon.svg" type="image/svg+xml">
@@ -2938,8 +2938,277 @@
 
             </div>
 
+<!-- ================= CÁMARA: crear contenido ================= -->
+
+            <div id="pantalla-camara" class="pantalla-camara modal modal-contenido-social" hidden>
+
+                <canvas id="camara-canvas" class="camara-canvas"></canvas>
+                <video id="camara-video" class="camara-video" playsinline muted hidden></video>
+
+                <div class="camara-zona camara-zona-izq">
+
+                    <button id="camara-cerrar" class="camara-boton-icono boton-cerrar-modal" type="button" aria-label="Cerrar cámara">
+                        ×
+                    </button>
+
+                    <button id="camara-boton-tipo" class="camara-boton-icono" type="button" aria-label="Elegir tipo de contenido" aria-haspopup="true" aria-expanded="false">
+                        <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false">
+                            <circle cx="12" cy="5" r="1.9" fill="currentColor"/>
+                            <circle cx="12" cy="12" r="1.9" fill="currentColor"/>
+                            <circle cx="12" cy="19" r="1.9" fill="currentColor"/>
+                        </svg>
+                    </button>
+
+                    <div id="camara-panel-tipo" class="camara-panel-tipo" hidden role="menu" aria-label="Tipo de contenido">
+                        <button type="button" role="menuitemradio" data-camara-modo="video">Vídeo · reel / historia / estado</button>
+                        <button type="button" role="menuitemradio" data-camara-modo="foto">Foto · publicación</button>
+                        <button type="button" role="menuitemradio" data-camara-modo="texto">Texto · publicación</button>
+                    </div>
+
+                </div>
+
+                <div class="camara-zona camara-zona-der">
+
+                    <button id="camara-linterna" class="camara-boton-icono" type="button" aria-label="Linterna" hidden>
+                        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
+                            <path d="M9 3h6v2H9z" fill="none" stroke="currentColor" stroke-width="1.6"/>
+                            <path d="M8 5h8l1 12a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+                            <path d="M12 9.5l1.8 2.6H10.2z" fill="currentColor"/>
+                        </svg>
+                    </button>
+
+                    <button id="camara-cambiar" class="camara-boton-icono" type="button" aria-label="Cambiar de cámara">
+                        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
+                            <path d="M4 9a8 8 0 0 1 13.2-2.5L19 7" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M20 15a8 8 0 0 1-13.2 2.5L5 17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M19 3.5V8h-4.5M5 20.5V16h4.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+
+                    <button id="camara-temporizador" class="camara-boton-icono" type="button" aria-label="Temporizador">
+                        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
+                            <circle cx="12" cy="13" r="8" fill="none" stroke="currentColor" stroke-width="1.7"/>
+                            <path d="M12 9.2V13l2.6 1.8" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M9 2.5h6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+                        </svg>
+                        <span id="camara-temporizador-valor" class="camara-temporizador-valor"></span>
+                    </button>
+
+                </div>
+
+                <div id="camara-cuenta" class="camara-cuenta" hidden aria-live="assertive"></div>
+                <div id="camara-aviso" class="camara-aviso" aria-live="polite" hidden></div>
+                <div id="camara-filtros" class="camara-filtros" hidden role="group" aria-label="Filtros de vídeo"></div>
+                <div id="camara-tiempo" class="camara-tiempo" hidden>0:00 / 1:30</div>
+
+                <div class="camara-controles">
+                    <button id="camara-btn-filtros" class="camara-circulo camara-circulo-lateral" type="button" aria-label="Filtros">
+                        <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false">
+                            <path d="M4 6h16M4 12h16M4 18h16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+                            <circle cx="9" cy="6" r="2" fill="currentColor"/>
+                            <circle cx="15" cy="12" r="2" fill="currentColor"/>
+                            <circle cx="7.5" cy="18" r="2" fill="currentColor"/>
+                        </svg>
+                    </button>
+                    <button id="camara-btn-centro" class="camara-circulo camara-circulo-centro" type="button" aria-label="Empezar a grabar"></button>
+                    <button id="camara-btn-derecho" class="camara-circulo camara-circulo-lateral" type="button" aria-label="" disabled></button>
+                </div>
+
+            </div>
+
+            <!-- PREVISUALIZACIÓN DE LO GRABADO -->
+
+            <div id="camara-previa" class="modal modal-contenido-social" hidden>
+
+                <section class="dialogo-social dialogo-camara-previa" role="dialog" aria-modal="true" aria-labelledby="titulo-camara-previa">
+
+                    <header class="cabecera-dialogo-social">
+                        <h2 id="titulo-camara-previa">Previsualización</h2>
+                        <button id="camara-previa-cerrar" class="boton-cerrar-modal" type="button" aria-label="Volver a la cámara">
+                            ×
+                        </button>
+                    </header>
+
+                    <div class="camara-previa-cuerpo">
+                        <video id="camara-previa-video" class="camara-previa-video" controls playsinline></video>
+                        <img id="camara-previa-imagen" class="camara-previa-video" alt="Foto capturada" hidden>
+                        <p id="camara-previa-texto" class="camara-previa-texto" hidden></p>
+                    </div>
+
+                    <button id="camara-previa-continuar" class="boton-confirmar-social" type="button">
+                        CONTINUAR
+                    </button>
+
+                </section>
+
+            </div>
+
+            <!-- ENVIAR: título, público/amigos y destinos -->
+
+            <div id="camara-enviar" class="modal modal-contenido-social" hidden>
+
+                <section class="dialogo-social" role="dialog" aria-modal="true" aria-labelledby="titulo-camara-enviar">
+
+                    <header class="cabecera-dialogo-social">
+                        <h2 id="titulo-camara-enviar">Publicar</h2>
+                        <button id="camara-enviar-cerrar" class="boton-cerrar-modal" type="button" aria-label="Volver">
+                            ×
+                        </button>
+                    </header>
+
+                    <form id="camara-enviar-formulario" class="formulario-dialogo-social">
+
+                        <label for="camara-titulo">Título (obligatorio)</label>
+                        <input
+                            id="camara-titulo"
+                            type="text"
+                            maxlength="100"
+                            required
+                            placeholder="Escribe un título..."
+                        >
+
+                        <div class="fila-switch-cuenta">
+                            <div class="texto-switch-cuenta">
+                                <strong>Público</strong>
+                                <span>Si lo desactivas, solo lo verán tus amigos.</span>
+                            </div>
+                            <label class="switch" for="camara-publico">
+                                <input type="checkbox" id="camara-publico">
+                                <span class="switch-pista" aria-hidden="true">
+                                    <span class="switch-boton"></span>
+                                </span>
+                            </label>
+                        </div>
+
+                        <fieldset class="camara-destinos">
+                            <legend>¿Dónde lo publicas?</legend>
+
+                            <div class="fila-switch-cuenta fila-camara-destino">
+                                <div class="texto-switch-cuenta">
+                                    <strong>Estado</strong>
+                                    <span>Desaparece a las 24 horas.</span>
+                                </div>
+                                <label class="switch" for="camara-dest-estado">
+                                    <input type="checkbox" id="camara-dest-estado" class="camara-dest" data-destino="estado">
+                                    <span class="switch-pista" aria-hidden="true">
+                                        <span class="switch-boton"></span>
+                                    </span>
+                                </label>
+                            </div>
+
+                            <div class="fila-switch-cuenta fila-camara-destino">
+                                <div class="texto-switch-cuenta">
+                                    <strong>Reel</strong>
+                                    <span>Vídeo corto en tu perfil.</span>
+                                </div>
+                                <label class="switch" for="camara-dest-reel">
+                                    <input type="checkbox" id="camara-dest-reel" class="camara-dest" data-destino="reel">
+                                    <span class="switch-pista" aria-hidden="true">
+                                        <span class="switch-boton"></span>
+                                    </span>
+                                </label>
+                            </div>
+
+                            <div class="fila-switch-cuenta fila-camara-destino">
+                                <div class="texto-switch-cuenta">
+                                    <strong>Publicación</strong>
+                                    <span>Se queda en tu perfil.</span>
+                                </div>
+                                <label class="switch" for="camara-dest-publicacion">
+                                    <input type="checkbox" id="camara-dest-publicacion" class="camara-dest" data-destino="publicacion">
+                                    <span class="switch-pista" aria-hidden="true">
+                                        <span class="switch-boton"></span>
+                                    </span>
+                                </label>
+                            </div>
+
+                            <div class="fila-switch-cuenta fila-camara-destino">
+                                <div class="texto-switch-cuenta">
+                                    <strong>Historia</strong>
+                                    <span>Se queda en la carpeta que elijas.</span>
+                                </div>
+                                <label class="switch" for="camara-dest-historia">
+                                    <input type="checkbox" id="camara-dest-historia" class="camara-dest" data-destino="historia">
+                                    <span class="switch-pista" aria-hidden="true">
+                                        <span class="switch-boton"></span>
+                                    </span>
+                                </label>
+                            </div>
+
+                            <div id="camara-historia-extra" class="camara-historia-extra" hidden>
+                                <label for="camara-historia-select">Carpeta de la historia</label>
+                                <select id="camara-historia-select" required>
+                                    <option value="">Elige una carpeta...</option>
+                                </select>
+                            </div>
+
+                        </fieldset>
+
+                        <p id="camara-enviar-error" class="error-social" aria-live="polite"></p>
+
+                        <button class="boton-confirmar-social" type="submit">
+                            <span id="camara-enviar-texto">VER PREVISUALIZACIÓN</span>
+                        </button>
+
+                        
+
+                    </form>
+
+                </section>
+
+            </div>
+
+            <!-- CONFIRMACIÓN FINAL DE SUBIDA -->
+
+            <div id="camara-confirmar" class="modal modal-contenido-social" hidden>
+
+                <section class="dialogo-social dialogo-camara-previa" role="dialog" aria-modal="true" aria-labelledby="titulo-camara-confirmar">
+
+                    <header class="cabecera-dialogo-social">
+                        <h2 id="titulo-camara-confirmar">Confirmar y subir</h2>
+                        <button id="camara-confirmar-cerrar" class="boton-cerrar-modal" type="button" aria-label="Volver">
+                            ×
+                        </button>
+                    </header>
+
+                    <div class="camara-previa-cuerpo">
+                        <video id="camara-confirmar-video" class="camara-previa-video" controls playsinline></video>
+                        <img id="camara-confirmar-imagen" class="camara-previa-video" alt="Foto capturada" hidden>
+                        <p id="camara-confirmar-texto" class="camara-previa-texto" hidden></p>
+                    </div>
+
+                    <p id="camara-confirmar-resumen" class="estado-amigos"></p>
+
+                    <button id="camara-confirmar-subir" class="boton-confirmar-social" type="button">
+                        CONFIRMAR Y SUBIR
+                    </button>
+
+                </section>
+
+            </div>
+
+            <!-- ERROR DE CÁMARA -->
+
+            <div id="camara-error" class="modal modal-contenido-social" hidden>
+
+                <div class="modal-contenido" role="dialog" aria-modal="true" aria-labelledby="titulo-camara-error">
+
+                    <h2 id="titulo-camara-error">No se pudo abrir la cámara</h2>
+
+                    <p id="camara-error-texto" class="estado-amigos" aria-live="polite">
+                        Permiso de cámara denegado.
+                    </p>
+
+                    <button id="camara-error-cerrar" class="boton-cerrar-modal" type="button">
+                        CERRAR
+                    </button>
+
+                </div>
+
+            </div>
+
     <script src="/data/emojis.js"></script>
-    <script src="/app.js?v=54"></script>
+    <script src="/app.js?v=50"></script>
 
 </body>
 

@@ -116,7 +116,7 @@ const ICONO_COMPOSER_MICROFONO = `
     </svg>
 `;
 
-const VERSION_APP = "v54";
+const VERSION_APP = "v50";
 
 document.getElementById("version-app-cuenta")?.replaceChildren(VERSION_APP);
 
@@ -9813,8 +9813,880 @@ const modalMiContenido = document.getElementById("modal-mi-contenido");
 let reelsVisor = [];
 let reelAbierto = null;
 
+/* ================= CÁMARA: crear contenido ================= */
+
+const ICONO_CAMARA = {
+    grabar: `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8" fill="currentColor"/></svg>`,
+    parar: `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="7" y="7" width="10" height="10" rx="2" fill="currentColor"/></svg>`,
+    pausa: `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="7" y="5" width="3.6" height="14" rx="1.2" fill="currentColor"/><rect x="13.4" y="5" width="3.6" height="14" rx="1.2" fill="currentColor"/></svg>`,
+    reanudar: `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 5.5v13l10-6.5z" fill="currentColor"/></svg>`,
+    foto: `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M4 8h4l1.5-2h5L16 8h4a1.5 1.5 0 0 1 1.5 1.5V18a1.5 1.5 0 0 1-1.5 1.5H4A1.5 1.5 0 0 1 2.5 18V9.5A1.5 1.5 0 0 1 4 8z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>`,
+    borrar: `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 7h12l-1 13a2 2 0 0 1-2 1.8H9A2 2 0 0 1 7 20z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M9.5 7V5.2A1.2 1.2 0 0 1 10.7 4h2.6a1.2 1.2 0 0 1 1.2 1.2V7" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M10 10.5v6M14 10.5v6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`,
+    enviar: `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 11.5 20 4l-7.5 16-2.2-6.3z" fill="currentColor"/><path d="M4 11.5l6.3-1.8L20 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>`
+};
+
+const FILTROS_CAMARA = [
+    { id: "ninguno", nombre: "Normal", css: "none" },
+    { id: "calido", nombre: "Cálido", css: "sepia(0.35) saturate(1.25)" },
+    { id: "frio", nombre: "Frío", css: "saturate(1.1) hue-rotate(-12deg) brightness(1.03)" },
+    { id: "byn", nombre: "B/N", css: "grayscale(1)" },
+    { id: "vintage", nombre: "Vintage", css: "sepia(0.55) contrast(1.1) brightness(0.96)" },
+    { id: "vivido", nombre: "Vívido", css: "saturate(1.6) contrast(1.12)" },
+    { id: "cine", nombre: "Cine", css: "contrast(1.2) saturate(0.9) brightness(1.05)" }
+];
+
+const TEMPORIZADORES_CAMARA = [0, 1, 3, 5, 10];
+const MAX_GRABACION_CAMARA = 90;
+
+const cam = {
+    pantalla: document.getElementById("pantalla-camara"),
+    lienzo: document.getElementById("camara-canvas"),
+    video: document.getElementById("camara-video"),
+    cuenta: document.getElementById("camara-cuenta"),
+    aviso: document.getElementById("camara-aviso"),
+    filtros: document.getElementById("camara-filtros"),
+    tiempo: document.getElementById("camara-tiempo"),
+    btnCentro: document.getElementById("camara-btn-centro"),
+    btnDerecho: document.getElementById("camara-btn-derecho"),
+    btnFiltros: document.getElementById("camara-btn-filtros"),
+    botonTipo: document.getElementById("camara-boton-tipo"),
+    panelTipo: document.getElementById("camara-panel-tipo"),
+    linterna: document.getElementById("camara-linterna"),
+    cambiar: document.getElementById("camara-cambiar"),
+    temporizador: document.getElementById("camara-temporizador"),
+    temporizadorValor: document.getElementById("camara-temporizador-valor"),
+    previa: document.getElementById("camara-previa"),
+    previaVideo: document.getElementById("camara-previa-video"),
+    previaImagen: document.getElementById("camara-previa-imagen"),
+    previaTexto: document.getElementById("camara-previa-texto"),
+    enviar: document.getElementById("camara-enviar"),
+    enviarFormulario: document.getElementById("camara-enviar-formulario"),
+    enviarTitulo: document.getElementById("camara-titulo"),
+    enviarPublico: document.getElementById("camara-publico"),
+    enviarError: document.getElementById("camara-enviar-error"),
+    enviarTexto: document.getElementById("camara-enviar-texto"),
+    historiaExtra: document.getElementById("camara-historia-extra"),
+    historiaSelect: document.getElementById("camara-historia-select"),
+    confirmar: document.getElementById("camara-confirmar"),
+    confirmarVideo: document.getElementById("camara-confirmar-video"),
+    confirmarImagen: document.getElementById("camara-confirmar-imagen"),
+    confirmarTexto: document.getElementById("camara-confirmar-texto"),
+    confirmarResumen: document.getElementById("camara-confirmar-resumen"),
+    error: document.getElementById("camara-error"),
+    errorTexto: document.getElementById("camara-error-texto")
+};
+
+let flujoCamara = null;
+let pistaVideo = null;
+let grabadora = null;
+let lienzoStream = null;
+let ctxCamara = null;
+let rafCamara = null;
+let tramosGrabacion = [];
+let estadoGrabacion = "inactivo";
+let modoCamara = "video";
+let filtroCamara = "ninguno";
+let camaraFrontal = false;
+let temporizadorIndice = 0;
+let segundosGrabados = 0;
+let intervaloGrabacion = null;
+let blobFinal = null;
+let urlBlob = null;
+let confirmado = false;
+let historiasDisponibles = [];
+
+//CAMARA-JS
+
+function avisoCamara(texto, tiempo = 1600) {
+    if (!cam.aviso) return;
+    cam.aviso.textContent = texto;
+    cam.aviso.hidden = false;
+    clearTimeout(avisoCamara._t);
+    avisoCamara._t = setTimeout(() => { cam.aviso.hidden = true; }, tiempo);
+}
+
+function pintarTiempoCamara() {
+    if (!cam.tiempo) return;
+    const t = Math.min(segundosGrabados, MAX_GRABACION_CAMARA);
+    const m = Math.floor(t / 60);
+    const s = t % 60;
+    cam.tiempo.textContent = `${m}:${String(s).padStart(2, "0")} / 1:30`;
+}
+
+async function abrirCamara() {
+    if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
+        mostrarErrorCamara("Este navegador no permite usar la cámara.");
+        return;
+    }
+
+    resetearEstadoCamara();
+    cam.pantalla.hidden = false;
+    document.body.style.overflow = "hidden";
+
+    try {
+        await arrancarFlujoCamara();
+    } catch (error) {
+        cerrarPantallaCamara();
+        const denegado = error && (error.name === "NotAllowedError" || error.name === "SecurityError" || error.name === "PermissionDeniedError");
+        mostrarErrorCamara(denegado ? "Permiso de cámara denegado." : "No se pudo acceder a la cámara.");
+        return;
+    }
+
+    pintarFiltrosCamara();
+    reflejarModoTipo();
+    actualizarBotonCentro();
+    actualizarBotonDerecho();
+    actualizarLinternaDisponible();
+    reflejarTemporizador();
+    cam.filtros.hidden = true;
+}
+
+function resetearEstadoCamara() {
+    detenerGrabacionInterna();
+    detenerFlujoCamara();
+    tramosGrabacion = [];
+    estadoGrabacion = "inactivo";
+    segundosGrabados = 0;
+    blobFinal = null;
+    confirmado = false;
+    tipoContenido = "video";
+    filtroCamara = "ninguno";
+    camaraFrontal = false;
+    temporizadorIndice = 0;
+    historiasDisponibles = [];
+    if (cam.enviarFormulario) cam.enviarFormulario.reset();
+    if (cam.enviarError) cam.enviarError.textContent = "";
+    if (cam.previaVideo) { cam.previaVideo.removeAttribute("src"); cam.previaVideo.load?.(); }
+    if (cam.confirmarVideo) { cam.confirmarVideo.removeAttribute("src"); cam.confirmarVideo.load?.(); }
+    liberarUrlBlob();
+    cam.panelTipo.hidden = true;
+    cam.botonTipo.setAttribute("aria-expanded", "false");
+}
+
+async function arrancarFlujoCamara() {
+    const restricciones = {
+        audio: true,
+        video: { facingMode: camaraFrontal ? "user" : "environment", width: { ideal: 1280 }, height: { ideal: 720 } }
+    };
+    flujoCamara = await navigator.mediaDevices.getUserMedia(restricciones);
+    pistaVideo = flujoCamara.getVideoTracks()[0] ?? null;
+    cam.video.srcObject = flujoCamara;
+    await cam.video.play().catch(() => {});
+
+    ctxCamara = cam.lienzo.getContext("2d");
+    ajustarLienzo();
+    dibujarFotograma();
+}
+
+function ajustarLienzo() {
+    const ancho = cam.video.videoWidth || 1280;
+    const alto = cam.video.videoHeight || 720;
+    cam.lienzo.width = ancho;
+    cam.lienzo.height = alto;
+}
+
+function filtroCssActual() {
+    return (FILTROS_CAMARA.find((f) => f.id === filtroCamara) ?? FILTROS_CAMARA[0]).css;
+}
+
+function dibujarFotograma() {
+    if (!flujoCamara) return;
+    if (cam.video.readyState >= 2 && cam.lienzo.width !== cam.video.videoWidth && cam.video.videoWidth) {
+        ajustarLienzo();
+    }
+    const ctx = ctxCamara;
+    if (ctx && cam.video.readyState >= 2) {
+        try {
+            ctx.save();
+            if (camaraFrontal) {
+                ctx.translate(cam.lienzo.width, 0);
+                ctx.scale(-1, 1);
+            }
+            ctx.filter = filtroCssActual();
+            ctx.drawImage(cam.video, 0, 0, cam.lienzo.width, cam.lienzo.height);
+            ctx.restore();
+        } catch (error) {
+            /* El vídeo aún no tiene datos (p. ej. al cambiar de cámara): se reintenta en el próximo frame. */
+        }
+    }
+    rafCamara = requestAnimationFrame(dibujarFotograma);
+}
+
+function detenerFlujoCamara() {
+    if (rafCamara) { cancelAnimationFrame(rafCamara); rafCamara = null; }
+    if (flujoCamara) {
+        flujoCamara.getTracks().forEach((t) => t.stop());
+        flujoCamara = null;
+    }
+    pistaVideo = null;
+    cam.video.srcObject = null;
+    if (cam.linterna) { cam.linterna.classList.remove("activa"); cam.linterna.hidden = true; }
+}
+
+function liberarUrlBlob() {
+    if (urlBlob) { URL.revokeObjectURL(urlBlob); urlBlob = null; }
+}
+
+//CAMARA-JS-B
+
+function actualizarBotonCentro() {
+    const b = cam.btnCentro;
+    b.classList.remove("grabando", "peligro");
+    if (modoCamara === "foto") {
+        b.innerHTML = ICONO_CAMARA.foto;
+        b.setAttribute("aria-label", "Hacer foto");
+        b.disabled = false;
+        return;
+    }
+    if (modoCamara === "texto") {
+        b.innerHTML = ICONO_CAMARA.enviar;
+        b.setAttribute("aria-label", "Continuar con texto");
+        b.disabled = false;
+        return;
+    }
+    if (estadoGrabacion === "inactivo") {
+        b.innerHTML = ICONO_CAMARA.grabar;
+        b.setAttribute("aria-label", "Empezar a grabar");
+    } else if (estadoGrabacion === "grabando") {
+        b.innerHTML = ICONO_CAMARA.parar;
+        b.classList.add("grabando");
+        b.setAttribute("aria-label", "Parar de grabar");
+    } else if (estadoGrabacion === "pausado") {
+        b.innerHTML = ICONO_CAMARA.reanudar;
+        b.setAttribute("aria-label", "Reanudar la grabación");
+    } else if (estadoGrabacion === "parado") {
+        b.innerHTML = ICONO_CAMARA.borrar;
+        b.classList.add("peligro");
+        b.setAttribute("aria-label", "Borrar el vídeo entero");
+    }
+    b.disabled = false;
+}
+
+function actualizarBotonDerecho() {
+    const b = cam.btnDerecho;
+    b.classList.remove("peligro");
+    if (estadoGrabacion === "grabando") {
+        b.innerHTML = ICONO_CAMARA.pausa;
+        b.setAttribute("aria-label", "Pausar la grabación");
+        b.disabled = false;
+    } else if (estadoGrabacion === "pausado") {
+        b.innerHTML = ICONO_CAMARA.borrar;
+        b.classList.add("peligro");
+        b.setAttribute("aria-label", "Borrar la última sección grabada");
+        b.disabled = tramosGrabacion.length === 0;
+    } else if (estadoGrabacion === "parado") {
+        b.innerHTML = ICONO_CAMARA.enviar;
+        b.setAttribute("aria-label", "Enviar");
+        b.disabled = false;
+    } else {
+        b.innerHTML = "";
+        b.setAttribute("aria-label", "");
+        b.disabled = true;
+    }
+}
+
+function tipoMimeVideo() {
+    if (typeof MediaRecorder === "undefined" || typeof MediaRecorder.isTypeSupported !== "function") return "";
+    const candidatos = [
+        "video/webm;codecs=vp9,opus",
+        "video/webm;codecs=vp8,opus",
+        "video/webm",
+        "video/mp4"
+    ];
+    return candidatos.find((t) => MediaRecorder.isTypeSupported(t)) ?? "";
+}
+
+function cuentaAtrasCamara(segundos) {
+    return new Promise((resolver) => {
+        let restante = segundos;
+        cam.cuenta.hidden = false;
+        cam.cuenta.textContent = String(restante);
+        const intervalo = setInterval(() => {
+            restante -= 1;
+            if (restante <= 0) {
+                clearInterval(intervalo);
+                cam.cuenta.hidden = true;
+                cam.cuenta.textContent = "";
+                resolver();
+            } else {
+                cam.cuenta.textContent = String(restante);
+            }
+        }, 1000);
+    });
+}
+
+//CAMARA-JS-B2
+
+async function iniciarGrabacionCamara() {
+    if (!cam.lienzo || typeof cam.lienzo.captureStream !== "function") {
+        mostrarErrorCamara("Este navegador no permite grabar vídeo.");
+        return;
+    }
+
+    const espera = TEMPORIZADORES_CAMARA[temporizadorIndice];
+    if (espera > 0) {
+        await cuentaAtrasCamara(espera);
+        if (!flujoCamara) return;
+    }
+
+    try {
+        lienzoStream = cam.lienzo.captureStream(30);
+        flujoCamara.getAudioTracks().forEach((pista) => lienzoStream.addTrack(pista));
+
+        const mime = tipoMimeVideo();
+        grabadora = new MediaRecorder(lienzoStream, mime ? { mimeType: mime } : undefined);
+        tramosGrabacion = [];
+        segundosGrabados = 0;
+
+        grabadora.addEventListener("dataavailable", (evento) => {
+            if (evento.data && evento.data.size) tramosGrabacion.push(evento.data);
+        });
+        grabadora.addEventListener("stop", finalizarGrabacion);
+        grabadora.start(1000);
+
+        estadoGrabacion = "grabando";
+        cam.tiempo.hidden = false;
+        pintarTiempoCamara();
+        clearInterval(intervaloGrabacion);
+        intervaloGrabacion = setInterval(() => {
+            if (estadoGrabacion !== "grabando") return;
+            segundosGrabados += 1;
+            pintarTiempoCamara();
+            if (segundosGrabados >= MAX_GRABACION_CAMARA) pararGrabacionCamara();
+        }, 1000);
+
+        actualizarBotonCentro();
+        actualizarBotonDerecho();
+    } catch (error) {
+        console.error("No se pudo iniciar la grabación:", error);
+        mostrarErrorCamara("No se pudo empezar a grabar.");
+    }
+}
+
+function pausarGrabacionCamara() {
+    if (!grabadora || grabadora.state !== "recording") return;
+    try {
+        grabadora.pause();
+    } catch (error) {
+        return;
+    }
+    estadoGrabacion = "pausado";
+    actualizarBotonCentro();
+    actualizarBotonDerecho();
+}
+
+function reanudarGrabacionCamara() {
+    if (!grabadora || grabadora.state !== "paused") return;
+    try {
+        grabadora.resume();
+    } catch (error) {
+        return;
+    }
+    estadoGrabacion = "grabando";
+    actualizarBotonCentro();
+    actualizarBotonDerecho();
+}
+
+function pararGrabacionCamara() {
+    if (!grabadora || grabadora.state === "inactive") return;
+    try {
+        grabadora.stop();
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+function detenerGrabacionInterna() {
+    clearInterval(intervaloGrabacion);
+    intervaloGrabacion = null;
+    if (grabadora && grabadora.state !== "inactive") {
+        try { grabadora.stop(); } catch (error) { /* ignorar */ }
+    }
+    grabadora = null;
+    if (lienzoStream) {
+        lienzoStream.getTracks().forEach((t) => { if (t.kind === "video") t.stop(); });
+        lienzoStream = null;
+    }
+}
+
+function finalizarGrabacion() {
+    clearInterval(intervaloGrabacion);
+    intervaloGrabacion = null;
+    if (tramosGrabacion.length === 0) {
+        estadoGrabacion = "inactivo";
+        cam.tiempo.hidden = true;
+        actualizarBotonCentro();
+        actualizarBotonDerecho();
+        avisoCamara("Grabación demasiado corta");
+        return;
+    }
+    const tipo = tipoMimeVideo() || "video/webm";
+    blobFinal = new Blob(tramosGrabacion, { type: tipo });
+    estadoGrabacion = "parado";
+    cam.tiempo.hidden = true;
+    actualizarBotonCentro();
+    actualizarBotonDerecho();
+    avisoCamara("Grabación lista");
+}
+
+function borrarUltimaSeccion() {
+    if (estadoGrabacion !== "pausado" || tramosGrabacion.length === 0) return;
+    tramosGrabacion.pop();
+    avisoCamara("Última sección borrada");
+    actualizarBotonDerecho();
+}
+
+let tipoContenido = "video";
+
+function hacerFotoCamara() {
+    if (!cam.lienzo || !cam.lienzo.width) {
+        avisoCamara("La cámara aún no está lista");
+        return;
+    }
+    cam.lienzo.toBlob((blob) => {
+        if (!blob) {
+            avisoCamara("No se pudo hacer la foto");
+            return;
+        }
+        tipoContenido = "foto";
+        liberarUrlBlob();
+        blobFinal = blob;
+        urlBlob = URL.createObjectURL(blobFinal);
+        pintarPrevia();
+        cam.pantalla.hidden = true;
+        cam.previa.hidden = false;
+    }, "image/jpeg", 0.92);
+}
+
+function textoCamara() {
+    tipoContenido = "texto";
+    blobFinal = null;
+    liberarUrlBlob();
+    pintarPrevia();
+    cam.pantalla.hidden = true;
+    cam.previa.hidden = false;
+}
+
+function pintarPrevia() {
+    const esVideo = tipoContenido === "video";
+    const esFoto = tipoContenido === "foto";
+    const esTexto = tipoContenido === "texto";
+
+    cam.previaVideo.hidden = !esVideo;
+    cam.previaImagen.hidden = !esFoto;
+    cam.previaTexto.hidden = !esTexto;
+
+    if (esVideo && urlBlob) cam.previaVideo.src = urlBlob;
+    if (esFoto && urlBlob) cam.previaImagen.src = urlBlob;
+    if (esTexto) cam.previaTexto.textContent = "Escribe el texto en el siguiente paso.";
+}
+
+function pintarConfirmar() {
+    const esVideo = tipoContenido === "video";
+    const esFoto = tipoContenido === "foto";
+    const esTexto = tipoContenido === "texto";
+
+    cam.confirmarVideo.hidden = !esVideo;
+    cam.confirmarImagen.hidden = !esFoto;
+    cam.confirmarTexto.hidden = !esTexto;
+
+    liberarUrlBlob();
+    if (tipoContenido !== "texto") {
+        urlBlob = URL.createObjectURL(blobFinal);
+    }
+    if (esVideo && urlBlob) cam.confirmarVideo.src = urlBlob;
+    if (esFoto && urlBlob) cam.confirmarImagen.src = urlBlob;
+    if (esTexto) cam.confirmarTexto.textContent = cam.enviarTitulo.value.trim();
+}
+
+function borrarVideoEntero() {
+    if (estadoGrabacion !== "parado") return;
+    if (!window.confirm("¿Borrar el vídeo entero? Se descartará la grabación.")) return;
+    tramosGrabacion = [];
+    blobFinal = null;
+    estadoGrabacion = "inactivo";
+    segundosGrabados = 0;
+    cam.tiempo.hidden = true;
+    actualizarBotonCentro();
+    actualizarBotonDerecho();
+}
+
+//CAMARA-JS-C
+
+function pintarFiltrosCamara() {
+    if (!cam.filtros) return;
+    cam.filtros.replaceChildren();
+    FILTROS_CAMARA.forEach((filtro) => {
+        const boton = document.createElement("button");
+        boton.type = "button";
+        boton.className = "camara-filtro" + (filtro.id === filtroCamara ? " activa" : "");
+        boton.textContent = filtro.nombre;
+        boton.addEventListener("click", () => {
+            filtroCamara = filtro.id;
+            cam.filtros.querySelectorAll(".camara-filtro").forEach((b) => b.classList.toggle("activa", b === boton));
+        });
+        cam.filtros.appendChild(boton);
+    });
+}
+
+function alternarPanelFiltros() {
+    if (!cam.filtros) return;
+    cam.filtros.hidden = !cam.filtros.hidden;
+}
+
+function alternarPanelTipo() {
+    if (!cam.panelTipo) return;
+    const abierto = cam.panelTipo.hidden;
+    cam.panelTipo.hidden = !abierto;
+    cam.botonTipo.setAttribute("aria-expanded", String(abierto));
+}
+
+function reflejarModoTipo() {
+    cam.panelTipo?.querySelectorAll("[data-camara-modo]").forEach((b) => {
+        const activo = b.dataset.camaraModo === modoCamara;
+        b.classList.toggle("activa", activo);
+        b.setAttribute("aria-checked", String(activo));
+    });
+}
+
+function cambiarModoCamara(modo) {
+    if (!["video", "foto", "texto"].includes(modo)) return;
+    modoCamara = modo;
+    reflejarModoTipo();
+    cam.panelTipo.hidden = true;
+    cam.botonTipo.setAttribute("aria-expanded", "false");
+    avisoCamara(modo === "video" ? "Modo vídeo" : modo === "foto" ? "Modo foto" : "Modo texto");
+}
+
+function actualizarLinternaDisponible() {
+    if (!pistaVideo) { cam.linterna.hidden = true; return; }
+    const capacidades = typeof pistaVideo.getCapabilities === "function" ? pistaVideo.getCapabilities() : {};
+    cam.linterna.hidden = !capacidades.torch;
+}
+
+function alternarLinterna() {
+    if (!pistaVideo || cam.linterna.hidden) return;
+    const encendida = cam.linterna.classList.toggle("activa");
+    pistaVideo.applyConstraints({ advanced: [{ torch: encendida }] }).catch(() => {
+        cam.linterna.classList.remove("activa");
+        avisoCamara("No se pudo encender la linterna");
+    });
+}
+
+async function cambiarCamara() {
+    if (!flujoCamara) return;
+    camaraFrontal = !camaraFrontal;
+    detenerFlujoCamara();
+    try {
+        await arrancarFlujoCamara();
+        actualizarLinternaDisponible();
+    } catch (error) {
+        mostrarErrorCamara("No se pudo cambiar de cámara.");
+    }
+}
+
+function reflejarTemporizador() {
+    const valor = TEMPORIZADORES_CAMARA[temporizadorIndice];
+    cam.temporizadorValor.textContent = valor > 0 ? `${valor}s` : "";
+    cam.temporizador.classList.toggle("activa", valor > 0);
+}
+
+function ciclarTemporizador() {
+    temporizadorIndice = (temporizadorIndice + 1) % TEMPORIZADORES_CAMARA.length;
+    reflejarTemporizador();
+}
+
+function mostrarErrorCamara(texto) {
+    if (cam.errorTexto) cam.errorTexto.textContent = texto || "Permiso de cámara denegado.";
+    if (cam.error) cam.error.hidden = false;
+}
+
+function cerrarPantallaCamara() {
+    detenerGrabacionInterna();
+    detenerFlujoCamara();
+    cam.pantalla.hidden = true;
+    document.body.style.overflow = "";
+    if (cam.panelTipo) cam.panelTipo.hidden = true;
+}
+
+//CAMARA-JS-D
+
+function abrirPrevia() {
+    if (tipoContenido === "texto" || !blobFinal) {
+        pintarPrevia();
+        cam.previa.hidden = false;
+        return;
+    }
+    liberarUrlBlob();
+    urlBlob = URL.createObjectURL(blobFinal);
+    pintarPrevia();
+    cam.previa.hidden = false;
+}
+
+function abrirEnviar() {
+    cam.previa.hidden = true;
+    if (cam.enviarError) cam.enviarError.textContent = "";
+    const filaReel = cam.enviar.querySelector('[data-destino="reel"]')?.closest(".fila-camara-destino");
+    if (filaReel) {
+        const soloTextoOFoto = tipoContenido !== "video";
+        filaReel.hidden = soloTextoOFoto;
+        if (soloTextoOFoto) {
+            const check = document.getElementById("camara-dest-reel");
+            if (check) check.checked = false;
+        }
+    }
+    cam.enviar.hidden = false;
+    cam.enviarTitulo?.focus();
+    cargarHistoriasSelect();
+}
+
+function destinosSeleccionados() {
+    return [...document.querySelectorAll(".camara-dest:checked")].map((c) => c.dataset.destino);
+}
+
+async function cargarHistoriasSelect() {
+    if (!cam.historiaSelect) return;
+    try {
+        const datos = await solicitarGrupo("/api/historias/mias");
+        historiasDisponibles = datos.historias ?? [];
+    } catch (error) {
+        historiasDisponibles = [];
+    }
+    cam.historiaSelect.innerHTML = `<option value="">Elige una carpeta...</option>` +
+        historiasDisponibles.map((h) => `<option value="${escapeHtml(h.id)}">${escapeHtml(h.nombre)}</option>`).join("") +
+        `<option value="__nueva__">+ Crear nueva historia</option>`;
+}
+
+function reflejarHistoriaExtra() {
+    const activa = document.getElementById("camara-dest-historia")?.checked;
+    if (cam.historiaExtra) cam.historiaExtra.hidden = !activa;
+}
+
+//CAMARA-JS-D2
+
+function prepararConfirmacion() {
+    const titulo = cam.enviarTitulo.value.trim();
+    if (!titulo) {
+        cam.enviarError.textContent = "El título es obligatorio.";
+        cam.enviarTitulo.focus();
+        return;
+    }
+    const destinos = destinosSeleccionados();
+    if (destinos.length === 0) {
+        cam.enviarError.textContent = "Elige al menos un destino.";
+        return;
+    }
+    if (destinos.includes("historia") && !cam.historiaSelect.value) {
+        cam.enviarError.textContent = "Elige o crea una carpeta para la historia.";
+        cam.historiaSelect.focus();
+        return;
+    }
+    cam.enviarError.textContent = "";
+
+    const publico = cam.enviarPublico.checked;
+    const nombres = {
+        estado: "Estado",
+        reel: "Reel",
+        publicacion: "Publicación",
+        historia: cam.historiaSelect.value === "__nueva__" ? "Historia (nueva)" : "Historia"
+    };
+    const lista = destinos.map((d) => nombres[d]).join(" · ");
+    cam.confirmarResumen.textContent = `"${titulo}" · ${publico ? "Público" : "Solo amigos"} · ${lista}`;
+
+    pintarConfirmar();
+    cam.enviar.hidden = true;
+    cam.confirmar.hidden = false;
+}
+
+function tipoCampoContenido() {
+    if (tipoContenido === "foto") return "imagen";
+    if (tipoContenido === "texto") return "texto";
+    return "video";
+}
+
+function archivoDesdeBlob() {
+    if (tipoContenido === "foto") {
+        return new File([blobFinal], "atuista.jpg", { type: "image/jpeg" });
+    }
+    const tipo = blobFinal.type.includes("mp4") ? "mp4" : "webm";
+    return new File([blobFinal], `atuista.${tipo}`, { type: blobFinal.type });
+}
+
+async function subirADestino(destino, archivo, titulo, visibilidad) {
+    const esTexto = tipoContenido === "texto";
+    const tipoCampo = tipoCampoContenido();
+    if (destino === "reel") {
+        if (esTexto) throw new Error("El texto no se puede subir como reel.");
+        const body = new FormData();
+        body.append("titulo", titulo);
+        body.append("visibilidad", visibilidad);
+        body.append("archivo", archivo);
+        await solicitarGrupo("/api/reels", { method: "POST", body });
+        return;
+    }
+    if (destino === "estado") {
+        if (esTexto) {
+            await solicitarGrupo("/api/estados", {
+                method: "POST",
+                body: JSON.stringify({ texto: titulo, visibilidad })
+            });
+            return;
+        }
+        const body = new FormData();
+        body.append("tipo", tipoCampo);
+        body.append("visibilidad", visibilidad);
+        body.append("texto", titulo);
+        body.append("archivo", archivo);
+        await solicitarGrupo("/api/estados/multimedia", { method: "POST", body });
+        return;
+    }
+    if (destino === "publicacion") {
+        if (esTexto) {
+            await solicitarGrupo("/api/publicaciones", {
+                method: "POST",
+                body: JSON.stringify({ texto: titulo, visibilidad })
+            });
+            return;
+        }
+        const tipoPub = tipoContenido === "foto" ? "imagenes" : "video";
+        const body = new FormData();
+        body.append("tipo", tipoPub);
+        body.append("visibilidad", visibilidad);
+        body.append("texto", titulo);
+        body.append("archivo", archivo);
+        await solicitarGrupo("/api/publicaciones/multimedia", { method: "POST", body });
+        return;
+    }
+    if (destino === "historia") {
+        let historiaId = cam.historiaSelect.value;
+        if (historiaId === "__nueva__") {
+            const datos = await solicitarGrupo("/api/historias", {
+                method: "POST",
+                body: JSON.stringify({ nombre: titulo })
+            });
+            historiaId = datos.historia?.id;
+        }
+        if (!historiaId) throw new Error("No se pudo determinar la historia.");
+        if (esTexto) {
+            const bodyTexto = new FormData();
+            bodyTexto.append("tipo", "texto");
+            bodyTexto.append("texto", titulo);
+            await solicitarGrupo(`/api/historias/${encodeURIComponent(historiaId)}/items`, { method: "POST", body: bodyTexto });
+            return;
+        }
+        const body = new FormData();
+        body.append("tipo", tipoCampo);
+        body.append("texto", titulo);
+        body.append("archivo", archivo);
+        await solicitarGrupo(`/api/historias/${encodeURIComponent(historiaId)}/items`, { method: "POST", body });
+    }
+}
+
+async function confirmarYSubir() {
+    if (confirmado) return;
+    const titulo = cam.enviarTitulo.value.trim();
+    const destinos = destinosSeleccionados();
+    const hayContenido = tipoContenido === "texto" || blobFinal;
+    if (!titulo || destinos.length === 0 || !hayContenido) {
+        cam.confirmar.hidden = true;
+        cam.enviar.hidden = false;
+        return;
+    }
+    const visibilidad = cam.enviarPublico.checked ? "publica" : "amigos";
+    const archivo = tipoContenido === "texto" ? null : archivoDesdeBlob();
+
+    confirmado = true;
+    const boton = document.getElementById("camara-confirmar-subir");
+    const textoBoton = boton.textContent;
+    boton.disabled = true;
+    boton.textContent = "SUBIENDO...";
+
+    const resultados = await Promise.allSettled(destinos.map((d) => subirADestino(d, archivo, titulo, visibilidad)));
+    const fallos = resultados.filter((r) => r.status === "rejected");
+
+    boton.disabled = false;
+    boton.textContent = textoBoton;
+
+    cerrarPantallaCamara();
+    cam.confirmar.hidden = true;
+    cam.enviar.hidden = true;
+
+    try { await cargarContenidoInicio(); } catch (error) { /* ignorar */ }
+    try { actualizarPistaReelsCuenta?.(); } catch (error) { /* ignorar */ }
+
+    if (fallos.length === 0) {
+        avisoCamara("Publicado correctamente", 2200);
+    } else if (fallos.length < destinos.length) {
+        avisoCamara("Publicado en algunos destinos. Revisa tu perfil.", 2600);
+    } else {
+        mostrarErrorCamara("No se pudo publicar. Inténtalo de nuevo.");
+    }
+}
+
+//CAMARA-JS-E
+
+cam.btnCentro?.addEventListener("click", () => {
+    if (modoCamara === "foto") { hacerFotoCamara(); return; }
+    if (modoCamara === "texto") { textoCamara(); return; }
+    if (estadoGrabacion === "inactivo") iniciarGrabacionCamara();
+    else if (estadoGrabacion === "grabando") pararGrabacionCamara();
+    else if (estadoGrabacion === "pausado") reanudarGrabacionCamara();
+    else if (estadoGrabacion === "parado") borrarVideoEntero();
+});
+
+cam.btnDerecho?.addEventListener("click", () => {
+    if (modoCamara !== "video") return;
+    if (estadoGrabacion === "grabando") pausarGrabacionCamara();
+    else if (estadoGrabacion === "pausado") borrarUltimaSeccion();
+    else if (estadoGrabacion === "parado") abrirPrevia();
+});
+
+cam.btnFiltros?.addEventListener("click", alternarPanelFiltros);
+cam.botonTipo?.addEventListener("click", alternarPanelTipo);
+cam.linterna?.addEventListener("click", alternarLinterna);
+cam.cambiar?.addEventListener("click", cambiarCamara);
+cam.temporizador?.addEventListener("click", ciclarTemporizador);
+
+cam.panelTipo?.querySelectorAll("[data-camara-modo]").forEach((boton) => {
+    boton.addEventListener("click", () => cambiarModoCamara(boton.dataset.camaraModo));
+});
+
+document.getElementById("camara-cerrar")?.addEventListener("click", cerrarPantallaCamara);
+document.getElementById("camara-previa-cerrar")?.addEventListener("click", () => {
+    cam.previa.hidden = true;
+});
+document.getElementById("camara-previa-continuar")?.addEventListener("click", abrirEnviar);
+document.getElementById("camara-enviar-cerrar")?.addEventListener("click", () => {
+    cam.enviar.hidden = true;
+    cam.previa.hidden = false;
+});
+document.getElementById("camara-confirmar-cerrar")?.addEventListener("click", () => {
+    cam.confirmar.hidden = true;
+    cam.enviar.hidden = true;
+    cam.previa.hidden = false;
+});
+document.getElementById("camara-confirmar-subir")?.addEventListener("click", confirmarYSubir);
+document.getElementById("camara-error-cerrar")?.addEventListener("click", () => {
+    if (cam.error) cam.error.hidden = true;
+});
+
+cam.enviarFormulario?.addEventListener("submit", (evento) => {
+    evento.preventDefault();
+    prepararConfirmacion();
+});
+
+document.getElementById("camara-dest-historia")?.addEventListener("change", reflejarHistoriaExtra);
+
+
+
+
+
+
+
+
+
 document.getElementById("boton-crear")?.addEventListener("click", () => {
-    modalCrear.hidden = false;
+    abrirCamara();
 });
 
 document.getElementById("boton-cerrar-crear")?.addEventListener("click", () => {
