@@ -14,7 +14,7 @@
 
     <link
         rel="stylesheet"
-        href="/style.css?v=56"
+        href="/style.css?v=58"
     >
 
     <link rel="icon" href="/icon.svg" type="image/svg+xml">
@@ -688,6 +688,21 @@
                     </div>
 
 
+                    <!-- FONDO DEL PERFIL -->
+
+                    <div class="fondo-cuenta">
+                        <img
+                            id="fondo-perfil-cuenta"
+                            alt=""
+                            hidden
+                        >
+                        <p class="ayuda-fondo-cuenta">
+                            Esta imagen sale de fondo en tu perfil. Cambiala o
+                            quitala desde el boton de tu foto.
+                        </p>
+                    </div>
+
+
                     <!-- HORA EN LOS MENSAJES -->
 
                     <div class="fila-switch-cuenta">
@@ -710,75 +725,73 @@
                     </div>
 
 
-                    <!-- FONDO DEL PERFIL -->
+                    <!-- NOTIFICACIONES -->
 
-                    <div class="fondo-cuenta">
-                        <img
-                            id="fondo-perfil-cuenta"
-                            alt=""
-                            hidden
-                        >
-                        <p class="ayuda-fondo-cuenta">
-                            Esta imagen sale de fondo en tu perfil. Cambiala o
-                            quitala desde el boton de tu foto.
-                        </p>
-                    </div>
-
-
-                    <!-- TUS APODOS -->
-
-                    <button id="boton-apodos-cuenta" type="button">
-                        TUS APODOS
+                    <button id="boton-notificaciones-cuenta" type="button">
+                        NOTIFICACIONES
                     </button>
 
 
-                    <!-- HISTORIAS Y PUBLICACIONES -->
+                    <!-- PERSONALIZACIÓN -->
 
-                    <div class="fila-botones-cuenta">
-                        <button id="boton-cuenta-historias" type="button">HISTORIAS</button>
-                        <button id="boton-cuenta-publicaciones" type="button">PUBLICACIONES</button>
+                    <h3 class="titulo-seccion-cuenta">Personalización</h3>
+
+                    <div class="grupo-boton-cuenta">
+                        <button id="boton-apodos-cuenta" type="button">
+                            TUS APODOS
+                        </button>
                     </div>
 
-                    <!-- NOTIFICACIONES (ventanita) -->
+                    <div class="grupo-boton-cuenta">
+                        <div class="fila-botones-cuenta">
+                            <button id="boton-cuenta-historias" type="button">HISTORIAS</button>
+                            <button id="boton-cuenta-publicaciones" type="button">PUBLICACIONES</button>
+                        </div>
+                    </div>
+
 
                     <!-- CÓDIGO DE VINCULACIÓN -->
 
-                    <div class="codigo-cuenta">
+                    <div class="grupo-boton-cuenta">
+                        <div class="codigo-cuenta">
 
-                        <h3>
-                            Código de vinculación
-                        </h3>
+                            <h3>
+                                Código de vinculación
+                            </h3>
 
-                        <div class="codigo-cuenta-contenedor">
+                            <div class="codigo-cuenta-contenedor">
 
-                            <span id="codigo-cuenta-texto">
-                                Cargando...
-                            </span>
+                                <span id="codigo-cuenta-texto">
+                                    Cargando...
+                                </span>
+
+                                <button
+                                    id="boton-copiar-codigo-cuenta"
+                                    type="button"
+                                    aria-label="Copiar código de vinculación"
+                                >
+                                    ⧉
+                                </button>
+
+                            </div>
 
                             <button
-                                id="boton-copiar-codigo-cuenta"
+                                id="boton-regenerar-codigo"
                                 type="button"
-                                aria-label="Copiar código de vinculación"
                             >
-                                ⧉
+                                REGENERAR CÓDIGO
                             </button>
 
                         </div>
-
-                        <button
-                            id="boton-regenerar-codigo"
-                            type="button"
-                        >
-                            REGENERAR CÓDIGO
-                        </button>
-
                     </div>
+
 
                     <!-- CERRAR SESIÓN -->
 
                     <button
                         id="boton-cerrar-sesion"
                         type="button"
+                        class="boton-cerrar-sesion-cuenta"
                     >
                         CERRAR SESIÓN
                     </button>
@@ -3238,7 +3251,7 @@
             </div>
 
     <script src="/data/emojis.js"></script>
-    <script src="/app.js?v=56"></script>
+    <script src="/app.js?v=58"></script>
 
 </body>
 

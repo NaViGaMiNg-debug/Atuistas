@@ -116,7 +116,7 @@ const ICONO_COMPOSER_MICROFONO = `
     </svg>
 `;
 
-const VERSION_APP = "v56";
+const VERSION_APP = "v58";
 
 document.getElementById("version-app-cuenta")?.replaceChildren(VERSION_APP);
 
@@ -2587,6 +2587,7 @@ function cerrarModalNotificaciones() {
 }
 
 document.getElementById("boton-campana-notificaciones")?.addEventListener("click", abrirModalNotificaciones);
+document.getElementById("boton-notificaciones-cuenta")?.addEventListener("click", abrirModalNotificaciones);
 document.getElementById("boton-cerrar-notificaciones")?.addEventListener("click", cerrarModalNotificaciones);
 modalNotificaciones?.addEventListener("click", (evento) => {
     if (evento.target === modalNotificaciones) cerrarModalNotificaciones();

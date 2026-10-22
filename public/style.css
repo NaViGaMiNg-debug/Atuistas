@@ -7597,6 +7597,91 @@ button.estadistica-perfil:hover {
 }
 
 
+/* SECCIONES DE CUENTA */
+
+.titulo-seccion-cuenta {
+    margin: 20px 0 8px;
+    padding: 0 10px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #8a8a8a;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.grupo-boton-cuenta {
+    margin-bottom: 4px;
+}
+
+#boton-notificaciones-cuenta {
+    width: 100%;
+    padding: 14px 20px;
+    border: 1px solid #444;
+    border-radius: 12px;
+    background: #2b2b2b;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: left;
+}
+
+#boton-notificaciones-cuenta:hover {
+    background: #333;
+}
+
+#boton-notificaciones-cuenta::after {
+    content: "›";
+    float: right;
+    font-size: 20px;
+    color: #8a8a8a;
+}
+
+#boton-cerrar-sesion-cuenta {
+    width: 100%;
+    padding: 14px 20px;
+    border: none;
+    border-radius: 12px;
+    background: #242424;
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 24px;
+}
+
+#boton-cerrar-sesion-cuenta:hover {
+    background: #333;
+}
+
+.boton-cerrar-sesion-cuenta {
+    color: #ff5252;
+}
+
+#boton-apodos-cuenta {
+    width: 100%;
+    padding: 14px 20px;
+    border: 1px solid #444;
+    border-radius: 12px;
+    background: #2b2b2b;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: left;
+}
+
+#boton-apodos-cuenta:hover {
+    background: #333;
+}
+
+#boton-apodos-cuenta::after {
+    content: "›";
+    float: right;
+    font-size: 20px;
+    color: #8a8a8a;
+}
+
 .ayuda-instalar {
     max-width: 320px;
     margin: 12px auto 0;
