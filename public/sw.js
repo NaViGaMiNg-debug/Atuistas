@@ -1,13 +1,13 @@
 /* SERVICE WORKER */
 
-const VERSION = "v58";
+const VERSION = "v59";
 const CACHE = `atuistas-${VERSION}`;
 
 const RECURSOS = [
     "/",
     "/index.html",
-    "/style.css?v=58",
-    "/app.js?v=58",
+    "/style.css?v=59",
+    "/app.js?v=59",
     "/data/emojis.js",
     "/qratuistas.png",
     "/app.webmanifest",
@@ -25,6 +25,8 @@ function cachearTodo(cache) {
 
 self.addEventListener("install", (event) => {
     event.waitUntil(caches.open(CACHE).then(cachearTodo));
+    // Forzar activación inmediata para no quedarse atrapado detrás de un SW antiguo
+    self.skipWaiting();
 });
 
 self.addEventListener("message", (event) => {

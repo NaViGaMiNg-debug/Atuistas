@@ -116,7 +116,7 @@ const ICONO_COMPOSER_MICROFONO = `
     </svg>
 `;
 
-const VERSION_APP = "v58";
+const VERSION_APP = "v59";
 
 document.getElementById("version-app-cuenta")?.replaceChildren(VERSION_APP);
 
