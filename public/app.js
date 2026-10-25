@@ -1673,7 +1673,7 @@ document.addEventListener("click", async (evento) => {
 
 /* EL CÓDIGO QR */
 
-const IMAGEN_CODIGO = "/qratuistas.png";
+const IMAGEN_CODIGO = "/qratuistas.svg";
 const SEGUNDOS_ATAJO_CODIGO = 5;
 const TECLAS_ATAJO_CODIGO = ["q", "r"];
 
