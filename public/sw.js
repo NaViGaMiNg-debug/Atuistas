@@ -24,7 +24,10 @@ function cachearTodo(cache) {
 }
 
 self.addEventListener("install", (event) => {
-    event.waitUntil(caches.open(CACHE).then(cachearTodo));
+    event.waitUntil(
+        caches.open(CACHE).then(cachearTodo)
+            .then(() => self.clients.claim())  // Tomar control inmediato de todas las páginas
+    );
     // Forzar activación inmediata para no quedarse atrapado detrás de un SW antiguo
     self.skipWaiting();
 });
