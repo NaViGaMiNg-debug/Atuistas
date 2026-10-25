@@ -9,7 +9,7 @@ const RECURSOS = [
     "/style.css?v=59",
     "/app.js?v=59",
     "/data/emojis.js",
-    "/qratuistas.svg?v=60",
+    "/qratuistas.png?v=61",
     "/app.webmanifest",
     "/icon.svg",
     "/icon-192.png",
