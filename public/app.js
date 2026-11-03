@@ -3677,16 +3677,16 @@ function mostrarSeccion(seccion, opciones = {}) {
     canalActual = null;
     cerrarPanelesServidor();
 
-    if (!contenidoCuenta.hidden && seccion !== "cuenta") {
+    if (!contenidoCuenta && seccion !== "cuenta") {
         guardarCuenta();
     }
 
-    contenidoEntrar.hidden = true;
-    contenidoPublico.hidden = true;
-    panelInicioEntrar.hidden = true;
-    contenidoCuenta.hidden = true;
-    contenidoAmigos.hidden = true;
-    contenidoServidores.hidden = true;
+    if (contenidoEntrar) contenidoEntrar.hidden = true;
+    if (contenidoPublico) contenidoPublico.hidden = true;
+    if (panelInicioEntrar) panelInicioEntrar.hidden = true;
+    if (contenidoCuenta) contenidoCuenta.hidden = true;
+    if (contenidoAmigos) contenidoAmigos.hidden = true;
+    if (contenidoServidores) contenidoServidores.hidden = true;
     if (contenidoModeracion) contenidoModeracion.hidden = true;
 
     document.body.classList.toggle("vista-servidores", seccion === "servidores");
@@ -3702,9 +3702,9 @@ function mostrarSeccion(seccion, opciones = {}) {
 
 
     if (seccion === "entrar") {
-        panelInicioEntrar.hidden = false;
-        contenidoEntrar.hidden = false;
-        contenidoPublico.hidden = true;
+        if (panelInicioEntrar) panelInicioEntrar.hidden = false;
+        if (contenidoEntrar) contenidoEntrar.hidden = false;
+        if (contenidoPublico) contenidoPublico.hidden = true;
         cambiarFeedEntrada(false);
 
         cargarContenidoInicio();
@@ -3712,26 +3712,29 @@ function mostrarSeccion(seccion, opciones = {}) {
 
 
     if (seccion === "cuenta") {
-        contenidoCuenta.hidden = false;
+        if (contenidoCuenta) contenidoCuenta.hidden = false;
         cargarCuenta();
+    } else {
+        if (contenidoCuenta) contenidoCuenta.hidden = true;
     }
-
 
     if (seccion === "amigos") {
-        contenidoAmigos.hidden = false;
+        if (contenidoAmigos) contenidoAmigos.hidden = false;
     }
+    if (sección !== "amigos" && contenidoAmigos) contenidoAmigos.hidden = true;
 
-
-    if (seccion === "servidores") {
-        contenidoServidores.hidden = false;
+    if (sección === "servidores") {
+        if (contenidoServidores) contenidoServidores.hidden = false;
         mostrarPestanaServidor("chats");
         cargarAmigos();
     }
+    if (sección !== "servidores" && contenidoServidores) contenidoServidores.hidden = true;
 
-    if (seccion === "moderacion") {
+    if (sección === "moderacion") {
         if (contenidoModeracion) contenidoModeracion.hidden = false;
         if (typeof mostrarPestanaModeracion === "function") mostrarPestanaModeracion("cuentas");
     }
+    if (sección !== "moderacion" && contenidoModeracion) contenidoModeracion.hidden = true;
 
     seccionActual = seccion;
 
@@ -12640,5 +12643,3 @@ document.getElementById("boton-enviar-ubicacion")?.addEventListener("click", asy
 document.getElementById("boton-parar-ubicacion")?.addEventListener("click", pararCompartido);
 
 reflejarDuracion();
-
-comprobarSesion();
