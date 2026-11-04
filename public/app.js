@@ -3695,16 +3695,29 @@ function mostrarSeccion(seccion, opciones = {}) {
         const cuentaVisible = seccion === "cuenta";
         [
             "fondo-perfil-cuenta-contenedor",
+            "fondo-perfil-cuenta",
             "boton-foto-perfil",
+            "foto-perfil-cuenta",
             "nombre-cuenta",
             "etiqueta-cuenta",
             "btn-cuenta-editar",
             "panel-cuenta-editar",
+            "nombre-cuenta-editar",
+            "descripcion-cuenta",
+            "color-nombre-cuenta",
+            "guardado-cuenta",
+            "estado-cuenta",
             "btn-cuenta-publicaciones",
             "contenido-publicaciones-cuenta",
             "btn-cuenta-ajustes",
             "panel-cuenta-ajustes",
+            "switch-ver-hora",
+            "boton-notificaciones-cuenta",
+            "boton-apodos-cuenta",
             "grupo-boton-cuenta",
+            "codigo-cuenta-texto",
+            "boton-copiar-codigo-cuenta",
+            "boton-regenerar-codigo",
             "boton-cerrar-sesion"
         ].forEach((id) => {
             const el = document.getElementById(id);
