@@ -3693,8 +3693,9 @@ function mostrarSeccion(seccion, opciones = {}) {
     // los elementos de cuenta individualmente según la sección activa
     if (!contenidoCuenta) {
         const cuentaVisible = seccion === "cuenta";
+
+        // Elementos que tienen id
         [
-            "fondo-perfil-cuenta-contenedor",
             "fondo-perfil-cuenta",
             "boton-foto-perfil",
             "foto-perfil-cuenta",
@@ -3714,7 +3715,6 @@ function mostrarSeccion(seccion, opciones = {}) {
             "switch-ver-hora",
             "boton-notificaciones-cuenta",
             "boton-apodos-cuenta",
-            "grupo-boton-cuenta",
             "codigo-cuenta-texto",
             "boton-copiar-codigo-cuenta",
             "boton-regenerar-codigo",
@@ -3722,6 +3722,16 @@ function mostrarSeccion(seccion, opciones = {}) {
         ].forEach((id) => {
             const el = document.getElementById(id);
             if (el) el.hidden = !cuentaVisible;
+        });
+
+        // Elementos que solo tienen clase (no id)
+        [
+            ".fondo-perfil-cuenta-contenedor",
+            ".grupo-boton-cuenta"
+        ].forEach((selector) => {
+            document.querySelectorAll(selector).forEach((el) => {
+                el.hidden = !cuentaVisible;
+            });
         });
     }
 
