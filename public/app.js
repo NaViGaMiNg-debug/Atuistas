@@ -3677,7 +3677,7 @@ function mostrarSeccion(seccion, opciones = {}) {
     canalActual = null;
     cerrarPanelesServidor();
 
-    if (!contenidoCuenta && seccion !== "cuenta") {
+    if (contenidoCuenta && !contenidoCuenta.hidden && seccion !== "cuenta") {
         guardarCuenta();
     }
 
@@ -3688,6 +3688,29 @@ function mostrarSeccion(seccion, opciones = {}) {
     if (contenidoAmigos) contenidoAmigos.hidden = true;
     if (contenidoServidores) contenidoServidores.hidden = true;
     if (contenidoModeracion) contenidoModeracion.hidden = true;
+
+    // Si no hay contenedor contenido-cuenta (index.html), ocultar/mostrar
+    // los elementos de cuenta individualmente según la sección activa
+    if (!contenidoCuenta) {
+        const cuentaVisible = seccion === "cuenta";
+        [
+            "fondo-perfil-cuenta-contenedor",
+            "boton-foto-perfil",
+            "nombre-cuenta",
+            "etiqueta-cuenta",
+            "btn-cuenta-editar",
+            "panel-cuenta-editar",
+            "btn-cuenta-publicaciones",
+            "contenido-publicaciones-cuenta",
+            "btn-cuenta-ajustes",
+            "panel-cuenta-ajustes",
+            "grupo-boton-cuenta",
+            "boton-cerrar-sesion"
+        ].forEach((id) => {
+            const el = document.getElementById(id);
+            if (el) el.hidden = !cuentaVisible;
+        });
+    }
 
     document.body.classList.toggle("vista-servidores", seccion === "servidores");
 
@@ -3721,20 +3744,20 @@ function mostrarSeccion(seccion, opciones = {}) {
     if (seccion === "amigos") {
         if (contenidoAmigos) contenidoAmigos.hidden = false;
     }
-    if (sección !== "amigos" && contenidoAmigos) contenidoAmigos.hidden = true;
+    if (seccion !== "amigos" && contenidoAmigos) contenidoAmigos.hidden = true;
 
-    if (sección === "servidores") {
+    if (seccion === "servidores") {
         if (contenidoServidores) contenidoServidores.hidden = false;
         mostrarPestanaServidor("chats");
         cargarAmigos();
     }
-    if (sección !== "servidores" && contenidoServidores) contenidoServidores.hidden = true;
+    if (seccion !== "servidores" && contenidoServidores) contenidoServidores.hidden = true;
 
-    if (sección === "moderacion") {
+    if (seccion === "moderacion") {
         if (contenidoModeracion) contenidoModeracion.hidden = false;
         if (typeof mostrarPestanaModeracion === "function") mostrarPestanaModeracion("cuentas");
     }
-    if (sección !== "moderacion" && contenidoModeracion) contenidoModeracion.hidden = true;
+    if (seccion !== "moderacion" && contenidoModeracion) contenidoModeracion.hidden = true;
 
     seccionActual = seccion;
 
@@ -12584,6 +12607,8 @@ async function refrescarTrasBorrar(tipo, id) {
     await cargarContenidoInicio();
 }
 /* INICIAR */
+
+comprobarSesion();
 
 observarCapas();
 

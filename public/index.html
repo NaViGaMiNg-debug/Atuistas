@@ -599,114 +599,119 @@
 
                     </div>
 
-                <div id="contenido-cuenta" hidden>
+                <!-- FONDO DEL PERFIL (previsualización con difuminado) -->
+                <div class="fondo-perfil-cuenta-contenedor">
+                    <img
+                        id="fondo-perfil-cuenta"
+                        alt="Fondo de perfil"
+                        hidden
+                    >
+                    <div class="fondo-difuminado"></div>
+                    <p class="ayuda-fondo-cuenta">
+                        Esta imagen sale de fondo en tu perfil. Cambiala o
+                        quitala desde el boton de tu foto.
+                    </p>
+                </div>
 
-                    <div class="cabecera-cuenta">
+                <!-- FOTO DE PERFIL (círculo sobre el fondo) -->
+                <button
+                    id="boton-foto-perfil"
+                    class="boton-foto-perfil-cuenta"
+                    type="button"
+                    aria-label="Opciones de foto de perfil"
+                >
+                    <img
+                        id="foto-perfil-cuenta"
+                        src=""
+                        alt="Foto de perfil"
+                    >
+                </button>
 
-                        <button
-                            id="boton-foto-perfil"
-                            class="boton-foto-perfil"
-                            type="button"
-                            aria-label="Opciones de foto de perfil"
-                        >
+                <!-- NOMBRE -->
+                <h1 id="nombre-cuenta">Mi cuenta</h1>
 
-                            <img
-                                id="foto-perfil-cuenta"
-                                src=""
-                                alt="Foto de perfil"
-                            >
+                <!-- ETIQUETA (solo si existe) -->
+                <span
+                    id="etiqueta-cuenta"
+                    class="etiqueta-perfil etiqueta-cuenta"
+                    hidden
+                ></span>
 
-                        </button>
+                <!-- SECCIÓN CUENTA (editable) -->
+                <button id="btn-cuenta-editar" class="btn-seccion-cuenta" type="button">
+                    CUENTA
+                </button>
+                <div id="panel-cuenta-editar" class="panel-seccion-cuenta" hidden>
 
-                        <h2 id="nombre-cuenta">
-                            Mi cuenta
-                        </h2>
+                    <label for="nombre-cuenta-editar">
+                        Nombre
+                    </label>
 
-                        <span
-                            id="etiqueta-cuenta"
-                            class="etiqueta-perfil etiqueta-cuenta"
-                            hidden
-                        ></span>
+                    <input
+                        type="text"
+                        id="nombre-cuenta-editar"
+                        maxlength="25"
+                        autocomplete="name"
+                    >
 
-                        <span id="version-app-cuenta" class="version-app-cuenta" aria-label="Versión de la app"></span>
+                    <label for="descripcion-cuenta">
+                        Descripción
+                    </label>
 
-                    </div>
+                    <textarea
+                        id="descripcion-cuenta"
+                        maxlength="500"
+                        placeholder="Escribe una descripción..."
+                    ></textarea>
 
+                    <label for="color-nombre-cuenta">
+                        Color de tu nombre
+                    </label>
 
-                    <div class="informacion-cuenta">
-
-                        <label for="nombre-cuenta-editar">
-                            Nombre
-                        </label>
+                    <div class="color-nombre-cuenta">
 
                         <input
-                            type="text"
-                            id="nombre-cuenta-editar"
-                            maxlength="25"
-                            autocomplete="name"
+                            type="color"
+                            id="color-nombre-cuenta"
+                            aria-label="Color de tu nombre"
                         >
 
-                        <label for="descripcion-cuenta">
-                            Descripción
-                        </label>
-
-                        <textarea
-                            id="descripcion-cuenta"
-                            maxlength="500"
-                            placeholder="Escribe una descripción..."
-                        ></textarea>
-
-
-                        <label for="color-nombre-cuenta">
-                            Color de tu nombre
-                        </label>
-
-                        <div class="color-nombre-cuenta">
-
-                            <input
-                                type="color"
-                                id="color-nombre-cuenta"
-                                aria-label="Color de tu nombre"
-                            >
-
-                            <span
-                                id="nombre-color-cuenta"
-                                class="nombre-color-cuenta"
-                            >Tu nombre</span>
-
-                        </div>
-
-                        <p
-                            id="guardado-cuenta"
-                            class="guardado-cuenta"
-                            aria-live="polite"
-                        ></p>
-
-
-                        <p id="estado-cuenta"></p>
+                        <span
+                            id="nombre-color-cuenta"
+                            class="nombre-color-cuenta"
+                        >Tu nombre</span>
 
                     </div>
 
+                    <p
+                        id="guardado-cuenta"
+                        class="guardado-cuenta"
+                        aria-live="polite"
+                    ></p>
 
-                    <!-- FONDO DEL PERFIL -->
+                    <p id="estado-cuenta"></p>
 
-                    <div class="fondo-cuenta">
-                        <img
-                            id="fondo-perfil-cuenta"
-                            alt=""
-                            hidden
-                        >
-                        <p class="ayuda-fondo-cuenta">
-                            Esta imagen sale de fondo en tu perfil. Cambiala o
-                            quitala desde el boton de tu foto.
-                        </p>
+                </div>
+
+                <!-- SECCIÓN PUBLICACIONES -->
+                <button id="btn-cuenta-publicaciones" class="btn-seccion-cuenta" type="button">
+                    PUBLICACIONES
+                </button>
+                <div id="panel-cuenta-publicaciones" class="panel-seccion-cuenta" hidden>
+                    <div class="fila-botones-cuenta">
+                        <button id="boton-cuenta-historias" type="button">HISTORIAS</button>
+                        <button id="boton-cuenta-publicaciones-ver" type="button">PUBLICACIONES</button>
+                        <button id="boton-cuenta-reels" type="button">REELS</button>
                     </div>
+                    <div id="contenido-publicaciones-cuenta" class="contenido-publicaciones-cuenta" hidden></div>
+                </div>
 
-
-                    <!-- HORA EN LOS MENSAJES -->
-
+                <!-- SECCIÓN AJUSTES -->
+                <button id="btn-cuenta-ajustes" class="btn-seccion-cuenta" type="button">
+                    AJUSTES
+                </button>
+                <div id="panel-cuenta-ajustes" class="panel-seccion-cuenta" hidden>
                     <div class="fila-switch-cuenta">
-
                         <div class="texto-switch-cuenta">
                             <strong>Hora en los mensajes</strong>
                             <span>
@@ -714,89 +719,63 @@
                                 separador con el día cuando cambia la fecha.
                             </span>
                         </div>
-
                         <label class="switch" for="switch-ver-hora">
                             <input type="checkbox" id="switch-ver-hora">
                             <span class="switch-pista" aria-hidden="true">
                                 <span class="switch-boton"></span>
                             </span>
                         </label>
-
                     </div>
-
-
-                    <!-- NOTIFICACIONES -->
-
                     <button id="boton-notificaciones-cuenta" type="button">
                         NOTIFICACIONES
                     </button>
+                    <button id="boton-apodos-cuenta" type="button">
+                        TUS APODOS
+                    </button>
+                </div>
 
+                <!-- CÓDIGO DE VINCULACIÓN -->
+                <div class="grupo-boton-cuenta">
+                    <div class="codigo-cuenta">
 
-                    <!-- PERSONALIZACIÓN -->
+                        <h3>
+                            Código de vinculaciÃ³n
+                        </h3>
 
-                    <h3 class="titulo-seccion-cuenta">Personalización</h3>
+                        <div class="codigo-cuenta-contenedor">
 
-                    <div class="grupo-boton-cuenta">
-                        <button id="boton-apodos-cuenta" type="button">
-                            TUS APODOS
-                        </button>
-                    </div>
-
-                    <div class="grupo-boton-cuenta">
-                        <div class="fila-botones-cuenta">
-                            <button id="boton-cuenta-historias" type="button">HISTORIAS</button>
-                            <button id="boton-cuenta-publicaciones" type="button">PUBLICACIONES</button>
-                        </div>
-                    </div>
-
-
-                    <!-- CÓDIGO DE VINCULACIÓN -->
-
-                    <div class="grupo-boton-cuenta">
-                        <div class="codigo-cuenta">
-
-                            <h3>
-                                Código de vinculación
-                            </h3>
-
-                            <div class="codigo-cuenta-contenedor">
-
-                                <span id="codigo-cuenta-texto">
-                                    Cargando...
-                                </span>
-
-                                <button
-                                    id="boton-copiar-codigo-cuenta"
-                                    type="button"
-                                    aria-label="Copiar código de vinculación"
-                                >
-                                    ⧉
-                                </button>
-
-                            </div>
+                            <span id="codigo-cuenta-texto">
+                                Cargando...
+                            </span>
 
                             <button
-                                id="boton-regenerar-codigo"
+                                id="boton-copiar-codigo-cuenta"
                                 type="button"
+                                aria-label="Copiar cÃ³digo de vinculaciÃ³n"
                             >
-                                REGENERAR CÓDIGO
+                                ≡
                             </button>
 
                         </div>
+
+                        <button
+                            id="boton-regenerar-codigo"
+                            type="button"
+                        >
+                            REGENERAR CÓDIGO
+                        </button>
+
                     </div>
-
-
-                    <!-- CERRAR SESIÓN -->
-
-                    <button
-                        id="boton-cerrar-sesion"
-                        type="button"
-                        class="boton-cerrar-sesion-cuenta"
-                    >
-                        CERRAR SESIÓN
-                    </button>
-
                 </div>
+
+                <!-- CERRAR SESIÓN -->
+                <button
+                    id="boton-cerrar-sesion"
+                    type="button"
+                    class="boton-cerrar-sesion-cuenta"
+                >
+                    CERRAR SESIÃ³N
+                </button>
 
 
                 <!-- AGREGAR AMIGOS -->

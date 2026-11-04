@@ -12,7 +12,7 @@ echo "--- servicio systemd ---"
 printf "atuistas: "
 systemctl is-active atuistas 2>/dev/null || echo "desconocido"
 printf "habilitado: "
-systemctl is-enabled atuistas 2>/dev/null || echo "desconocido"
+systemctl is-enabled atuistas 2>/dev/null || echo "desconocido"1
 
 echo "--- base de datos ---"
 PGBIN="$(ls -1d /usr/lib/postgresql/*/bin | tail -1)"
