@@ -8009,6 +8009,14 @@ if (btnCuentaAjustes && panelCuentaAjustes) {
     });
 }
 
+/* SUBCUENTA: sesión */
+if (btnCuentaSesion && panelCuentaSesion) {
+    btnCuentaSesion.addEventListener("click", () => {
+        ocultarPanelesSubcuenta();
+        panelCuentaSesion.hidden = false;
+        btnCuentaSesion.classList.add("activa");
+    });
+}
 /* GUARDADO AUTOMÃTICO DE LA CUENTA */
 
 nombreCuentaEditar.addEventListener("input", programarGuardadoCuenta);
