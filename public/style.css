@@ -3974,6 +3974,13 @@ button.servidor-tarjeta:focus-visible {
     width: 100%;
 }
 
+/* Contenedor de fondo + foto: altura fija para alinear la foto al borde inferior */
+.cabecera-visual {
+    position: relative;
+    width: 100%;
+    height: 200px;
+}
+
 /* Degradado en el borde inferior del fondo */
 .fondo-perfil-cuenta-contenedor::after {
     content: "";
@@ -3982,7 +3989,7 @@ button.servidor-tarjeta:focus-visible {
     left: 0;
     right: 0;
     height: 60px;
-    background: linear-gradient(to top, transparent, rgba(0, 0, 0, 0.6));
+    background: linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.75));
     pointer-events: none;
     z-index: 1;
 }
@@ -3990,7 +3997,7 @@ button.servidor-tarjeta:focus-visible {
 .fondo-perfil-cuenta-contenedor {
     position: relative;
     width: 100%;
-    max-height: 200px;
+    height: 200px;
     overflow: hidden;
     background: #1a1a1a;
 }
@@ -4007,7 +4014,7 @@ button.servidor-tarjeta:focus-visible {
     position: absolute;
     left: 50%;
     transform: translateX(-50%);
-    top: calc(100% - 60px); /* centro vertical = borde inferior del fondo */
+    top: calc(100% - 60px); /* centro vertical = borde inferior del fondo (200px) */
     width: 120px;
     height: 120px;
     padding: 0;
@@ -4028,16 +4035,15 @@ button.servidor-tarjeta:focus-visible {
 
 /* Nombre y etiqueta justo debajo de la foto de perfil */
 #nombre-cuenta {
-    margin-top: 80px;
+    margin-top: 90px;
     margin-left: 0;
     text-align: center;
     width: 100%;
 }
 
 #etiqueta-cuenta {
-    display: block;
+    display: inline-block;
     text-align: center;
-    width: 100%;
     margin-top: 4px;
 }
 /* INFORMACIÃ“N DE CUENTA */
