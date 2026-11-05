@@ -199,13 +199,6 @@ bash ~/atuistas/deploy/tunel-dominio.sh
 
 *Última actualización: 2026-11-02*
 
-
-
-
-
-
-
-
 ---
 
 *Última actualización: 2026-11-02*
