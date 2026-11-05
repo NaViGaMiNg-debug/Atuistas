@@ -4007,7 +4007,9 @@ button.servidor-tarjeta:focus-visible {
     height: 100%;
     object-fit: cover;
     display: block;
+
 }
+
 
 /* Foto de perfil centrada sobre el borde inferior del fondo */
 .boton-foto-perfil-cuenta {
@@ -4033,7 +4035,40 @@ button.servidor-tarjeta:focus-visible {
     object-fit: cover;
 }
 
+
 /* Nombre y etiqueta justo debajo de la foto de perfil */
+.boton-foto-perfil-cuenta img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+}
+
+
+/* BOTONES Y PANELES DE SUBSECCIÓN DE CUENTA */
+.btn-seccion-cuenta {
+    display: inline-block;
+    padding: 10px 24px;
+    margin: 0 6px;
+    background: #222;
+    color: #aaa;
+    border: 1px solid #444;
+    border-bottom: none;
+    border-radius: 8px 8px 0 0;
+    cursor: pointer;
+    font-size: 14px;
+    text-transform: uppercase;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+    min-width: 100px;
+    text-align: center;
+}
+.btn-seccion-cuenta:hover { background: #333; color: #fff; }
+.btn-seccion-cuenta.activa { background: #555; color: #fff; border-color: #777; }
+.panel-seccion-cuenta { display: none; background: #1a1a1a; border: 1px solid #444; border-top: none; border-radius: 0 0 8px 8px; padding: 16px; margin-top: -1px; }
+.panel-seccion-cuenta[hidden] { display: none; }
+
+/* Nombre y etiqueta justo debajo de la foto de perfil */
+
 #nombre-cuenta {
     margin-top: 90px;
     margin-left: 0;
@@ -9043,4 +9078,5 @@ button.estadistica-perfil:hover {
         font-size: 76px;
     }
 }
+
 

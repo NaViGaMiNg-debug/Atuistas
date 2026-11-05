@@ -1,4 +1,4 @@
-function generarUUID() {
+﻿function generarUUID() {
     if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
         return crypto.randomUUID();
     }
@@ -96,7 +96,7 @@ if (botonVolverChat) {
     });
 }
 
-/* COMPOSER DE MENSAJES: MICRÓFONO, ENVÍO Y ADJUNTOS */
+/* COMPOSER DE MENSAJES: MICRÃ“FONO, ENVÃO Y ADJUNTOS */
 
 let composerChat = null;
 let composerServidor = null;
@@ -128,7 +128,7 @@ const ACEPTA_ADJUNTO = {
 
 const ETIQUETA_ADJUNTO = {
     imagen: "FOTO",
-    video: "VÍDEO",
+    video: "VÃDEO",
     audio: "AUDIO"
 };
 
@@ -443,7 +443,7 @@ function crearComposer(config) {
         if (!archivo) return;
         const tipo = tipoDeMime(archivo.type);
         if (!tipo) {
-            avisar("Solo se pueden adjuntar fotos, vídeos o audios");
+            avisar("Solo se pueden adjuntar fotos, vÃ­deos o audios");
             return;
         }
         if (tipo === "imagen") {
@@ -467,7 +467,7 @@ function crearComposer(config) {
         }
         const fotos = elegidos.filter((archivo) => tipoDeMime(archivo.type) === "imagen");
         if (fotos.length !== elegidos.length) {
-            avisar("Entre varias fotos solo se pueden adjuntar imágenes");
+            avisar("Entre varias fotos solo se pueden adjuntar imÃ¡genes");
             return;
         }
         adjunto = { archivos: fotos, tipo: "imagen" };
@@ -534,8 +534,8 @@ function crearComposer(config) {
         try {
             flujoLocal = await navigator.mediaDevices.getUserMedia({ audio: true });
         } catch (error) {
-            console.error("No se pudo acceder al micrófono:", error);
-            avisar("No se pudo acceder al micrófono");
+            console.error("No se pudo acceder al micrÃ³fono:", error);
+            avisar("No se pudo acceder al micrÃ³fono");
             return;
         }
 
@@ -543,10 +543,10 @@ function crearComposer(config) {
         try {
             grabadora = new MediaRecorder(flujoLocal, mime ? { mimeType: mime } : undefined);
         } catch (error) {
-            console.error("No se pudo iniciar la grabación:", error);
+            console.error("No se pudo iniciar la grabaciÃ³n:", error);
             flujoLocal.getTracks().forEach((pista) => pista.stop());
             flujoLocal = null;
-            avisar("No se pudo iniciar la grabación");
+            avisar("No se pudo iniciar la grabaciÃ³n");
             return;
         }
 
@@ -910,6 +910,22 @@ const botonRegenerarCodigo =
 const botonCerrarSesion =
     document.getElementById("boton-cerrar-sesion");
 
+/* BOTONES DE SUBSECCIÃ“N DE CUENTA */
+const btnCuentaEditar =
+    document.getElementById("btn-cuenta-editar");
+const panelCuentaEditar =
+    document.getElementById("panel-cuenta-editar");
+
+const btnCuentaPublicaciones =
+    document.getElementById("btn-cuenta-publicaciones");
+const panelCuentaPublicaciones =
+    document.getElementById("panel-cuenta-publicaciones");
+
+const btnCuentaAjustes =
+    document.getElementById("btn-cuenta-ajustes");
+const panelCuentaAjustes =
+    document.getElementById("panel-cuenta-ajustes");
+
 const guardadoCuenta =
     document.getElementById("guardado-cuenta");
 
@@ -1033,7 +1049,7 @@ let personaActual = 0;
 let limitesPersonas = [];
 let botonOpcionesHistoria = null;
 
-/* INSTALACIÓN Y ACTUALIZACIÓN DE LA PWA */
+/* INSTALACIÃ“N Y ACTUALIZACIÃ“N DE LA PWA */
 
 const botonInstalarApp = document.getElementById("boton-instalar-app");
 const avisoActualizacion = document.getElementById("aviso-actualizacion");
@@ -1183,7 +1199,7 @@ if ("serviceWorker" in navigator && window.isSecureContext) {
 
 async function solicitarGrupo(ruta, opciones = {}) {
     const token = localStorage.getItem("atuistas_token");
-    if (!token) throw new Error("Inicia sesión para usar los servidores");
+    if (!token) throw new Error("Inicia sesiÃ³n para usar los servidores");
 
     const respuesta = await fetch(ruta, {
         ...opciones,
@@ -1194,7 +1210,7 @@ async function solicitarGrupo(ruta, opciones = {}) {
         }
     });
     const datos = await respuesta.json().catch(() => ({}));
-    if (!respuesta.ok) throw new Error(datos.error || "No se pudo completar la operación");
+    if (!respuesta.ok) throw new Error(datos.error || "No se pudo completar la operaciÃ³n");
     return datos;
 }
 
@@ -1302,7 +1318,7 @@ function escapeHtml(texto) {
     return elemento.innerHTML;
 }
 
-/* UBICACIÓN EN DIRECTO */
+/* UBICACIÃ“N EN DIRECTO */
 
 const MINUTO_AUTOR_UBICACION = 60000;
 const METROS_MINIMO_MOVIMIENTO = 12;
@@ -1333,7 +1349,7 @@ function abrirModalUbicacion(compartir) {
     botonParar.hidden = !activa;
     botonEnviar.hidden = activa;
     estado.textContent = activa
-        ? "Estás compartiendo ahora mismo. Se parará sola al terminar el tiempo."
+        ? "EstÃ¡s compartiendo ahora mismo. Se pararÃ¡ sola al terminar el tiempo."
         : "";
 
     modal.hidden = false;
@@ -1357,7 +1373,7 @@ function distanciaEntre(a, b) {
     return 2 * radioTierra * Math.asin(Math.sqrt(x));
 }
 
-/* TARJETA DE UBICACIÓN */
+/* TARJETA DE UBICACIÃ“N */
 
 const ZOOM_UBICACION = 16;
 const LADO_TESELA_PANTALLA = 128;
@@ -1420,7 +1436,7 @@ function htmlTarjetaUbicacion(mensaje) {
     const lat = Number(datos.lat);
     const lon = Number(datos.lon);
     const precision = Number(datos.precision) > 0
-        ? ` · ±${Math.round(Number(datos.precision))} m`
+        ? ` Â· Â±${Math.round(Number(datos.precision))} m`
         : "";
 
     const mapa = pintarMapaUbicacion(lat, lon);
@@ -1432,21 +1448,21 @@ function htmlTarjetaUbicacion(mensaje) {
                 <span class="ubicacion-chincheta" aria-hidden="true"></span>
             </div>
             <div class="ubicacion-pie">
-                <span class="ubicacion-estado">${enVivo ? "● En vivo" : "■ Ubicación"}</span>
-                <span class="ubicacion-detalle">${escapeHtml(datos.nombre || "Ubicación en directo")}${escapeHtml(precision)}</span>
+                <span class="ubicacion-estado">${enVivo ? "â— En vivo" : "â–  UbicaciÃ³n"}</span>
+                <span class="ubicacion-detalle">${escapeHtml(datos.nombre || "UbicaciÃ³n en directo")}${escapeHtml(precision)}</span>
             </div>
             <div class="ubicacion-acciones">
                 <a class="ubicacion-abrir-mapa" href="https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=17/${lat}/${lon}" target="_blank" rel="noopener noreferrer">ABRIR EN EL MAPA</a>
                 ${mias && enVivo ? `<button type="button" class="ubicacion-parar" data-parar-ubicacion="${escapeHtml(mensaje.id)}">DEJAR DE COMPARTIR</button>` : ""}
             </div>
-            <a class="ubicacion-credito" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">© OpenStreetMap</a>
+            <a class="ubicacion-credito" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">Â© OpenStreetMap</a>
         </div>`;
 }
 
 function pedirPosicionActual() {
     return new Promise((resolver, rechazar) => {
         if (!navigator.geolocation) {
-            rechazar(new Error("Este navegador no sabe decir dónde estás"));
+            rechazar(new Error("Este navegador no sabe decir dÃ³nde estÃ¡s"));
             return;
         }
 
@@ -1458,7 +1474,7 @@ function pedirPosicionActual() {
             }),
             (error) => {
                 const mensajes = {
-                    1: "Has denegado la ubicación. Actívala en los ajustes del navegador.",
+                    1: "Has denegado la ubicaciÃ³n. ActÃ­vala en los ajustes del navegador.",
                     2: "No se pudoTu ubicacion. Intentalo de nuevo en unos segundos.",
                     3: "No se pudo saber tu ubicacion. Intentalo otra vez."
                 };
@@ -1671,7 +1687,7 @@ document.addEventListener("click", async (evento) => {
     await pararCompartido();
 });
 
-/* EL CÓDIGO QR */
+/* EL CÃ“DIGO QR */
 
 const IMAGEN_CODIGO = "/qratuistas.png?v=61";
 const SEGUNDOS_ATAJO_CODIGO = 5;
@@ -1688,14 +1704,14 @@ function construirVentanaCodigo() {
     ventana.className = "modal modal-codigo";
     ventana.hidden = true;
     ventana.innerHTML = `
-        <div class="dialogo-codigo" role="dialog" aria-modal="true" aria-label="Código QR">
+        <div class="dialogo-codigo" role="dialog" aria-modal="true" aria-label="CÃ³digo QR">
             <button
                 id="cerrar-codigo"
                 class="cerrar-codigo"
                 type="button"
                 aria-label="Cerrar"
-            >✕</button>
-            <img src="${IMAGEN_CODIGO}" alt="Código QR de Atuistas">
+            >âœ•</button>
+            <img src="${IMAGEN_CODIGO}" alt="CÃ³digo QR de Atuistas">
         </div>`;
 
     document.body.appendChild(ventana);
@@ -1824,7 +1840,7 @@ function construirSelector() {
             <button type="button" data-pestana="emojis" class="activa">EMOJIS</button>
             <button type="button" data-pestana="gifs">GIF</button>
             <button type="button" data-pestana="stickers">STICKERS</button>
-            <button type="button" id="selector-medio-cerrar" aria-label="Cerrar el selector">✕</button>
+            <button type="button" id="selector-medio-cerrar" aria-label="Cerrar el selector">âœ•</button>
         </div>
         <input
             id="selector-medio-buscar"
@@ -1959,7 +1975,7 @@ function pintarSelector() {
                 <button type="button" class="selector-emoji" data-emoji="${emoji}" data-nombre="${escapeHtml(nombre)}" title="${escapeHtml(nombre)}">
                     ${emoji}
                 </button>`).join("")
-            : '<p class="selector-medio-vacio">No hay ningún emoji con ese nombre.</p>';
+            : '<p class="selector-medio-vacio">No hay ningÃºn emoji con ese nombre.</p>';
         return;
     }
 
@@ -1991,11 +2007,11 @@ async function buscarMedioEnProveedor(texto) {
     const consulta = ++consultaEnCurso;
 
     if (!texto) {
-        rejilla.innerHTML = `<p class="selector-medio-vacio">Escribe arriba qué ${pestanaSelector === "gifs" ? "GIF" : "sticker"} buscas.</p>`;
+        rejilla.innerHTML = `<p class="selector-medio-vacio">Escribe arriba quÃ© ${pestanaSelector === "gifs" ? "GIF" : "sticker"} buscas.</p>`;
         return;
     }
 
-    rejilla.innerHTML = '<p class="selector-medio-vacio">Buscando…</p>';
+    rejilla.innerHTML = '<p class="selector-medio-vacio">Buscandoâ€¦</p>';
 
     try {
         const token = localStorage.getItem("atuistas_token");
@@ -2036,7 +2052,7 @@ async function buscarMedioEnProveedor(texto) {
             </div>`;
     } catch (error) {
         if (consulta !== consultaEnCurso) return;
-        rejilla.innerHTML = '<p class="selector-medio-vacio">Sin conexión para buscar.</p>';
+        rejilla.innerHTML = '<p class="selector-medio-vacio">Sin conexiÃ³n para buscar.</p>';
     }
 }
 
@@ -2329,11 +2345,11 @@ if (pistaFotosChat) {
     pistaFotosChat.addEventListener("pointercancel", soltarPunteroFotoChat);
 }
 
-/* MOSTRAR APLICACIÓN */
+/* MOSTRAR APLICACIÃ“N */
 
 function mostrarAplicacion() {
 
-    console.log("Mostrando aplicación");
+    console.log("Mostrando aplicaciÃ³n");
 
     pantallaAcceso.hidden = true;
     pantallaApp.hidden = false;
@@ -2391,11 +2407,11 @@ document.getElementById("boton-activar-notificaciones-dispositivo").addEventList
             throw new Error("Este navegador necesita HTTPS o localhost para activar avisos del dispositivo.");
         }
         if (Notification.permission === "denied") {
-            throw new Error("Los avisos están bloqueados en los permisos del navegador.");
+            throw new Error("Los avisos estÃ¡n bloqueados en los permisos del navegador.");
         }
         if (Notification.permission !== "granted") {
             const permission = await Notification.requestPermission();
-            if (permission !== "granted") throw new Error("No se concedió permiso para mostrar avisos.");
+            if (permission !== "granted") throw new Error("No se concediÃ³ permiso para mostrar avisos.");
         }
 
         registroServiceWorker ??= await navigator.serviceWorker.ready;
@@ -2411,7 +2427,7 @@ document.getElementById("boton-activar-notificaciones-dispositivo").addEventList
                 suscripcion: suscripcion.toJSON()
             })
         });
-        estado.textContent = "Los avisos se mostrarán en este dispositivo.";
+        estado.textContent = "Los avisos se mostrarÃ¡n en este dispositivo.";
         actualizarBotonActivarDispositivo();
     } catch (error) {
         estado.textContent = error.message || "No se pudieron activar los avisos.";
@@ -2469,11 +2485,11 @@ function actualizarBotonActivarDispositivo() {
     const concedido = Notification.permission === "granted";
     boton.hidden = concedido;
     if (concedido && estado && !estado.textContent) {
-        estado.textContent = "Los avisos ya están activos en este dispositivo.";
+        estado.textContent = "Los avisos ya estÃ¡n activos en este dispositivo.";
     }
 }
 
-/* PRESENCIA: QUÉ ESTÁ VIENDO */
+/* PRESENCIA: QUÃ‰ ESTÃ VIENDO */
 
 let vistaAvisada = null;
 
@@ -2521,7 +2537,7 @@ async function cargarListaNotificaciones() {
         pintarPuntoNotificaciones(noLeidas);
         lista.innerHTML = "";
         if (notificaciones.length === 0) {
-            lista.innerHTML = `<p class="sin-contenido">Todavía no hay avisos.</p>`;
+            lista.innerHTML = `<p class="sin-contenido">TodavÃ­a no hay avisos.</p>`;
             return;
         }
         notificaciones.forEach((aviso) => {
@@ -2661,13 +2677,13 @@ async function abrirChat(amigo) {
 
         if (!respuesta.ok) {
             console.error(
-                "Error abriendo conversación:",
+                "Error abriendo conversaciÃ³n:",
                 datos
             );
 
             listaMensajes.innerHTML = `
                 <div class="mensajes-vacios">
-                    No se pudo abrir la conversación.
+                    No se pudo abrir la conversaciÃ³n.
                 </div>
             `;
 
@@ -2970,8 +2986,8 @@ async function cargarMensajesChat() {
         ) {
             listaMensajes.innerHTML = `
                 <div class="mensajes-vacios">
-                    Todavía no hay mensajes.<br>
-                    ¡Empieza la conversación!
+                    TodavÃ­a no hay mensajes.<br>
+                    Â¡Empieza la conversaciÃ³n!
                 </div>
             `;
 
@@ -2999,7 +3015,7 @@ function cerrarChat() {
     console.log("PANEL CHAT:", panelChat);
 
     if (!panelChat) {
-        console.error("No se encontró #panel-chat");
+        console.error("No se encontrÃ³ #panel-chat");
         return;
     }
 
@@ -3055,7 +3071,7 @@ function mostrarIndicadorGestoChat(modo) {
     const icono = document.getElementById("icono-gesto-chat");
     const texto = document.getElementById("texto-gesto-chat");
     if (!indicador || !icono || !texto) return;
-    icono.textContent = modo === "editar" ? "✎" : "↩";
+    icono.textContent = modo === "editar" ? "âœŽ" : "â†©";
     texto.textContent = modo === "editar" ? "Editar" : "Responder";
     indicador.hidden = false;
 }
@@ -3303,8 +3319,8 @@ async function eliminarSeleccionChat() {
     if (mensajesSeleccionadosChat.size === 0) return;
     const total = mensajesSeleccionadosChat.size;
     const texto = total === 1
-        ? "¿Eliminar este mensaje? No se podrá recuperar."
-        : `¿Eliminar estos ${total} mensajes? No se podrán recuperar.`;
+        ? "Â¿Eliminar este mensaje? No se podrÃ¡ recuperar."
+        : `Â¿Eliminar estos ${total} mensajes? No se podrÃ¡n recuperar.`;
     if (!confirm(texto)) return;
     try {
         await solicitarGrupo("/api/mensajes/eliminar", {
@@ -3386,7 +3402,7 @@ async function abrirModalReenviar(origen) {
         const datos = await solicitarGrupo("/api/amigos");
         const amigos = datos.amigos || [];
         if (!amigos.length) {
-            lista.innerHTML = '<p class="estado-amigos">Todavía no tienes amigos.</p>';
+            lista.innerHTML = '<p class="estado-amigos">TodavÃ­a no tienes amigos.</p>';
             return;
         }
         lista.innerHTML = "";
@@ -3524,14 +3540,14 @@ async function cargarAmigos() {
 
             listaAmigos.innerHTML = `
                 <p class="sin-contenido">
-                    Todavía no tienes amigos.
+                    TodavÃ­a no tienes amigos.
                 </p>
             `;
 
             return;
         }
 
-        // alfabético entre sí.
+        // alfabÃ©tico entre sÃ­.
         datos.amigos.sort((a, b) => {
             const fechaA = a.ultimo_mensaje_en ? new Date(a.ultimo_mensaje_en).getTime() : 0;
             const fechaB = b.ultimo_mensaje_en ? new Date(b.ultimo_mensaje_en).getTime() : 0;
@@ -3586,7 +3602,7 @@ async function cargarAmigos() {
                         : ""
                 }
                 ${fijado ? `<span class="chat-amigo-pin" aria-label="Chat fijado"><svg class="icono-pin" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg></span>` : ""}
-                ${amigo.es_silenciado ? `<span class="chat-amigo-silencio" aria-label="Chat silenciado">🔕</span>` : ""}
+                ${amigo.es_silenciado ? `<span class="chat-amigo-silencio" aria-label="Chat silenciado">ðŸ”•</span>` : ""}
             `;
 
             elemento.addEventListener("click", () => {
@@ -3646,7 +3662,7 @@ async function abrirChatPorId(usuarioId) {
 }
 
 
-/* CAMBIAR SECCIÓN */
+/* CAMBIAR SECCIÃ“N */
 
 let seccionActual = "entrar";
 
@@ -3690,7 +3706,7 @@ function mostrarSeccion(seccion, opciones = {}) {
     if (contenidoModeracion) contenidoModeracion.hidden = true;
 
     // Si no hay contenedor contenido-cuenta (index.html), ocultar/mostrar
-    // los elementos de cuenta individualmente según la sección activa
+    // los elementos de cuenta individualmente segÃºn la secciÃ³n activa
     if (!contenidoCuenta) {
         const cuentaVisible = seccion === "cuenta";
 
@@ -3792,7 +3808,7 @@ function mostrarSeccion(seccion, opciones = {}) {
     }
 }
 
-/* BOTÓN ATRÁS DEL MÓVIL */
+/* BOTÃ“N ATRÃS DEL MÃ“VIL */
 
 let capasApiladas = 0;
 let gestionandoAtras = false;
@@ -3865,11 +3881,11 @@ function sincronizarAtrasSeccion(seccion) {
     }
 }
 
-/* NAVEGACIÓN PASO A PASO DEL BOTÓN ATRÁS */
+/* NAVEGACIÃ“N PASO A PASO DEL BOTÃ“N ATRÃS */
 
-// El feed Público es un apartado dentro de Entrar: apipla su propia entrada
-// para que el atrás vuelva a Mis Amigos en lugar de salir de la app. Durante
-// el popstate el historial ya se movió, así que no se toca (gestionandoAtras).
+// El feed PÃºblico es un apartado dentro de Entrar: apipla su propia entrada
+// para que el atrÃ¡s vuelva a Mis Amigos en lugar de salir de la app. Durante
+// el popstate el historial ya se moviÃ³, asÃ­ que no se toca (gestionandoAtras).
 function sincronizarAtrasPublico(publico) {
     if (gestionandoAtras) return;
     const hayPublico = window.history?.state?.capa === "publico";
@@ -3892,8 +3908,8 @@ function estaEnPublico() {
     return contenidoPublico?.hidden === false;
 }
 
-// Devuelve true si la sección actual tiene varios apartados y NO está en el
-// principal; en ese caso salta al principal. Así el atrás recorre los pasos.
+// Devuelve true si la secciÃ³n actual tiene varios apartados y NO estÃ¡ en el
+// principal; en ese caso salta al principal. AsÃ­ el atrÃ¡s recorre los pasos.
 function retrocederAApartadoPrincipal() {
     if (seccionActual === "entrar") {
         if (estaEnPublico()) {
@@ -3928,9 +3944,9 @@ function retrocederAApartadoPrincipal() {
     return false;
 }
 
-// Repone una entrada propia para que el siguiente atrás se quede en la app.
-// Solo se usa al navegar entre apartados/secciones, que no apiplan por sí
-// solos (las capas sí lo hacen con el observador).
+// Repone una entrada propia para que el siguiente atrÃ¡s se quede en la app.
+// Solo se usa al navegar entre apartados/secciones, que no apiplan por sÃ­
+// solos (las capas sÃ­ lo hacen con el observador).
 function asegurarEntradaSeccion() {
     if (window.history?.state?.capa === "seccion") return;
     try {
@@ -3941,9 +3957,9 @@ function asegurarEntradaSeccion() {
     }
 }
 
-// Un solo paso de atrás cuando no hay ninguna capa abierta: recorre apartados
-// y secciones. Devuelve true si se movió (hay que seguir dentro de la app) o
-// false si ya está en Entrar > Mis Amigos y debe salir.
+// Un solo paso de atrÃ¡s cuando no hay ninguna capa abierta: recorre apartados
+// y secciones. Devuelve true si se moviÃ³ (hay que seguir dentro de la app) o
+// false si ya estÃ¡ en Entrar > Mis Amigos y debe salir.
 function darPasoAtras() {
     if (retrocederAApartadoPrincipal()) return true;
     if (seccionActual !== "entrar") {
@@ -3963,8 +3979,8 @@ function cerrarCapaSuperior() {
         const ventana = ventanas[ventanas.length - 1];
         const boton = ventana.querySelector("[id^='boton-cerrar'], .boton-cerrar-modal");
         if (boton) boton.click();
-        // La cámara ya no tiene X: el botón atrás debe parar la cámara entera,
-        // no solo ocultarla, o el flujo seguiría vivo en segundo plano.
+        // La cÃ¡mara ya no tiene X: el botÃ³n atrÃ¡s debe parar la cÃ¡mara entera,
+        // no solo ocultarla, o el flujo seguirÃ­a vivo en segundo plano.
         else if (ventana.id === "pantalla-camara") cerrarPantallaCamara();
         else ventana.hidden = true;
         return true;
@@ -4024,12 +4040,12 @@ window.addEventListener("popstate", () => {
 
         // 2) Sin capas: se da un paso por los apartados y secciones.
         if (darPasoAtras() && seccionActual !== "entrar") {
-            // Seguimos dentro de una sección con varios apartados: reponemos
-            // una entrada propia para que el siguiente atrás no salga de la app.
+            // Seguimos dentro de una secciÃ³n con varios apartados: reponemos
+            // una entrada propia para que el siguiente atrÃ¡s no salga de la app.
             asegurarEntradaSeccion();
         }
-        // Si el paso nos dejó en Entrar (o ya estábamos allí sin nada abierto),
-        // no se repone nada: el siguiente atrás sale de la app, que es lo correcto.
+        // Si el paso nos dejÃ³ en Entrar (o ya estÃ¡bamos allÃ­ sin nada abierto),
+        // no se repone nada: el siguiente atrÃ¡s sale de la app, que es lo correcto.
     } finally {
         gestionandoAtras = false;
     }
@@ -4072,7 +4088,7 @@ function cambiarFeedEntrada(publico) {
 document.getElementById("boton-feed-amigos").addEventListener("click", () => cambiarFeedEntrada(false));
 document.getElementById("boton-feed-publico").addEventListener("click", () => cambiarFeedEntrada(true));
 
-// NAVEGACIÓN POR FASES
+// NAVEGACIÃ“N POR FASES
 
 let vistaServidorActual = "lista";
 
@@ -4135,7 +4151,7 @@ function actualizarContextoServidor() {
             `${detalleGrupo?.miembros ?? grupoActual.miembros ?? "?"} miembros`,
             etiquetaRol,
             detalleGrupo?.mi_silenciado ? "Silenciado" : ""
-        ].filter(Boolean).join(" · ");
+        ].filter(Boolean).join(" Â· ");
     }
 
     volver.hidden = false;
@@ -4216,7 +4232,7 @@ function plantillaTarjetaServidor(grupo, { conAccionUnirse = false } = {}) {
     const sinLeer = Number(grupo.mensajes_sin_leer) || 0;
     const preview = grupo.ultimo_mensaje
         ? String(grupo.ultimo_mensaje).slice(0, 90)
-        : (grupo.descripcion || "Sin descripción");
+        : (grupo.descripcion || "Sin descripciÃ³n");
     const insignia = sinLeer > 0
         ? `<span class="servidor-tarjeta-contador" aria-label="${sinLeer} mensajes sin leer">${sinLeer > 99 ? "99+" : sinLeer}</span>`
         : "";
@@ -4232,7 +4248,7 @@ function plantillaTarjetaServidor(grupo, { conAccionUnirse = false } = {}) {
                 <span class="servidor-tarjeta-preview">${escapeHtml(preview)}</span>
                 <span class="servidor-tarjeta-meta">
                     ${grupo.miembros} miembros
-                    ${grupo.modelo === "canales" ? " · canales" : ""}
+                    ${grupo.modelo === "canales" ? " Â· canales" : ""}
                     ${grupo.permite_ocultos ? '<em class="insignia-oculto insignia-mini">OC</em>' : ""}
                 </span>
             </span>
@@ -4274,7 +4290,7 @@ async function cargarServidores() {
     estadoServidores.textContent = "Cargando servidores...";
     try {
         const datos = await solicitarGrupo("/api/grupos");
-        estadoServidores.textContent = datos.grupos.length ? "" : "Todavía no perteneces a ningún servidor.";
+        estadoServidores.textContent = datos.grupos.length ? "" : "TodavÃ­a no perteneces a ningÃºn servidor.";
         listaServidores.innerHTML = datos.grupos
             .map((grupo) => plantillaTarjetaServidor(grupo))
             .join("");
@@ -4369,7 +4385,7 @@ const autorId = mensaje.autor_id;
 
     const insignias = [];
     if (mensaje.oculto) {
-        insignias.push(`<span class="insignia-oculto insignia-mini">${mensaje.envio_oculto ? "OCULTO · tuyo" : "OCULTO"}</span>`);
+        insignias.push(`<span class="insignia-oculto insignia-mini">${mensaje.envio_oculto ? "OCULTO Â· tuyo" : "OCULTO"}</span>`);
     }
     if (mensaje.editado_en) {
         insignias.push("<small>editado</small>");
@@ -4381,7 +4397,7 @@ const autorId = mensaje.autor_id;
            </div>`
         : "";
 
-    // separador de día.
+    // separador de dÃ­a.
     const conHora = separadorDiaVisible(mensaje);
     const horaHtml = conHora
         ? `<time class="hora-mensaje" datetime="${escapeHtml(mensaje.creado_en)}">${textoHora(mensaje.creado_en)}</time>`
@@ -4438,7 +4454,7 @@ async function cargarMensajesServidor() {
         const parametros = canalActual ? `?canalId=${encodeURIComponent(canalActual.id)}` : "";
         const datos = await solicitarGrupo(`/api/grupos/${encodeURIComponent(grupoActual.id)}/mensajes${parametros}`);
         mensajesServidor.innerHTML = plantillasMensajesGrupo(datos.mensajes).join("")
-            || '<p class="estado-amigos">Aún no hay mensajes en este canal.</p>';
+            || '<p class="estado-amigos">AÃºn no hay mensajes en este canal.</p>';
         for (const elemento of mensajesServidor.querySelectorAll(".mensaje-chat")) {
             const mensaje = datos.mensajes.find((item) => item.id === elemento.dataset.mensajeId);
             if (!mensaje) continue;
@@ -4558,11 +4574,11 @@ if (formularioMensajeServidor) {
 async function enviarMensajeServidor(contenido, adjunto, opciones = {}) {
     const esOculto = Boolean(opciones.oculto);
     if (!grupoActual) {
-        throw new Error("No hay ningún servidor abierto");
+        throw new Error("No hay ningÃºn servidor abierto");
     }
 
     if (esOculto && mensajeEdicionChat) {
-        throw new Error("Termina la edición antes de enviar un mensaje oculto");
+        throw new Error("Termina la ediciÃ³n antes de enviar un mensaje oculto");
     }
 
     if (mensajeEdicionChat) {
@@ -4604,7 +4620,7 @@ async function enviarMensajeServidor(contenido, adjunto, opciones = {}) {
 }
 
 /* MENSAJE OCULTO DEL SERVIDOR
-   Se abre desde el botón OCULTO del menú + y llega al canal sin autor. */
+   Se abre desde el botÃ³n OCULTO del menÃº + y llega al canal sin autor. */
 
 function abrirModalMensajeOculto() {
     const modal = document.getElementById("modal-mensaje-oculto");
@@ -4818,8 +4834,8 @@ async function eliminarSeleccionServidor() {
     if (!grupoActual || mensajesSeleccionadosServidor.size === 0) return;
     const total = mensajesSeleccionadosServidor.size;
     const texto = total === 1
-        ? "¿Eliminar este mensaje? No se podrá recuperar."
-        : `¿Eliminar estos ${total} mensajes? No se podrán recuperar.`;
+        ? "Â¿Eliminar este mensaje? No se podrÃ¡ recuperar."
+        : `Â¿Eliminar estos ${total} mensajes? No se podrÃ¡n recuperar.`;
     if (!confirm(texto)) return;
     try {
         await solicitarGrupo(`/api/grupos/${encodeURIComponent(grupoActual.id)}/mensajes/eliminar`, {
@@ -4850,13 +4866,13 @@ function activarEdicionMensajeServidor(mensaje) {
     mensajeRespuestaChat = null;
     const entrada = document.getElementById("entrada-mensaje-servidor");
     entrada.value = mensaje.contenido ?? "";
-    entrada.placeholder = "Editando el mensaje. Envía para guardar...";
+    entrada.placeholder = "Editando el mensaje. EnvÃ­a para guardar...";
     composerServidor?.refrescar();
     entrada.focus();
 }
 
 document.getElementById("boton-salir-servidor").addEventListener("click", async () => {
-    if (!grupoActual || !confirm(`¿Quieres salir de ${grupoActual.nombre}?`)) return;
+    if (!grupoActual || !confirm(`Â¿Quieres salir de ${grupoActual.nombre}?`)) return;
     try {
         await solicitarGrupo(`/api/grupos/${encodeURIComponent(grupoActual.id)}/salir`, { method: "POST" });
         volverAListaServidores();
@@ -4866,7 +4882,7 @@ document.getElementById("boton-salir-servidor").addEventListener("click", async 
 });
 
 document.getElementById("boton-eliminar-servidor").addEventListener("click", async () => {
-    if (!grupoActual || !confirm(`¿Eliminar ${grupoActual.nombre} y todo su contenido?`)) return;
+    if (!grupoActual || !confirm(`Â¿Eliminar ${grupoActual.nombre} y todo su contenido?`)) return;
     try {
         await solicitarGrupo(`/api/grupos/${encodeURIComponent(grupoActual.id)}`, { method: "DELETE" });
         volverAListaServidores();
@@ -4921,7 +4937,7 @@ function actualizarControlesComposer() {
     const entrada = document.getElementById("entrada-mensaje-servidor");
     const permiteOcultos = Boolean(canalActual && canalActual.permite_ocultos);
 
-    // El botón OCULTO del menú + solo se muestra donde el canal lo permite.
+    // El botÃ³n OCULTO del menÃº + solo se muestra donde el canal lo permite.
     opcionOculto.hidden = !permiteOcultos;
 
     if (!mensajeRespuestaChat && !mensajeEdicionChat) {
@@ -5050,7 +5066,7 @@ document.getElementById("boton-acciones-ajustes-servidor").addEventListener("cli
 });
 
 document.getElementById("boton-salir-servidor-acciones").addEventListener("click", async () => {
-    if (!grupoActual || !confirm(`¿Quieres salir de ${grupoActual.nombre}?`)) return;
+    if (!grupoActual || !confirm(`Â¿Quieres salir de ${grupoActual.nombre}?`)) return;
     try {
         await solicitarGrupo(`/api/grupos/${encodeURIComponent(grupoActual.id)}/salir`, { method: "POST" });
         cerrarAccionesServidor();
@@ -5061,7 +5077,7 @@ document.getElementById("boton-salir-servidor-acciones").addEventListener("click
 });
 
 document.getElementById("boton-eliminar-servidor-acciones").addEventListener("click", async () => {
-    if (!grupoActual || !confirm(`¿Eliminar ${grupoActual.nombre} y todo su contenido?`)) return;
+    if (!grupoActual || !confirm(`Â¿Eliminar ${grupoActual.nombre} y todo su contenido?`)) return;
     try {
         await solicitarGrupo(`/api/grupos/${encodeURIComponent(grupoActual.id)}`, { method: "DELETE" });
         cerrarAccionesServidor();
@@ -5073,7 +5089,7 @@ document.getElementById("boton-eliminar-servidor-acciones").addEventListener("cl
 
 document.getElementById("boton-activar-canales-acciones").addEventListener("click", async () => {
     if (!grupoActual) return;
-    if (!confirm("¿Activar los canales en este servidor? Esta acción es irreversible.")) return;
+    if (!confirm("Â¿Activar los canales en este servidor? Esta acciÃ³n es irreversible.")) return;
     try {
         await solicitarGrupo(`/api/grupos/${encodeURIComponent(grupoActual.id)}/activar-canales`, { method: "POST" });
         await refrescarDetalleServidor();
@@ -5109,7 +5125,7 @@ document.getElementById("boton-guardar-descripcion-servidor").addEventListener("
         const descripcion = detalleGrupo?.descripcion ?? "";
         textoDescripcion.textContent = descripcion;
         textoDescripcion.hidden = Boolean(descripcion);
-        estadoAccionesServidor.textContent = "Descripción guardada.";
+        estadoAccionesServidor.textContent = "DescripciÃ³n guardada.";
     } catch (error) {
         estadoAccionesServidor.textContent = error.message;
     } finally {
@@ -5128,12 +5144,12 @@ document.getElementById("boton-foto-servidor").addEventListener("click", () => {
         if (esGestor) {
             abrirCambioFotoServidor();
         } else {
-            estadoServidores.textContent = "Este servidor todavía no tiene foto.";
+            estadoServidores.textContent = "Este servidor todavÃ­a no tiene foto.";
         }
         return;
     }
 
-    if (esGestor && !confirm("¿Quieres cambiar la foto del servidor?")) {
+    if (esGestor && !confirm("Â¿Quieres cambiar la foto del servidor?")) {
         return;
     }
 
@@ -5220,7 +5236,7 @@ async function cargarMiembrosServidor() {
             return `
                 <div class="fila-servidor ${miembro.es_mio ? "yo" : ""}">
                     <span class="fila-servidor-datos">
-                        <strong style="${estiloNombre(miembro.color_nombre)}">${escapeHtml(nombreVisible(miembro.usuario_id, miembro.nombre))}${miembro.es_mio ? " (tú)" : ""}</strong>
+                        <strong style="${estiloNombre(miembro.color_nombre)}">${escapeHtml(nombreVisible(miembro.usuario_id, miembro.nombre))}${miembro.es_mio ? " (tÃº)" : ""}</strong>
                         <span>${etiquetas.join(" ")}</span>
                     </span>
                     <span class="fila-servidor-acciones">${acciones.join("")}</span>
@@ -5274,7 +5290,7 @@ document.getElementById("lista-miembros-servidor").addEventListener("click", asy
 
     const expulsar = evento.target.closest("[data-expulsar-miembro]");
     if (expulsar) {
-        if (!confirm("¿Expulsar a este miembro del servidor?")) return;
+        if (!confirm("Â¿Expulsar a este miembro del servidor?")) return;
         try {
             await solicitarGrupo(`${base}/${encodeURIComponent(expulsar.dataset.expulsarMiembro)}`, { method: "DELETE" });
             await Promise.all([cargarMiembrosServidor(), refrescarDetalleServidor()]);
@@ -5286,7 +5302,7 @@ document.getElementById("lista-miembros-servidor").addEventListener("click", asy
 
     const bloquear = evento.target.closest("[data-bloquear-miembro]");
     if (bloquear) {
-        if (!confirm("¿Bloquear a este miembro? Se expulsará y no podrá volver a unirse.")) return;
+        if (!confirm("Â¿Bloquear a este miembro? Se expulsarÃ¡ y no podrÃ¡ volver a unirse.")) return;
         try {
             await solicitarGrupo(`${base}/${encodeURIComponent(bloquear.dataset.bloquearMiembro)}/bloquear`, {
                 method: "POST",
@@ -5305,12 +5321,12 @@ function renderizarInvitacion() {
     const texto = document.getElementById("codigo-invitacion-servidor");
     const invitacion = detalleGrupo ? detalleGrupo.invitacion : null;
     if (!invitacion) {
-        texto.textContent = "Sin código activo.";
+        texto.textContent = "Sin cÃ³digo activo.";
         texto.dataset.codigo = "";
         return;
     }
     const caduca = invitacion.expira_en ? new Date(invitacion.expira_en).toLocaleDateString() : "";
-    texto.textContent = `Código ${invitacion.codigo}${caduca ? ` · caduca el ${caduca}` : ""}`;
+    texto.textContent = `CÃ³digo ${invitacion.codigo}${caduca ? ` Â· caduca el ${caduca}` : ""}`;
     texto.dataset.codigo = invitacion.codigo;
 }
 
@@ -5342,7 +5358,7 @@ function renderizarPreviaImagenServidor() {
     quitar.hidden = !ruta;
 }
 
-/* PRIVACIDAD DEL SERVIDOR (PÚBLICO / PRIVADO)
+/* PRIVACIDAD DEL SERVIDOR (PÃšBLICO / PRIVADO)
    Solo el creador ve y cambia este bloque; por defecto Privado. */
 
 function renderizarPrivacidadServidor() {
@@ -5360,9 +5376,9 @@ function reflejarPrivacidadServidor() {
     const publico = Boolean(detalleGrupo?.es_publico);
     const texto = document.getElementById("texto-privacidad-servidor");
     texto.textContent = publico
-        ? "ACTUALMENTE: Publico, aparecerá en la zona de búsqueda"
-        : "ACTUALMENTE: Privado, solo se podrán unir personas mediante el código de invitación";
-    // El desplegable de rol solo tiene sentido cuando el servidor es público.
+        ? "ACTUALMENTE: Publico, aparecerÃ¡ en la zona de bÃºsqueda"
+        : "ACTUALMENTE: Privado, solo se podrÃ¡n unir personas mediante el cÃ³digo de invitaciÃ³n";
+    // El desplegable de rol solo tiene sentido cuando el servidor es pÃºblico.
     document.getElementById("bloque-rol-entrada-servidor").hidden = !publico;
 }
 
@@ -5445,7 +5461,7 @@ function renderizarCanalesAjuste() {
         <div class="fila-servidor">
             <span class="fila-servidor-datos">
                 <strong># ${escapeHtml(canal.nombre)}</strong>
-                <span>${canal.retencion_horas ? `Retención ${canal.retencion_horas} h` : "Permanente"}${canal.permite_ocultos ? " · ocultos permitidos" : ""}</span>
+                <span>${canal.retencion_horas ? `RetenciÃ³n ${canal.retencion_horas} h` : "Permanente"}${canal.permite_ocultos ? " Â· ocultos permitidos" : ""}</span>
             </span>
             <span class="fila-servidor-acciones">
                 <button type="button" data-ajuste-canal="${escapeHtml(canal.id)}">EDITAR</button>
@@ -5463,7 +5479,7 @@ async function cargarBloqueadosServidor() {
             <div class="fila-servidor">
                 <span class="fila-servidor-datos">
                     <strong style="${estiloNombre(bloqueo.color_nombre)}">${escapeHtml(bloqueo.nombre ?? "Desconocido")}</strong>
-                    <span>${escapeHtml(bloqueo.etiqueta)}${bloqueo.motivo ? ` · ${escapeHtml(bloqueo.motivo)}` : ""}</span>
+                    <span>${escapeHtml(bloqueo.etiqueta)}${bloqueo.motivo ? ` Â· ${escapeHtml(bloqueo.motivo)}` : ""}</span>
                 </span>
                 <span class="fila-servidor-acciones">
                     ${bloqueo.usuario_id ? `<button type="button" data-desbloquear="${escapeHtml(bloqueo.usuario_id)}">DESBLOQUEAR</button>` : ""}
@@ -5491,14 +5507,14 @@ document.getElementById("boton-generar-invitacion").addEventListener("click", as
 document.getElementById("boton-copiar-invitacion").addEventListener("click", async () => {
     const codigo = document.getElementById("codigo-invitacion-servidor").dataset.codigo;
     if (!codigo) {
-        document.getElementById("estado-ajustes-servidor").textContent = "Genera un código primero.";
+        document.getElementById("estado-ajustes-servidor").textContent = "Genera un cÃ³digo primero.";
         return;
     }
     try {
         await navigator.clipboard.writeText(codigo);
-        document.getElementById("estado-ajustes-servidor").textContent = "Código copiado.";
+        document.getElementById("estado-ajustes-servidor").textContent = "CÃ³digo copiado.";
     } catch {
-        document.getElementById("estado-ajustes-servidor").textContent = `Código: ${codigo}`;
+        document.getElementById("estado-ajustes-servidor").textContent = `CÃ³digo: ${codigo}`;
     }
 });
 
@@ -5543,7 +5559,7 @@ document.getElementById("lista-canales-ajuste").addEventListener("click", (event
 document.getElementById("lista-bloqueados-servidor").addEventListener("click", async (evento) => {
     const boton = evento.target.closest("[data-desbloquear]");
     if (!boton || !grupoActual) return;
-    if (!confirm("¿Desbloquear a este usuario?")) return;
+    if (!confirm("Â¿Desbloquear a este usuario?")) return;
     try {
         await solicitarGrupo(`/api/grupos/${encodeURIComponent(grupoActual.id)}/bloqueados/${encodeURIComponent(boton.dataset.desbloquear)}`, { method: "DELETE" });
         await cargarBloqueadosServidor();
@@ -5554,13 +5570,13 @@ document.getElementById("lista-bloqueados-servidor").addEventListener("click", a
 
 document.getElementById("boton-quitar-restricciones").addEventListener("click", async () => {
     if (!grupoActual) return;
-    if (!confirm("¿Levantar todas las restricciones de mensajes ocultos de este servidor?")) return;
+    if (!confirm("Â¿Levantar todas las restricciones de mensajes ocultos de este servidor?")) return;
     try {
         const datos = await solicitarGrupo(`/api/grupos/${encodeURIComponent(grupoActual.id)}/ocultos/restricciones/quitar`, {
             method: "POST",
             body: JSON.stringify({})
         });
-        document.getElementById("estado-ajustes-servidor").textContent = `${datos.totales} restricción(es) levantada(s).`;
+        document.getElementById("estado-ajustes-servidor").textContent = `${datos.totales} restricciÃ³n(es) levantada(s).`;
     } catch (error) {
         document.getElementById("estado-ajustes-servidor").textContent = error.message;
     }
@@ -5587,7 +5603,7 @@ document.getElementById("boton-traspasar-servidor").addEventListener("click", as
         document.getElementById("estado-ajustes-servidor").textContent = "Elige un miembro para traspasar el servidor.";
         return;
     }
-    if (!confirm("¿Traspasar la propiedad del servidor? Perderás el rol de creador.")) return;
+    if (!confirm("Â¿Traspasar la propiedad del servidor? PerderÃ¡s el rol de creador.")) return;
     try {
         await solicitarGrupo(`/api/grupos/${encodeURIComponent(grupoActual.id)}/propiedad`, {
             method: "POST",
@@ -5639,7 +5655,7 @@ document.getElementById("boton-eliminar-canal").addEventListener("click", async 
     if (!grupoActual) return;
     const canalId = document.getElementById("editar-canal-id").value;
     if (!canalId) return;
-    if (!confirm("¿Eliminar este canal y todos sus mensajes?")) return;
+    if (!confirm("Â¿Eliminar este canal y todos sus mensajes?")) return;
     try {
         await solicitarGrupo(`/api/grupos/${encodeURIComponent(grupoActual.id)}/canales/${encodeURIComponent(canalId)}`, { method: "DELETE" });
         document.getElementById("modal-canal-servidor").hidden = true;
@@ -5665,7 +5681,7 @@ document.getElementById("formulario-invitacion").addEventListener("submit", asyn
             <div class="servidor-item">
                 <span class="servidor-item-datos">
                     <strong>${escapeHtml(invitacion.nombre)}</strong>
-                    <span>${escapeHtml(invitacion.descripcion || "Sin descripción")} · ${invitacion.miembros} miembros</span>
+                    <span>${escapeHtml(invitacion.descripcion || "Sin descripciÃ³n")} Â· ${invitacion.miembros} miembros</span>
                 </span>
                 ${invitacion.es_miembro
                     ? '<span class="servidor-item-meta">YA ES TUYO</span>'
@@ -5730,7 +5746,7 @@ async function conectarTiempoReal() {
         try {
             manejarEventoTiempoReal(JSON.parse(evento.data));
         } catch (error) {
-            console.warn("Evento de tiempo real no válido", error);
+            console.warn("Evento de tiempo real no vÃ¡lido", error);
         }
     });
 
@@ -5852,7 +5868,7 @@ async function manejarEventoTiempoReal(evento) {
                 if (nodo) nodo.remove();
             }
             if (!mensajesServidor.querySelector(".mensaje-chat")) {
-                mensajesServidor.innerHTML = '<p class="estado-amigos">Aún no hay mensajes en este canal.</p>';
+                mensajesServidor.innerHTML = '<p class="estado-amigos">AÃºn no hay mensajes en este canal.</p>';
             }
             return;
         }
@@ -5931,7 +5947,7 @@ async function buscarPersonas(texto) {
             estadoBusquedaAmigos.textContent =
                 textoLimpio
                     ? "No se han encontrado personas."
-                    : "Todavía no hay más cuentas en la web.";
+                    : "TodavÃ­a no hay mÃ¡s cuentas en la web.";
 
             return;
         }
@@ -6377,7 +6393,7 @@ async function rechazarSolicitud(
     }
 }
 
-/* COMPROBAR SESIÓN */
+/* COMPROBAR SESIÃ“N */
 
 async function comprobarSesion() {
 
@@ -6426,7 +6442,7 @@ async function comprobarSesion() {
     } catch (error) {
 
         console.error(
-            "Error comprobando sesión:",
+            "Error comprobando sesiÃ³n:",
             error
         );
 
@@ -6469,7 +6485,7 @@ formularioLogin.addEventListener(
         if (!codigo) {
 
             errorLogin.textContent =
-                "Introduce tu código";
+                "Introduce tu cÃ³digo";
 
             return;
         }
@@ -6505,12 +6521,12 @@ formularioLogin.addEventListener(
             } catch {
                 if (!tipoRespuesta.includes("application/json")) {
                     throw new Error(
-                        "Esta página no está conectada al backend. No uses Go Live; abre http://127.0.0.1:3000."
+                        "Esta pÃ¡gina no estÃ¡ conectada al backend. No uses Go Live; abre http://127.0.0.1:3000."
                     );
                 }
 
                 throw new Error(
-                    "El servidor devolvió una respuesta vacía. Comprueba que Atuistas esté ejecutándose en http://127.0.0.1:3000."
+                    "El servidor devolviÃ³ una respuesta vacÃ­a. Comprueba que Atuistas estÃ© ejecutÃ¡ndose en http://127.0.0.1:3000."
                 );
             }
 
@@ -6524,7 +6540,7 @@ formularioLogin.addEventListener(
 
                 throw new Error(
                     datos.error ||
-                    "No se pudo iniciar sesión"
+                    "No se pudo iniciar sesiÃ³n"
                 );
 
             }
@@ -6542,13 +6558,13 @@ formularioLogin.addEventListener(
         } catch (error) {
 
             console.error(
-                "Error iniciando sesión:",
+                "Error iniciando sesiÃ³n:",
                 error
             );
 
             errorLogin.textContent =
                 error.message ||
-                "Error al iniciar sesión";
+                "Error al iniciar sesiÃ³n";
 
         }
 
@@ -6688,7 +6704,7 @@ formularioRegistro.addEventListener(
 );
 
 
-/* CONTINUAR DESPUÉS DEL REGISTRO */
+/* CONTINUAR DESPUÃ‰S DEL REGISTRO */
 
 botonContinuarRegistro.addEventListener(
     "click",
@@ -6704,7 +6720,7 @@ botonContinuarRegistro.addEventListener(
 );
 
 
-/* COPIAR CÓDIGO DE REGISTRO */
+/* COPIAR CÃ“DIGO DE REGISTRO */
 
 botonCopiarCodigo.addEventListener(
     "click",
@@ -6726,21 +6742,21 @@ botonCopiarCodigo.addEventListener(
             );
 
 
-            botonCopiarCodigo.textContent = "✓";
+            botonCopiarCodigo.textContent = "âœ“";
 
             botonCopiarCodigo.setAttribute(
                 "aria-label",
-                "Código copiado"
+                "CÃ³digo copiado"
             );
 
 
             setTimeout(() => {
 
-                botonCopiarCodigo.textContent = "⧉";
+                botonCopiarCodigo.textContent = "â§‰";
 
                 botonCopiarCodigo.setAttribute(
                     "aria-label",
-                    "Copiar código"
+                    "Copiar cÃ³digo"
                 );
 
             }, 2000);
@@ -6749,7 +6765,7 @@ botonCopiarCodigo.addEventListener(
         } catch (error) {
 
             console.error(
-                "No se pudo copiar el código:",
+                "No se pudo copiar el cÃ³digo:",
                 error
             );
 
@@ -6759,7 +6775,7 @@ botonCopiarCodigo.addEventListener(
 );
 
 
-/* NAVEGACIÓN PRINCIPAL */
+/* NAVEGACIÃ“N PRINCIPAL */
 
 botonEntrarApp.addEventListener(
     "click",
@@ -6781,7 +6797,7 @@ botonAmigos.addEventListener(
     }
 );
 
-// PESTAÑAS DE AGREGAR AMIGOS
+// PESTAÃ‘AS DE AGREGAR AMIGOS
 
 botonEncontrarPersonas.addEventListener("click", () => {
     seccionEncontrarPersonas.hidden = false;
@@ -6937,7 +6953,7 @@ inputFotoPerfil.addEventListener(
         if (!archivo.type.startsWith("image/")) {
 
             alert(
-                "Selecciona una imagen válida."
+                "Selecciona una imagen vÃ¡lida."
             );
 
             inputFotoPerfil.value = "";
@@ -6978,7 +6994,7 @@ async function subirAvatarEditada(archivo) {
     const token = localStorage.getItem("atuistas_token");
 
     if (!token) {
-        alert("Tu sesión ha expirado.");
+        alert("Tu sesiÃ³n ha expirado.");
         return;
     }
 
@@ -7047,7 +7063,7 @@ modalFotoGrande.addEventListener(
 
 /* CARGAR CUENTA */
 
-/* La etiqueta propia, igual que la ven los demás en el perfil */
+/* La etiqueta propia, igual que la ven los demÃ¡s en el perfil */
 function pintarEtiquetaCuenta(usuario) {
     const insignia = document.getElementById("etiqueta-cuenta");
     if (!insignia) return;
@@ -7113,7 +7129,7 @@ async function cargarCuenta() {
         actualizarTarjetaMiEstado();
 
 
-        /* DATOS BÁSICOS */
+        /* DATOS BÃSICOS */
 
         cuentaGuardada = {
             nombre: usuario.nombre,
@@ -7141,7 +7157,7 @@ async function cargarCuenta() {
 
         estadoCuenta.textContent =
             usuario.es_desarrollador
-                ? "Desarrollador: en cualquier perfil puedes pulsar el nombre, la etiqueta o la descripción para cambiarla, y mantener pulsado el contenido para borrarlo."
+                ? "Desarrollador: en cualquier perfil puedes pulsar el nombre, la etiqueta o la descripciÃ³n para cambiarla, y mantener pulsado el contenido para borrarlo."
                 : "";
 
 
@@ -7175,10 +7191,10 @@ async function cargarCuenta() {
         }
 
 
-        /* CÓDIGO DE VINCULACIÓN */
+        /* CÃ“DIGO DE VINCULACIÃ“N */
 
         codigoCuentaTexto.textContent =
-            usuario.codigo_vinculacion || "Código no disponible. Regenera uno para vincular otros dispositivos.";
+            usuario.codigo_vinculacion || "CÃ³digo no disponible. Regenera uno para vincular otros dispositivos.";
 
 
     } catch (error) {
@@ -7193,7 +7209,7 @@ async function cargarCuenta() {
 }
 
 
-/* GUARDADO AUTOMÁTICO DE LA CUENTA */
+/* GUARDADO AUTOMÃTICO DE LA CUENTA */
 
 let cuentaGuardada = { nombre: "", descripcion: "", color_nombre: "#FFFFFF" };
 
@@ -7466,7 +7482,7 @@ document.getElementById("boton-cuenta-bloquear")?.addEventListener("click", () =
     if (!cuentaAccionActual) return;
     const modal = document.getElementById("modal-bloquear-cuenta");
     const nombre = document.getElementById("nombre-bloquear-cuenta");
-    if (nombre) nombre.textContent = `¿Seguro de que quieres bloquear a ${cuentaAccionActual.nombre ?? "esta cuenta"}?`;
+    if (nombre) nombre.textContent = `Â¿Seguro de que quieres bloquear a ${cuentaAccionActual.nombre ?? "esta cuenta"}?`;
     cerrarAccionesCuenta();
     if (modal) modal.hidden = false;
 });
@@ -7515,7 +7531,7 @@ document.getElementById("boton-cuenta-eliminar")?.addEventListener("click", () =
     const estado = document.getElementById("estado-eliminar-cuenta");
     const texto = document.getElementById("texto-confirmar-eliminar-cuenta");
     if (nombre) nombre.textContent = `Eliminar a: ${cuentaAccionActual.nombre ?? ""}`;
-    if (estado) estado.textContent = "Se borrará la cuenta y todo lo suyo. No se puede deshacer.";
+    if (estado) estado.textContent = "Se borrarÃ¡ la cuenta y todo lo suyo. No se puede deshacer.";
     if (texto) texto.value = "";
     cerrarAccionesCuenta();
     if (modal) modal.hidden = false;
@@ -7530,7 +7546,7 @@ document.getElementById("boton-confirmar-eliminar-cuenta")?.addEventListener("cl
     const estado = document.getElementById("estado-eliminar-cuenta");
     const texto = (document.getElementById("texto-confirmar-eliminar-cuenta")?.value ?? "").trim();
     if (texto !== "ELIMINAR") {
-        if (estado) estado.textContent = "Escribe ELIMINAR en mayúsculas para confirmar.";
+        if (estado) estado.textContent = "Escribe ELIMINAR en mayÃºsculas para confirmar.";
         return;
     }
     if (!cuentaAccionActual) return;
@@ -7805,7 +7821,7 @@ function programarGuardadoCuenta() {
 }
 
 
-/* COPIAR CÓDIGO DE CUENTA */
+/* COPIAR CÃ“DIGO DE CUENTA */
 
 botonCopiarCodigoCuenta.addEventListener(
     "click",
@@ -7831,24 +7847,24 @@ botonCopiarCodigoCuenta.addEventListener(
 
 
             botonCopiarCodigoCuenta.textContent =
-                "✓";
+                "âœ“";
 
 
             botonCopiarCodigoCuenta.setAttribute(
                 "aria-label",
-                "Código copiado"
+                "CÃ³digo copiado"
             );
 
 
             setTimeout(() => {
 
                 botonCopiarCodigoCuenta.textContent =
-                    "⧉";
+                    "â§‰";
 
 
                 botonCopiarCodigoCuenta.setAttribute(
                     "aria-label",
-                    "Copiar código de vinculación"
+                    "Copiar cÃ³digo de vinculaciÃ³n"
                 );
 
             }, 2000);
@@ -7857,7 +7873,7 @@ botonCopiarCodigoCuenta.addEventListener(
         } catch (error) {
 
             console.error(
-                "No se pudo copiar el código:",
+                "No se pudo copiar el cÃ³digo:",
                 error
             );
 
@@ -7867,7 +7883,7 @@ botonCopiarCodigoCuenta.addEventListener(
 );
 
 
-/* REGENERAR CÓDIGO */
+/* REGENERAR CÃ“DIGO */
 
 botonRegenerarCodigo.addEventListener(
     "click",
@@ -7875,7 +7891,7 @@ botonRegenerarCodigo.addEventListener(
 
         const confirmar =
             confirm(
-                "¿Quieres regenerar tu código de vinculación?\n\nEl código actual dejará de funcionar para vincular nuevos dispositivos. Tus dispositivos ya vinculados seguirán conectados."
+                "Â¿Quieres regenerar tu cÃ³digo de vinculaciÃ³n?\n\nEl cÃ³digo actual dejarÃ¡ de funcionar para vincular nuevos dispositivos. Tus dispositivos ya vinculados seguirÃ¡n conectados."
             );
 
 
@@ -7919,7 +7935,7 @@ botonRegenerarCodigo.addEventListener(
 
                 throw new Error(
                     datos.error ||
-                    "No se pudo regenerar el código"
+                    "No se pudo regenerar el cÃ³digo"
                 );
 
             }
@@ -7930,21 +7946,21 @@ botonRegenerarCodigo.addEventListener(
 
 
             alert(
-                "Código regenerado correctamente."
+                "CÃ³digo regenerado correctamente."
             );
 
 
         } catch (error) {
 
             console.error(
-                "Error regenerando código:",
+                "Error regenerando cÃ³digo:",
                 error
             );
 
 
             alert(
                 error.message ||
-                "Error al regenerar el código"
+                "Error al regenerar el cÃ³digo"
             );
 
 
@@ -7958,7 +7974,42 @@ botonRegenerarCodigo.addEventListener(
 );
 
 
-/* GUARDADO AUTOMÁTICO DE LA CUENTA */
+/* SUBCUENTA: alternar paneles CUENTA / PUBLICACIONES / AJUSTES */
+
+function ocultarPanelesSubcuenta() {
+    if (panelCuentaEditar) panelCuentaEditar.hidden = true;
+    if (panelCuentaPublicaciones) panelCuentaPublicaciones.hidden = true;
+    if (panelCuentaAjustes) panelCuentaAjustes.hidden = true;
+    if (btnCuentaEditar) btnCuentaEditar.classList.remove("activa");
+    if (btnCuentaPublicaciones) btnCuentaPublicaciones.classList.remove("activa");
+    if (btnCuentaAjustes) btnCuentaAjustes.classList.remove("activa");
+}
+
+if (btnCuentaEditar && panelCuentaEditar) {
+    btnCuentaEditar.addEventListener("click", () => {
+        ocultarPanelesSubcuenta();
+        panelCuentaEditar.hidden = false;
+        btnCuentaEditar.classList.add("activa");
+    });
+}
+
+if (btnCuentaPublicaciones && panelCuentaPublicaciones) {
+    btnCuentaPublicaciones.addEventListener("click", () => {
+        ocultarPanelesSubcuenta();
+        panelCuentaPublicaciones.hidden = false;
+        btnCuentaPublicaciones.classList.add("activa");
+    });
+}
+
+if (btnCuentaAjustes && panelCuentaAjustes) {
+    btnCuentaAjustes.addEventListener("click", () => {
+        ocultarPanelesSubcuenta();
+        panelCuentaAjustes.hidden = false;
+        btnCuentaAjustes.classList.add("activa");
+    });
+}
+
+/* GUARDADO AUTOMÃTICO DE LA CUENTA */
 
 nombreCuentaEditar.addEventListener("input", programarGuardadoCuenta);
 nombreCuentaEditar.addEventListener("blur", guardarCuenta);
@@ -7974,7 +8025,7 @@ colorNombreCuenta.addEventListener("input", () => {
 colorNombreCuenta.addEventListener("change", guardarCuenta);
 
 
-/* CERRAR SESIÓN */
+/* CERRAR SESIÃ“N */
 
 botonCerrarSesion.addEventListener(
     "click",
@@ -8010,7 +8061,7 @@ botonCerrarSesion.addEventListener(
         } catch (error) {
 
             console.error(
-                "Error cerrando sesión:",
+                "Error cerrando sesiÃ³n:",
                 error
             );
 
@@ -8095,7 +8146,7 @@ async function cargarPublicaciones(seccion, contenedor) {
     try {
         const datos = await solicitarGrupo(`/api/publicaciones?seccion=${seccion}`);
         guardarPosicionesCarruselFoto(contenedor);
-        contenedor.innerHTML = datos.publicaciones.map((publicacion) => renderizarPublicacion(publicacion)).join("") || '<p class="estado-amigos">Todavía no hay publicaciones.</p>';
+        contenedor.innerHTML = datos.publicaciones.map((publicacion) => renderizarPublicacion(publicacion)).join("") || '<p class="estado-amigos">TodavÃ­a no hay publicaciones.</p>';
         restaurarPosicionesCarruselFoto(contenedor);
     } catch (error) {
         contenedor.innerHTML = `<p class="estado-amigos">${escapeHtml(error.message)}</p>`;
@@ -8114,7 +8165,7 @@ function renderizarPublicacion(publicacion) {
                     </span>
                 </button>
                 ${publicacion.es_mia ? `<button type="button" data-eliminar-publicacion="${escapeHtml(publicacion.id)}">ELIMINAR</button>` : ""}
-                <button class="boton-opciones-publicacion" type="button" data-opciones-publicacion="${escapeHtml(publicacion.id)}" aria-label="Opciones de la publicación" aria-expanded="false">
+                <button class="boton-opciones-publicacion" type="button" data-opciones-publicacion="${escapeHtml(publicacion.id)}" aria-label="Opciones de la publicaciÃ³n" aria-expanded="false">
                     <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
                         <circle cx="12" cy="5" r="1.8" fill="currentColor"/>
                         <circle cx="12" cy="12" r="1.8" fill="currentColor"/>
@@ -8123,7 +8174,7 @@ function renderizarPublicacion(publicacion) {
                 </button>
                 <div class="menu-opciones-publicacion" hidden>
                     <ul>
-                        <li><button type="button" data-denunciar-publicacion="${escapeHtml(publicacion.id)}">Denunciar publicación</button></li>
+                        <li><button type="button" data-denunciar-publicacion="${escapeHtml(publicacion.id)}">Denunciar publicaciÃ³n</button></li>
                     </ul>
                 </div>
             </header>
@@ -8134,7 +8185,7 @@ function renderizarPublicacion(publicacion) {
                     <svg class="icono-corazon-publicacion" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
                     <span data-contador-corazon>${publicacion.corazones}</span>
                 </button>
-                <button type="button" data-comentarios-publicacion="${escapeHtml(publicacion.id)}">COMENTARIOS · ${publicacion.comentarios}</button>
+                <button type="button" data-comentarios-publicacion="${escapeHtml(publicacion.id)}">COMENTARIOS Â· ${publicacion.comentarios}</button>
             </div>
             <div class="comentarios-publicacion" hidden></div>
         </article>
@@ -8683,7 +8734,7 @@ function actualizarTarjetaMiEstado() {
         }
     }
     const historiasPropias = contarHistoriasEstado(misEstadosActuales);
-    etiqueta.textContent = misEstadosActuales.length ? "Ver o añadir" : "Añadir estado";
+    etiqueta.textContent = misEstadosActuales.length ? "Ver o aÃ±adir" : "AÃ±adir estado";
     cantidad.textContent = String(historiasPropias);
     cantidad.hidden = historiasPropias === 0;
 }
@@ -8703,7 +8754,7 @@ function mostrarMisEstados() {
         <article class="visor-estado-item">
             ${renderizarMedios(estado.multimedia)}
             ${estado.texto ? `<p>${escapeHtml(estado.texto)}</p>` : ""}
-            <small>${escapeHtml(estado.visibilidad === "publica" ? "Público" : "Mis amigos")} · Hasta ${new Date(estado.expira_en).toLocaleString()}</small>
+            <small>${escapeHtml(estado.visibilidad === "publica" ? "PÃºblico" : "Mis amigos")} Â· Hasta ${new Date(estado.expira_en).toLocaleString()}</small>
             <button type="button" data-eliminar-estado="${escapeHtml(estado.id)}">ELIMINAR</button>
         </article>
     `).join("") || '<p class="estado-amigos">No tienes estados activos.</p>';
@@ -8789,9 +8840,9 @@ function configurarSelectorMedio(formId, fileLabelId, fileInputId, typeName, tex
                 : mode === "imagenes"
                     ? "Seleccionar hasta 10 fotos"
                     : mode === "video"
-                        ? "Seleccionar vídeo"
+                        ? "Seleccionar vÃ­deo"
                         : soloTexto
-                            ? "Subir fotos o vídeo"
+                            ? "Subir fotos o vÃ­deo"
                             : "Seleccionar foto";
         }
     };
@@ -8861,7 +8912,7 @@ function configurarSelectorMedio(formId, fileLabelId, fileInputId, typeName, tex
             boton.type = "button";
             boton.className = "miniatura-social";
             boton.setAttribute("aria-label", `Editar ${file.name}`);
-            boton.innerHTML = `<img src="${url}" alt=""><span>${escapeHtml(file.name)}${proc ? " · comprimida" : ""}</span>`;
+            boton.innerHTML = `<img src="${url}" alt=""><span>${escapeHtml(file.name)}${proc ? " Â· comprimida" : ""}</span>`;
             boton.addEventListener("click", () => {
                 abrirEditorFoto(proc?.archivo ?? file, (resultado) => {
                     fotosProcesadas.set(file.name, { archivo: resultado });
@@ -8875,8 +8926,8 @@ function configurarSelectorMedio(formId, fileLabelId, fileInputId, typeName, tex
             const aviso = document.createElement("p");
             aviso.className = "aviso-compresion-social";
             aviso.textContent = n === 1
-                ? "Una foto superaba el tamaño máximo y se ha comprimido con menos calidad para poder subirla."
-                : `${n} fotos superaban el tamaño máximo y se han comprimido con menos calidad para poder subirlas.`;
+                ? "Una foto superaba el tamaÃ±o mÃ¡ximo y se ha comprimido con menos calidad para poder subirla."
+                : `${n} fotos superaban el tamaÃ±o mÃ¡ximo y se han comprimido con menos calidad para poder subirlas.`;
             vistaPrevia.appendChild(aviso);
         }
     }
@@ -9221,7 +9272,7 @@ document.getElementById("boton-iniciar-audio").addEventListener("click", async (
         }, 210000);
         pintarControlesGrabacion();
     } catch (error) {
-        document.getElementById("error-estado-social").textContent = error.message || "No se pudo acceder al micrófono.";
+        document.getElementById("error-estado-social").textContent = error.message || "No se pudo acceder al micrÃ³fono.";
         pintarControlesGrabacion();
     }
 });
@@ -9311,7 +9362,7 @@ async function abrirComentariosReel(reelId, contador) {
                 <strong style="${estiloNombre(comentario.color_nombre)}">${escapeHtml(nombreVisible(comentario.autor_id, comentario.autor_nombre))}</strong>
                 ${escapeHtml(comentario.texto)}
             </p>
-        `).join("") || `<p class="estado-amigos">Todavía no hay comentarios.</p>`;
+        `).join("") || `<p class="estado-amigos">TodavÃ­a no hay comentarios.</p>`;
     } catch (fallo) {
         lista.innerHTML = `<p class="estado-amigos">${escapeHtml(fallo.message)}</p>`;
     }
@@ -9394,7 +9445,7 @@ async function abrirComentariosEstado(estadoId) {
                 <strong style="${estiloNombre(comentario.color_nombre)}">${escapeHtml(nombreVisible(comentario.autor_id, comentario.autor_nombre))}</strong>
                 ${escapeHtml(comentario.texto)}
             </p>
-        `).join("") || `<p class="estado-amigos">Todavía no hay comentarios.</p>`;
+        `).join("") || `<p class="estado-amigos">TodavÃ­a no hay comentarios.</p>`;
         pintarCantidadComentariosEstado(datos.comentarios.length);
     } catch (fallo) {
         lista.innerHTML = `<p class="estado-amigos">${escapeHtml(fallo.message)}</p>`;
@@ -9538,7 +9589,7 @@ document.getElementById("boton-cerrar-denunciar-estado")?.addEventListener("clic
     cerrarModalPorId("modal-denunciar-estado");
 });
 
-/* DENUNCIA DE PUBLICACIONES (menú de 3 puntos, igual que cuentas/estados) */
+/* DENUNCIA DE PUBLICACIONES (menÃº de 3 puntos, igual que cuentas/estados) */
 
 let publicacionDenunciaActual = null;
 
@@ -9548,7 +9599,7 @@ function abrirDenunciaPublicacion(publicacionId) {
     const modal = document.getElementById("modal-denunciar-publicacion");
     const nombre = document.getElementById("nombre-denunciar-publicacion");
     const estadoInfo = document.getElementById("estado-denunciar-publicacion");
-    if (nombre) nombre.textContent = "Denunciar esta publicación";
+    if (nombre) nombre.textContent = "Denunciar esta publicaciÃ³n";
     if (estadoInfo) estadoInfo.textContent = "";
     const motivo = document.getElementById("motivo-denuncia-publicacion");
     if (motivo) motivo.value = "";
@@ -9585,7 +9636,7 @@ document.getElementById("boton-confirmar-denuncia-publicacion")?.addEventListene
             if (estadoInfo) estadoInfo.textContent = datos.error || "No se pudo enviar la denuncia.";
         }
     } catch (fallo) {
-        console.warn("No se pudo denunciar la publicación:", fallo);
+        console.warn("No se pudo denunciar la publicaciÃ³n:", fallo);
         const estadoInfo = document.getElementById("estado-denunciar-publicacion");
         if (estadoInfo) estadoInfo.textContent = "No se pudo conectar con el servidor.";
     }
@@ -9596,7 +9647,7 @@ document.getElementById("boton-cerrar-denunciar-publicacion")?.addEventListener(
     publicacionDenunciaActual = null;
 });
 
-/* DENUNCIA DE REELS (menú de 3 puntos, igual que publicaciones) */
+/* DENUNCIA DE REELS (menÃº de 3 puntos, igual que publicaciones) */
 
 let reelDenunciaActual = null;
 
@@ -9654,7 +9705,7 @@ document.getElementById("boton-cerrar-denunciar-reel")?.addEventListener("click"
     reelDenunciaActual = null;
 });
 
-// Cerrar los menús de 3 puntos al pulsar fuera, igual que en estados.
+// Cerrar los menÃºs de 3 puntos al pulsar fuera, igual que en estados.
 document.addEventListener("click", (evento) => {
     if (!evento.target.closest?.(".menu-opciones-publicacion, [data-opciones-publicacion]")) {
         document.querySelectorAll(".menu-opciones-publicacion").forEach((menu) => {
@@ -9713,7 +9764,7 @@ async function actualizarBurbujasHistorias() {
                     : `<span class="burbuja-historia-vacia" aria-hidden="true"></span>`}
                 <span class="nombre-historia-carpeta">${escapeHtml(historia.nombre)}</span>
             </button>
-        `).join("") || `<p class="estado-amigos">Todavía no tienes historias.</p>`;
+        `).join("") || `<p class="estado-amigos">TodavÃ­a no tienes historias.</p>`;
     } catch {
         contenedor.innerHTML = `<p class="estado-amigos">No se pudieron cargar tus historias.</p>`;
     }
@@ -9734,7 +9785,7 @@ async function actualizarPistaReelsCuenta() {
         const datos = await solicitarGrupo("/api/reels/mios");
         pintarPistaReels(pista, datos.reels || []);
     } catch {
-        pista.innerHTML = `<p class="estado-amigos">Todavía no hay reels.</p>`;
+        pista.innerHTML = `<p class="estado-amigos">TodavÃ­a no hay reels.</p>`;
     }
 }
 
@@ -9746,7 +9797,7 @@ async function actualizarListaPublicacionesCuenta() {
         // el feed de Entrar.
         const mias = (datos.publicaciones || []).filter((publicacion) => publicacion.es_mia);
         lista.innerHTML = mias.map((publicacion) => renderizarPublicacion(publicacion)).join("")
-            || `<p class="estado-amigos">Todavía no tienes publicaciones.</p>`;
+            || `<p class="estado-amigos">TodavÃ­a no tienes publicaciones.</p>`;
         conectarFeed(lista);
     } catch {
         lista.innerHTML = `<p class="estado-amigos">No se pudieron cargar tus publicaciones.</p>`;
@@ -9856,10 +9907,10 @@ async function pintarItemsHistoria() {
                     ? `<img src="${escapeHtml(item.url)}" alt="" loading="lazy">`
                     : `<p>${escapeHtml(item.texto || "")}</p>`}
                 ${puedeEditar
-                    ? `<button type="button" data-borrar-item="${escapeHtml(item.id)}" aria-label="Borrar elemento">×</button>`
+                    ? `<button type="button" data-borrar-item="${escapeHtml(item.id)}" aria-label="Borrar elemento">Ã—</button>`
                     : ""}
             </div>
-        `).join("") || `<p class="estado-amigos">La historia todavía está vacía.</p>`;
+        `).join("") || `<p class="estado-amigos">La historia todavÃ­a estÃ¡ vacÃ­a.</p>`;
     } catch (fallo) {
         lista.innerHTML = `<p class="estado-amigos">${escapeHtml(fallo.message)}</p>`;
     }
@@ -9910,7 +9961,7 @@ document.getElementById("boton-guardar-historia")?.addEventListener("click", asy
 });
 
 document.getElementById("boton-borrar-historia")?.addEventListener("click", async () => {
-    if (!historiaAbierta || !confirm("¿Borrar esta historia?")) return;
+    if (!historiaAbierta || !confirm("Â¿Borrar esta historia?")) return;
     try {
         await solicitarGrupo(`/api/historias/${historiaAbierta}`, { method: "DELETE" });
         historiaAbierta = null;
@@ -9950,7 +10001,7 @@ const modalMiContenido = document.getElementById("modal-mi-contenido");
 let reelsVisor = [];
 let reelAbierto = null;
 
-/* ================= CÁMARA: crear contenido ================= */
+/* ================= CÃMARA: crear contenido ================= */
 
 const ICONO_CAMARA = {
     grabar: `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8" fill="currentColor"/></svg>`,
@@ -9964,11 +10015,11 @@ const ICONO_CAMARA = {
 
 const FILTROS_CAMARA = [
     { id: "ninguno", nombre: "Normal", css: "none" },
-    { id: "calido", nombre: "Cálido", css: "sepia(0.35) saturate(1.25)" },
-    { id: "frio", nombre: "Frío", css: "saturate(1.1) hue-rotate(-12deg) brightness(1.03)" },
+    { id: "calido", nombre: "CÃ¡lido", css: "sepia(0.35) saturate(1.25)" },
+    { id: "frio", nombre: "FrÃ­o", css: "saturate(1.1) hue-rotate(-12deg) brightness(1.03)" },
     { id: "byn", nombre: "B/N", css: "grayscale(1)" },
     { id: "vintage", nombre: "Vintage", css: "sepia(0.55) contrast(1.1) brightness(0.96)" },
-    { id: "vivido", nombre: "Vívido", css: "saturate(1.6) contrast(1.12)" },
+    { id: "vivido", nombre: "VÃ­vido", css: "saturate(1.6) contrast(1.12)" },
     { id: "cine", nombre: "Cine", css: "contrast(1.2) saturate(0.9) brightness(1.05)" }
 ];
 
@@ -10052,7 +10103,7 @@ function pintarTiempoCamara() {
 
 async function abrirCamara() {
     if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
-        mostrarErrorCamara("Este navegador no permite usar la cámara.");
+        mostrarErrorCamara("Este navegador no permite usar la cÃ¡mara.");
         return;
     }
 
@@ -10065,7 +10116,7 @@ async function abrirCamara() {
     } catch (error) {
         cerrarPantallaCamara();
         const denegado = error && (error.name === "NotAllowedError" || error.name === "SecurityError" || error.name === "PermissionDeniedError");
-        mostrarErrorCamara(denegado ? "Permiso de cámara denegado." : "No se pudo acceder a la cámara.");
+        mostrarErrorCamara(denegado ? "Permiso de cÃ¡mara denegado." : "No se pudo acceder a la cÃ¡mara.");
         return;
     }
 
@@ -10143,7 +10194,7 @@ function dibujarFotograma() {
             ctx.drawImage(cam.video, 0, 0, cam.lienzo.width, cam.lienzo.height);
             ctx.restore();
         } catch (error) {
-            /* El vídeo aún no tiene datos (p. ej. al cambiar de cámara): se reintenta en el próximo frame. */
+            /* El vÃ­deo aÃºn no tiene datos (p. ej. al cambiar de cÃ¡mara): se reintenta en el prÃ³ximo frame. */
         }
     }
     rafCamara = requestAnimationFrame(dibujarFotograma);
@@ -10190,11 +10241,11 @@ function actualizarBotonCentro() {
         b.setAttribute("aria-label", "Parar de grabar");
     } else if (estadoGrabacion === "pausado") {
         b.innerHTML = ICONO_CAMARA.reanudar;
-        b.setAttribute("aria-label", "Reanudar la grabación");
+        b.setAttribute("aria-label", "Reanudar la grabaciÃ³n");
     } else if (estadoGrabacion === "parado") {
         b.innerHTML = ICONO_CAMARA.borrar;
         b.classList.add("peligro");
-        b.setAttribute("aria-label", "Borrar el vídeo entero");
+        b.setAttribute("aria-label", "Borrar el vÃ­deo entero");
     }
     b.disabled = false;
 }
@@ -10204,12 +10255,12 @@ function actualizarBotonDerecho() {
     b.classList.remove("peligro");
     if (estadoGrabacion === "grabando") {
         b.innerHTML = ICONO_CAMARA.pausa;
-        b.setAttribute("aria-label", "Pausar la grabación");
+        b.setAttribute("aria-label", "Pausar la grabaciÃ³n");
         b.disabled = false;
     } else if (estadoGrabacion === "pausado") {
         b.innerHTML = ICONO_CAMARA.borrar;
         b.classList.add("peligro");
-        b.setAttribute("aria-label", "Borrar la última sección grabada");
+        b.setAttribute("aria-label", "Borrar la Ãºltima secciÃ³n grabada");
         b.disabled = tramosGrabacion.length === 0;
     } else if (estadoGrabacion === "parado") {
         b.innerHTML = ICONO_CAMARA.enviar;
@@ -10256,7 +10307,7 @@ function cuentaAtrasCamara(segundos) {
 
 async function iniciarGrabacionCamara() {
     if (!cam.lienzo || typeof cam.lienzo.captureStream !== "function") {
-        mostrarErrorCamara("Este navegador no permite grabar vídeo.");
+        mostrarErrorCamara("Este navegador no permite grabar vÃ­deo.");
         return;
     }
 
@@ -10295,7 +10346,7 @@ async function iniciarGrabacionCamara() {
         actualizarBotonCentro();
         actualizarBotonDerecho();
     } catch (error) {
-        console.error("No se pudo iniciar la grabación:", error);
+        console.error("No se pudo iniciar la grabaciÃ³n:", error);
         mostrarErrorCamara("No se pudo empezar a grabar.");
     }
 }
@@ -10354,7 +10405,7 @@ function finalizarGrabacion() {
         cam.tiempo.hidden = true;
         actualizarBotonCentro();
         actualizarBotonDerecho();
-        avisoCamara("Grabación demasiado corta");
+        avisoCamara("GrabaciÃ³n demasiado corta");
         return;
     }
     const tipo = tipoMimeVideo() || "video/webm";
@@ -10363,13 +10414,13 @@ function finalizarGrabacion() {
     cam.tiempo.hidden = true;
     actualizarBotonCentro();
     actualizarBotonDerecho();
-    avisoCamara("Grabación lista");
+    avisoCamara("GrabaciÃ³n lista");
 }
 
 function borrarUltimaSeccion() {
     if (estadoGrabacion !== "pausado" || tramosGrabacion.length === 0) return;
     tramosGrabacion.pop();
-    avisoCamara("Última sección borrada");
+    avisoCamara("Ãšltima secciÃ³n borrada");
     actualizarBotonDerecho();
 }
 
@@ -10377,7 +10428,7 @@ let tipoContenido = "video";
 
 function hacerFotoCamara() {
     if (!cam.lienzo || !cam.lienzo.width) {
-        avisoCamara("La cámara aún no está lista");
+        avisoCamara("La cÃ¡mara aÃºn no estÃ¡ lista");
         return;
     }
     cam.lienzo.toBlob((blob) => {
@@ -10438,7 +10489,7 @@ function pintarConfirmar() {
 
 function borrarVideoEntero() {
     if (estadoGrabacion !== "parado") return;
-    if (!window.confirm("¿Borrar el vídeo entero? Se descartará la grabación.")) return;
+    if (!window.confirm("Â¿Borrar el vÃ­deo entero? Se descartarÃ¡ la grabaciÃ³n.")) return;
     tramosGrabacion = [];
     blobFinal = null;
     estadoGrabacion = "inactivo";
@@ -10492,7 +10543,7 @@ function cambiarModoCamara(modo) {
     reflejarModoTipo();
     cam.panelTipo.hidden = true;
     cam.botonTipo.setAttribute("aria-expanded", "false");
-    avisoCamara(modo === "video" ? "Modo vídeo" : modo === "foto" ? "Modo foto" : "Modo texto");
+    avisoCamara(modo === "video" ? "Modo vÃ­deo" : modo === "foto" ? "Modo foto" : "Modo texto");
 }
 
 function actualizarLinternaDisponible() {
@@ -10518,7 +10569,7 @@ async function cambiarCamara() {
         await arrancarFlujoCamara();
         actualizarLinternaDisponible();
     } catch (error) {
-        mostrarErrorCamara("No se pudo cambiar de cámara.");
+        mostrarErrorCamara("No se pudo cambiar de cÃ¡mara.");
     }
 }
 
@@ -10534,7 +10585,7 @@ function ciclarTemporizador() {
 }
 
 function mostrarErrorCamara(texto) {
-    if (cam.errorTexto) cam.errorTexto.textContent = texto || "Permiso de cámara denegado.";
+    if (cam.errorTexto) cam.errorTexto.textContent = texto || "Permiso de cÃ¡mara denegado.";
     if (cam.error) cam.error.hidden = false;
 }
 
@@ -10604,7 +10655,7 @@ function reflejarHistoriaExtra() {
 function prepararConfirmacion() {
     const titulo = cam.enviarTitulo.value.trim();
     if (!titulo) {
-        cam.enviarError.textContent = "El título es obligatorio.";
+        cam.enviarError.textContent = "El tÃ­tulo es obligatorio.";
         cam.enviarTitulo.focus();
         return;
     }
@@ -10624,11 +10675,11 @@ function prepararConfirmacion() {
     const nombres = {
         estado: "Estado",
         reel: "Reel",
-        publicacion: "Publicación",
+        publicacion: "PublicaciÃ³n",
         historia: cam.historiaSelect.value === "__nueva__" ? "Historia (nueva)" : "Historia"
     };
-    const lista = destinos.map((d) => nombres[d]).join(" · ");
-    cam.confirmarResumen.textContent = `"${titulo}" · ${publico ? "Público" : "Solo amigos"} · ${lista}`;
+    const lista = destinos.map((d) => nombres[d]).join(" Â· ");
+    cam.confirmarResumen.textContent = `"${titulo}" Â· ${publico ? "PÃºblico" : "Solo amigos"} Â· ${lista}`;
 
     pintarConfirmar();
     cam.enviar.hidden = true;
@@ -10756,7 +10807,7 @@ async function confirmarYSubir() {
     } else if (fallos.length < destinos.length) {
         avisoCamara("Publicado en algunos destinos. Revisa tu perfil.", 2600);
     } else {
-        mostrarErrorCamara("No se pudo publicar. Inténtalo de nuevo.");
+        mostrarErrorCamara("No se pudo publicar. IntÃ©ntalo de nuevo.");
     }
 }
 
@@ -10865,7 +10916,7 @@ document.getElementById("formulario-reel")?.addEventListener("submit", async (ev
     const archivo = document.getElementById("archivo-reel").files?.[0];
     error.textContent = "";
     if (!archivo) {
-        error.textContent = "Selecciona un vídeo.";
+        error.textContent = "Selecciona un vÃ­deo.";
         return;
     }
     const body = new FormData();
@@ -10887,7 +10938,7 @@ function pintarPistaReels(contenedor, reels) {
     if (!contenedor) return;
     contenedor.innerHTML = "";
     if (!reels.length) {
-        contenedor.innerHTML = `<p class="estado-amigos">Todavía no hay reels.</p>`;
+        contenedor.innerHTML = `<p class="estado-amigos">TodavÃ­a no hay reels.</p>`;
         return;
     }
     reels.forEach((reel) => {
@@ -10979,7 +11030,7 @@ function abrirVisorReels(reels, reelId) {
                     class="barra-reel-pista"
                     role="slider"
                     tabindex="0"
-                    aria-label="Avanzar o retroceder en el vídeo"
+                    aria-label="Avanzar o retroceder en el vÃ­deo"
                     aria-valuemin="0"
                     aria-valuemax="100"
                     aria-valuenow="0"
@@ -11233,7 +11284,7 @@ document.getElementById("pista-reels-visor")?.addEventListener("click", async (e
             like.classList.toggle("activo", Boolean(datos.me_gusta));
             pantalla.querySelector(".cuenta-likes").textContent = datos.likes;
         } catch (fallo) {
-            console.warn("No se pudo guardar el corazón:", fallo);
+            console.warn("No se pudo guardar el corazÃ³n:", fallo);
         }
         return;
     }
@@ -11299,7 +11350,7 @@ document.getElementById("formulario-publicacion").addEventListener("submit", asy
 
 document.getElementById("visor-estados").addEventListener("click", async (evento) => {
     const boton = evento.target.closest("[data-eliminar-estado]");
-    if (!boton || !confirm("¿Eliminar este estado?")) return;
+    if (!boton || !confirm("Â¿Eliminar este estado?")) return;
     try {
         await solicitarGrupo(`/api/estados/${encodeURIComponent(boton.dataset.eliminarEstado)}`, { method: "DELETE" });
         await cargarContenidoInicio();
@@ -11316,7 +11367,7 @@ async function cargarComentariosPublicacion(publicacionId, contenedor) {
         <div class="lista-comentarios-actuales">
             ${datos.comentarios.map((comentario) => `
                 <p><strong style="${estiloNombre(comentario.color_nombre)}">${escapeHtml(nombreVisible(comentario.autor_id, comentario.autor_nombre))}</strong> ${escapeHtml(comentario.texto)}</p>
-            `).join("") || '<p class="estado-amigos">Sé la primera persona en comentar.</p>'}
+            `).join("") || '<p class="estado-amigos">SÃ© la primera persona en comentar.</p>'}
         </div>
         <form class="formulario-comentario-actual" data-publicacion="${escapeHtml(publicacionId)}">
             <input id="${escapeHtml(idEntrada)}" name="texto" type="text" maxlength="1000" placeholder="Escribe un comentario..." required>
@@ -11389,11 +11440,11 @@ function conectarFeed(contenedor) {
                 if (!panel.hidden) await cargarComentariosPublicacion(comentarios.dataset.comentariosPublicacion, panel);
             } else if (historias) {
                 abrirHistorias(expandirClaveSecuencia(historias.dataset.verHistorias));
-            } else if (eliminarPublicacion && confirm("¿Eliminar esta publicación?")) {
+            } else if (eliminarPublicacion && confirm("Â¿Eliminar esta publicaciÃ³n?")) {
                 await solicitarGrupo(`/api/publicaciones/${encodeURIComponent(eliminarPublicacion.dataset.eliminarPublicacion)}`, { method: "DELETE" });
                 if (enPerfil) await cargarPublicacionesPerfil();
                 else await cargarContenidoInicio();
-            } else if (eliminarEstado && confirm("¿Eliminar este estado?")) {
+            } else if (eliminarEstado && confirm("Â¿Eliminar este estado?")) {
                 await solicitarGrupo(`/api/estados/${encodeURIComponent(eliminarEstado.dataset.eliminarEstado)}`, { method: "DELETE" });
                 await cargarContenidoInicio();
             }
@@ -11565,7 +11616,7 @@ function renderizarPerfil(datos) {
 
     const descripcionMarkup = perfil.descripcion
         ? `<p class="descripcion-perfil">${escapeHtml(perfil.descripcion)}</p>`
-        : '<p class="descripcion-perfil descripcion-perfil-vacia">Sin descripción.</p>';
+        : '<p class="descripcion-perfil descripcion-perfil-vacia">Sin descripciÃ³n.</p>';
 
 const clasesCabecera = ["cabecera-perfil", perfil.es_mio ? "propio" : "ajeno"]
     .concat(perfil.fondo_url ? "con-fondo" : "")
@@ -11590,7 +11641,7 @@ contenidoPerfil.innerHTML = `
                     ${campo("etiqueta", "campo-etiqueta-perfil", etiquetaMarkup, "Cambiar la etiqueta")}
                 </div>
             </div>
-            ${campo("descripcion", "campo-descripcion-perfil", descripcionMarkup, "Cambiar la descripción")}
+            ${campo("descripcion", "campo-descripcion-perfil", descripcionMarkup, "Cambiar la descripciÃ³n")}
             <p id="estado-edicion-perfil" class="estado-edicion-perfil" aria-live="polite"></p>
             ${perfil.es_mio
                 ? ""
@@ -11687,7 +11738,7 @@ function campoApodo(perfil) {
             <button class="campo-apodo-perfil" type="button" data-editar-apodo="${escapeHtml(perfil.id)}">
                 ${etiqueta}
             </button>
-            <span class="ayuda-apodo-perfil">Solo lo ves tú. Máximo 25 caracteres.</span>
+            <span class="ayuda-apodo-perfil">Solo lo ves tÃº. MÃ¡ximo 25 caracteres.</span>
         </p>
     `;
 }
@@ -11770,7 +11821,7 @@ const listaApodos = document.getElementById("lista-apodos");
 function pintarListaApodos() {
     if (!listaApodos) return;
     if (apodosPorUsuario.size === 0) {
-        listaApodos.innerHTML = '<p class="sin-contenido">Todavía no le has puesto un apodo a nadie.</p>';
+        listaApodos.innerHTML = '<p class="sin-contenido">TodavÃ­a no le has puesto un apodo a nadie.</p>';
         return;
     }
 
@@ -11978,7 +12029,7 @@ async function cargarPublicacionesPerfil() {
             datos.publicaciones
                 .map((publicacion) => renderizarPublicacion(publicacion))
                 .join("") ||
-            '<p class="estado-amigos">Todavía no hay publicaciones.</p>';
+            '<p class="estado-amigos">TodavÃ­a no hay publicaciones.</p>';
 
         restaurarPosicionesCarruselFoto(contenedor);
 
@@ -12005,7 +12056,7 @@ async function abrirAmigosPerfil() {
         const amigos = datos.amigos || [];
 
         if (!amigos.length) {
-            estadoAmigosPerfil.textContent = "Todavía no tiene amistades.";
+            estadoAmigosPerfil.textContent = "TodavÃ­a no tiene amistades.";
             return;
         }
 
@@ -12279,7 +12330,7 @@ function previsualizacionMultimedia(items) {
     return lista.map((m) => {
         const url = "/" + String(m.url ?? "").replace(/\\/g, "/");
         // El limite va en linea: aunque el navegador tenga CSS viejo,
-        // la foto no puede salir a tamaño real.
+        // la foto no puede salir a tamaÃ±o real.
         if (m.tipo === "video") {
             return `<video class="previa-denuncia" style="max-width:100%;max-height:220px" src="${escapeHtml(url)}" controls preload="metadata" playsinline></video>`;
         }
@@ -12290,7 +12341,7 @@ function previsualizacionMultimedia(items) {
     }).join("");
 }
 
-// La publicación denunciada se pinta con la MISMA tarjeta real del feed
+// La publicaciÃ³n denunciada se pinta con la MISMA tarjeta real del feed
 // (avatar con anillo, nombre de color, fecha, medios). Los botones quedan
 // inerte con pointer-events (ver .previa-real en CSS); solo el nombre y el
 // avatar abren el perfil.
@@ -12341,7 +12392,7 @@ async function cargarDenuncias(tipo) {
                 const s = el.estado;
                 cuerpo = `<div class="linea-denunciado">${avatarDenunciaHTML(s)}${enlacePerfilDenuncia(s.autor_id, s.autor_nombre, estiloNombre(s.color_nombre))}</div><p>${escapeHtml(s.texto ?? "")}</p>${previsualizacionMultimedia(s.multimedia)}`;
             }
-            tarjeta.innerHTML = `<div class="cabecera-denuncia"><button type="button" class="boton-revisado${el.revisado ? " activo" : ""}" data-revisar="${el.id}" data-tipo="${tipo}">${el.revisado ? "REVISADO ✓" : "MARCAR REVISADO"}</button></div><div class="cuerpo-denuncia">${cuerpo}${tarjetaMotivos(el.denuncias)}</div><button type="button" class="boton-borrar-denunciado" data-borrar="${el.id}" data-tipo="${tipo}">BORRAR</button>`;
+            tarjeta.innerHTML = `<div class="cabecera-denuncia"><button type="button" class="boton-revisado${el.revisado ? " activo" : ""}" data-revisar="${el.id}" data-tipo="${tipo}">${el.revisado ? "REVISADO âœ“" : "MARCAR REVISADO"}</button></div><div class="cuerpo-denuncia">${cuerpo}${tarjetaMotivos(el.denuncias)}</div><button type="button" class="boton-borrar-denunciado" data-borrar="${el.id}" data-tipo="${tipo}">BORRAR</button>`;
             lista.appendChild(tarjeta);
         }
     } catch (error) {
@@ -12408,7 +12459,7 @@ document.getElementById("contenido-moderacion")?.addEventListener("click", async
     }
     const borrar = evento.target.closest("[data-borrar]");
     if (borrar) {
-        if (!confirm("¿Borrar esto? No se puede deshacer.")) return;
+        if (!confirm("Â¿Borrar esto? No se puede deshacer.")) return;
         try {
             await solicitarGrupo(`/api/admin/denuncias/${borrar.dataset.tipo}/${borrar.dataset.borrar}`, { method: "DELETE" });
             await cargarDenuncias(borrar.dataset.tipo);
@@ -12568,10 +12619,10 @@ document.addEventListener("click", (evento) => {
 }, true);
 
 const TEXTOS_BORRADO_DESARROLLADOR = {
-    publicacion: "¿Eliminar esta publicación?",
-    reel: "¿Eliminar este reel?",
-    historia: "¿Eliminar esta historia y todo lo que tiene dentro?",
-    estado: "¿Eliminar este estado?"
+    publicacion: "Â¿Eliminar esta publicaciÃ³n?",
+    reel: "Â¿Eliminar este reel?",
+    historia: "Â¿Eliminar esta historia y todo lo que tiene dentro?",
+    estado: "Â¿Eliminar este estado?"
 };
 
 async function borrarComoDesarrollador(tipo, id) {
@@ -12691,3 +12742,28 @@ document.getElementById("boton-enviar-ubicacion")?.addEventListener("click", asy
 document.getElementById("boton-parar-ubicacion")?.addEventListener("click", pararCompartido);
 
 reflejarDuracion();
+
+if (btnCuentaEditar && panelCuentaEditar) {
+    btnCuentaEditar.addEventListener("click", () => {
+        ocultarPanelesSubcuenta();
+        panelCuentaEditar.hidden = false;
+        btnCuentaEditar.classList.add("activa");
+    });
+}
+
+if (btnCuentaPublicaciones && panelCuentaPublicaciones) {
+    btnCuentaPublicaciones.addEventListener("click", () => {
+        ocultarPanelesSubcuenta();
+        panelCuentaPublicaciones.hidden = false;
+        btnCuentaPublicaciones.classList.add("activa");
+    });
+}
+
+if (btnCuentaAjustes && panelCuentaAjustes) {
+    btnCuentaAjustes.addEventListener("click", () => {
+        ocultarPanelesSubcuenta();
+        panelCuentaAjustes.hidden = false;
+        btnCuentaAjustes.classList.add("activa");
+    });
+}
+
