@@ -599,43 +599,48 @@
 
                     </div>
 
-                <!-- FONDO DEL PERFIL (previsualización con difuminado) -->
-                <div class="fondo-perfil-cuenta-contenedor">
-                    <img
-                        id="fondo-perfil-cuenta"
-                        alt="Fondo de perfil"
+                <!-- CABECERA DE CUENTA: fondo + foto de perfil + nombre -->
+                <div class="cabecera-cuenta">
+
+                    <!-- FONDO DEL PERFIL (previsualización con difuminado) -->
+                    <div class="fondo-perfil-cuenta-contenedor">
+                        <img
+                            id="fondo-perfil-cuenta"
+                            alt="Fondo de perfil"
+                            hidden
+                        >
+                        <div class="fondo-difuminado"></div>
+                        <p class="ayuda-fondo-cuenta">
+                            Esta imagen sale de fondo en tu perfil. Cambiala o
+                            quitala desde el boton de tu foto.
+                        </p>
+                    </div>
+
+                    <!-- FOTO DE PERFIL (círculo sobre el fondo) -->
+                    <button
+                        id="boton-foto-perfil"
+                        class="boton-foto-perfil-cuenta"
+                        type="button"
+                        aria-label="Opciones de foto de perfil"
+                    >
+                        <img
+                            id="foto-perfil-cuenta"
+                            src=""
+                            alt="Foto de perfil"
+                        >
+                    </button>
+
+                    <!-- NOMBRE -->
+                    <h1 id="nombre-cuenta">Mi cuenta</h1>
+
+                    <!-- ETIQUETA (solo si existe) -->
+                    <span
+                        id="etiqueta-cuenta"
+                        class="etiqueta-perfil etiqueta-cuenta"
                         hidden
-                    >
-                    <div class="fondo-difuminado"></div>
-                    <p class="ayuda-fondo-cuenta">
-                        Esta imagen sale de fondo en tu perfil. Cambiala o
-                        quitala desde el boton de tu foto.
-                    </p>
+                    ></span>
+
                 </div>
-
-                <!-- FOTO DE PERFIL (círculo sobre el fondo) -->
-                <button
-                    id="boton-foto-perfil"
-                    class="boton-foto-perfil-cuenta"
-                    type="button"
-                    aria-label="Opciones de foto de perfil"
-                >
-                    <img
-                        id="foto-perfil-cuenta"
-                        src=""
-                        alt="Foto de perfil"
-                    >
-                </button>
-
-                <!-- NOMBRE -->
-                <h1 id="nombre-cuenta">Mi cuenta</h1>
-
-                <!-- ETIQUETA (solo si existe) -->
-                <span
-                    id="etiqueta-cuenta"
-                    class="etiqueta-perfil etiqueta-cuenta"
-                    hidden
-                ></span>
 
                 <!-- SECCIÓN CUENTA (editable) -->
                 <button id="btn-cuenta-editar" class="btn-seccion-cuenta" type="button">

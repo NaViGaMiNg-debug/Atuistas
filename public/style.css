@@ -3968,26 +3968,25 @@ button.servidor-tarjeta:focus-visible {
 
 
 
-/* En index.html el botón usa clase boton-foto-perfil-cuenta */
-.boton-foto-perfil-cuenta {
-    width: 120px;
-    height: 120px;
-    padding: 0;
-    border: 2px solid #333;
-    border-radius: 50%;
-    background: #1a1a1a;
-    overflow: hidden;
-    cursor: pointer;
-}
-
-.boton-foto-perfil-cuenta img {
+/* Cabecera de cuenta: fondo + foto de perfil superpuesta + nombre */
+.cabecera-cuenta {
+    position: relative;
     width: 100%;
-    height: 100%;
-    display: block;
-    object-fit: cover;
 }
 
-/* Fondo de perfil en index.html */
+/* Degradado en el borde inferior del fondo */
+.fondo-perfil-cuenta-contenedor::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: linear-gradient(to top, transparent, rgba(0, 0, 0, 0.6));
+    pointer-events: none;
+    z-index: 1;
+}
+
 .fondo-perfil-cuenta-contenedor {
     position: relative;
     width: 100%;
@@ -4001,6 +4000,45 @@ button.servidor-tarjeta:focus-visible {
     height: 100%;
     object-fit: cover;
     display: block;
+}
+
+/* Foto de perfil centrada sobre el borde inferior del fondo */
+.boton-foto-perfil-cuenta {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    top: calc(100% - 60px); /* centro vertical = borde inferior del fondo */
+    width: 120px;
+    height: 120px;
+    padding: 0;
+    border: 2px solid #333;
+    border-radius: 50%;
+    background: #1a1a1a;
+    overflow: hidden;
+    cursor: pointer;
+    z-index: 2;
+}
+
+.boton-foto-perfil-cuenta img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+}
+
+/* Nombre y etiqueta justo debajo de la foto de perfil */
+#nombre-cuenta {
+    margin-top: 80px;
+    margin-left: 0;
+    text-align: center;
+    width: 100%;
+}
+
+#etiqueta-cuenta {
+    display: block;
+    text-align: center;
+    width: 100%;
+    margin-top: 4px;
 }
 /* INFORMACIÃ“N DE CUENTA */
 
