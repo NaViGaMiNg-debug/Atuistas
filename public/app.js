@@ -926,12 +926,8 @@ const btnCuentaAjustes =
 const panelCuentaAjustes =
     document.getElementById("panel-cuenta-ajustes");
 
-const btnCuentaSesion =
-    document.getElementById("btnCuentaSesion");
-// Variables para el panel de Sesión (NUEVO)
-const btnSesion = document.getElementById("btnCuentaSesion");  // Reutilizar o crear nuevo
-const panelSesion = document.getElementById("panelCuentaSesion");  // Panel independiente =
-    document.getElementById("panelCuentaSesion");
+const btnSesion = document.getElementById("btnSesion");  // Botón independiente de Sesión
+const panelSesion = document.getElementById("panelSesion");  // Panel independiente de Sesión
 
 const guardadoCuenta =
     document.getElementById("guardado-cuenta");
@@ -7992,8 +7988,7 @@ function ocultarPanelesSubcuenta() {
     if (btnCuentaEditar) btnCuentaEditar.classList.remove("activa");
     if (btnCuentaPublicaciones) btnCuentaPublicaciones.classList.remove("activa");
     if (btnCuentaAjustes) btnCuentaAjustes.classList.remove("activa");
-    // Ocultar el botón de sesión cuando no se está en la sección de cuenta
-    if (btnCuentaSesion) btnCuentaSesion.hidden = true;
+    if (btnSesion) btnSesion.classList.remove("activa");
 }
 
 if (btnCuentaEditar && panelCuentaEditar) {
@@ -12773,7 +12768,6 @@ if (btnCuentaEditar && panelCuentaEditar) {
         ocultarPanelesSubcuenta();
         panelCuentaEditar.hidden = false;
         btnCuentaEditar.classList.add("activa");
-        if (btnCuentaSesion) btnCuentaSesion.hidden = false;
     });
 }
 
