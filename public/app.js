@@ -8016,6 +8016,22 @@ if (btnCuentaAjustes && panelCuentaAjustes) {
 }
 
 /* SUBCUENTA: sesión */
+
+// SESION: toggle
+if (btnSesion && panelSesion) {
+    btnSesion.addEventListener("click", () => {
+        if (panelSesion.hidden) {
+            ocultarPanelesSubcuenta();
+            panelSesion.hidden = false;
+            btnSesion.classList.add("activa");
+        } else {
+            panelSesion.hidden = true;
+            btnSesion.classList.remove("activa");
+        }
+    });
+}
+
+
 if (btnSesion && panelSesion) {
     btnSesion.addEventListener("click", () => {
         // Toggle: si está oculto, mostrar; si está visible, ocultar
@@ -12788,4 +12804,19 @@ if (btnCuentaAjustes && panelCuentaAjustes) {
 }
 
 /* SUBCUENTA: sesión */
+
+if (btnSesion && panelSesion) {
+    btnSesion.addEventListener("click", () => {
+        if (panelSesion.hidden) {
+            ocultarPanelesSubcuenta();
+            panelSesion.hidden = false;
+            btnSesion.classList.add("activa");
+        } else {
+            panelSesion.hidden = true;
+            btnSesion.classList.remove("activa");
+        }
+    });
+}
+
+
 
