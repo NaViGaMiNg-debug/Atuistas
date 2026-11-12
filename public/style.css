@@ -4047,14 +4047,13 @@ button.servidor-tarjeta:focus-visible {
 
 /* BOTONES Y PANELES DE SUBSECCIÓN DE CUENTA */
 .btn-seccion-cuenta {
-    display: inline-block;
+    display: block;
     padding: 10px 24px;
-    margin: 0 6px;
+    margin: 8px 0;
     background: #222;
     color: #aaa;
     border: 1px solid #444;
-    border-bottom: none;
-    border-radius: 8px 8px 0 0;
+    border-radius: 8px;
     cursor: pointer;
     font-size: 14px;
     text-transform: uppercase;
