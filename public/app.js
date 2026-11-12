@@ -3737,7 +3737,9 @@ function mostrarSeccion(seccion, opciones = {}) {
             "codigo-cuenta-texto",
             "boton-copiar-codigo-cuenta",
             "boton-regenerar-codigo",
-            "boton-cerrar-sesion"
+            "boton-cerrar-sesion",
+            "btnSesion",
+            "panelSesion"
         ].forEach((id) => {
             const el = document.getElementById(id);
             if (el) el.hidden = !cuentaVisible;

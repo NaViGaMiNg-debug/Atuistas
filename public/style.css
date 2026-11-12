@@ -4064,7 +4064,7 @@ button.servidor-tarjeta:focus-visible {
 }
 .btn-seccion-cuenta:hover { background: #333; color: #fff; }
 .btn-seccion-cuenta.activa { background: #555; color: #fff; border-color: #777; }
-.panel-seccion-cuenta { display: none; background: #1a1a1a; border: 1px solid #444; border-top: none; border-radius: 0 0 8px 8px; padding: 16px; margin-top: -1px; }
+.panel-seccion-cuenta { background: #1a1a1a; border: 1px solid #444; border-top: none; border-radius: 0 0 8px 8px; padding: 16px; margin-top: -1px; }
 .panel-seccion-cuenta[hidden] { display: none; }
 
 /* Nombre y etiqueta justo debajo de la foto de perfil */
