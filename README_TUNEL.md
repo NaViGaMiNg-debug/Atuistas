@@ -2,6 +2,24 @@
 
 Este documento explica, paso a paso, cómo publicar cambios de código en la aplicación **Atuistas** para que se vean en el dominio `https://atuistas.com` (a través del túnel de Cloudflare). No es solo "hacer commit y subir"; es el flujo completo para que la actualización llegue al dominio público.
 
+## 1.1 Correcciones de tildes y emojis (aplicadas)
+
+Antes de publicar, se revisaron todas las partes del código y se corrigieron los siguientes símbolos:
+
+- **Mojibake (UTF-8 leído como Latin-1):** se sustituyeron `Ã¡`, `Ã©`, `Ã­`, `Ã³`, `Ãº`, `Ã±`, `Ã¿`, `Â¿`, `Â·`, `Â©`, `Â«`, `Â±`, `Â»`, `Ã—` y sus versiones en mayúscula (`Ã`, `Ã‰`, `Ã“`, `Ãš`, `Ã‘`) por las tildas y signos correctos (`á`, `é`, `í`, `ó`, `ú`, `ñ`, `¿`, `·`, `©`, `«`, `±`, `»`, `×`).
+- **Guión medio inválido (U+00AD):** vocales acentuadas seguidas de un guión medio, como `ví­deo`, `todaví­a`, `actí­vala`, `así­`, `vací­a` o `tí­tulo`, se corrigieron a la forma normal (`vídeo`, `todavía`, `activala`, `sí`, `vacía`, `título`...).
+- **Emojis:** se revisaron todos los símbolos emoji del código; ninguno estaba garrafal o convertido en caracteres de reemplazo (U+FFFD). Se mantuvieron los originales.
+
+Archivos modificados:
+
+| Archivo | Cambios |
+|---------|---------|
+| `public/prueba-visual.html` | Tildes y signos malos corregidos (`Semánticos`, `navegación`, `código`, `tú`, `ñ`, `¿`...) |
+| `public/style.css` | Tildes y signos malos corregidos (`Semánticos`, `peligro`, `éxito`, `éxito-fondo`...) |
+| `public/app.js` | 27 guiones medios inválidos eliminados (`vídeo`, `todavía`, `vacía`, `título`, `sí`, `activala`...); caracteres normalizados |
+
+Resultado: el dominio `https://atuistas.com` muestra tildes y emojis correctos, sin caracteres de control extraños.
+
 ---
 
 ## 1. Arquitectura rápida (cómo llega un cambio al dominio)

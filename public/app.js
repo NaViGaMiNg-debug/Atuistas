@@ -443,7 +443,7 @@ function crearComposer(config) {
         if (!archivo) return;
         const tipo = tipoDeMime(archivo.type);
         if (!tipo) {
-            avisar("Solo se pueden adjuntar fotos, ví­deos o audios");
+            avisar("Solo se pueden adjuntar fotos, vídeos o audios");
             return;
         }
         if (tipo === "imagen") {
@@ -1477,7 +1477,7 @@ function pedirPosicionActual() {
             }),
             (error) => {
                 const mensajes = {
-                    1: "Has denegado la ubicación. Actí­vala en los ajustes del navegador.",
+                    1: "Has denegado la ubicación. Actívala en los ajustes del navegador.",
                     2: "No se pudoTu ubicacion. Intentalo de nuevo en unos segundos.",
                     3: "No se pudo saber tu ubicacion. Intentalo otra vez."
                 };
@@ -2540,7 +2540,7 @@ async function cargarListaNotificaciones() {
         pintarPuntoNotificaciones(noLeidas);
         lista.innerHTML = "";
         if (notificaciones.length === 0) {
-            lista.innerHTML = `<p class="sin-contenido">Todaví­a no hay avisos.</p>`;
+            lista.innerHTML = `<p class="sin-contenido">Todavía no hay avisos.</p>`;
             return;
         }
         notificaciones.forEach((aviso) => {
@@ -2989,7 +2989,7 @@ async function cargarMensajesChat() {
         ) {
             listaMensajes.innerHTML = `
                 <div class="mensajes-vacios">
-                    Todaví­a no hay mensajes.<br>
+                    Todavía no hay mensajes.<br>
                     ¡Empieza la conversación!
                 </div>
             `;
@@ -3405,7 +3405,7 @@ async function abrirModalReenviar(origen) {
         const datos = await solicitarGrupo("/api/amigos");
         const amigos = datos.amigos || [];
         if (!amigos.length) {
-            lista.innerHTML = '<p class="estado-amigos">Todaví­a no tienes amigos.</p>';
+            lista.innerHTML = '<p class="estado-amigos">Todavía no tienes amigos.</p>';
             return;
         }
         lista.innerHTML = "";
@@ -3543,14 +3543,14 @@ async function cargarAmigos() {
 
             listaAmigos.innerHTML = `
                 <p class="sin-contenido">
-                    Todaví­a no tienes amigos.
+                    Todavía no tienes amigos.
                 </p>
             `;
 
             return;
         }
 
-        // alfabético entre sí­.
+        // alfabético entre sí.
         datos.amigos.sort((a, b) => {
             const fechaA = a.ultimo_mensaje_en ? new Date(a.ultimo_mensaje_en).getTime() : 0;
             const fechaB = b.ultimo_mensaje_en ? new Date(b.ultimo_mensaje_en).getTime() : 0;
@@ -3890,7 +3890,7 @@ function sincronizarAtrasSeccion(seccion) {
 
 // El feed Público es un apartado dentro de Entrar: apipla su propia entrada
 // para que el atrás vuelva a Mis Amigos en lugar de salir de la app. Durante
-// el popstate el historial ya se movió, así­ que no se toca (gestionandoAtras).
+// el popstate el historial ya se movió, así que no se toca (gestionandoAtras).
 function sincronizarAtrasPublico(publico) {
     if (gestionandoAtras) return;
     const hayPublico = window.history?.state?.capa === "publico";
@@ -3914,7 +3914,7 @@ function estaEnPublico() {
 }
 
 // Devuelve true si la sección actual tiene varios apartados y NO está en el
-// principal; en ese caso salta al principal. Así­ el atrás recorre los pasos.
+// principal; en ese caso salta al principal. Así el atrás recorre los pasos.
 function retrocederAApartadoPrincipal() {
     if (seccionActual === "entrar") {
         if (estaEnPublico()) {
@@ -3950,8 +3950,8 @@ function retrocederAApartadoPrincipal() {
 }
 
 // Repone una entrada propia para que el siguiente atrás se quede en la app.
-// Solo se usa al navegar entre apartados/secciones, que no apiplan por sí­
-// solos (las capas sí­ lo hacen con el observador).
+// Solo se usa al navegar entre apartados/secciones, que no apiplan por sí
+// solos (las capas sí lo hacen con el observador).
 function asegurarEntradaSeccion() {
     if (window.history?.state?.capa === "seccion") return;
     try {
@@ -3985,7 +3985,7 @@ function cerrarCapaSuperior() {
         const boton = ventana.querySelector("[id^='boton-cerrar'], .boton-cerrar-modal");
         if (boton) boton.click();
         // La cámara ya no tiene X: el botón atrás debe parar la cámara entera,
-        // no solo ocultarla, o el flujo seguirí­a vivo en segundo plano.
+        // no solo ocultarla, o el flujo seguiría vivo en segundo plano.
         else if (ventana.id === "pantalla-camara") cerrarPantallaCamara();
         else ventana.hidden = true;
         return true;
@@ -4049,7 +4049,7 @@ window.addEventListener("popstate", () => {
             // una entrada propia para que el siguiente atrás no salga de la app.
             asegurarEntradaSeccion();
         }
-        // Si el paso nos dejó en Entrar (o ya estábamos allí­ sin nada abierto),
+        // Si el paso nos dejó en Entrar (o ya estábamos allí sin nada abierto),
         // no se repone nada: el siguiente atrás sale de la app, que es lo correcto.
     } finally {
         gestionandoAtras = false;
@@ -4295,7 +4295,7 @@ async function cargarServidores() {
     estadoServidores.textContent = "Cargando servidores...";
     try {
         const datos = await solicitarGrupo("/api/grupos");
-        estadoServidores.textContent = datos.grupos.length ? "" : "Todaví­a no perteneces a ningún servidor.";
+        estadoServidores.textContent = datos.grupos.length ? "" : "Todavía no perteneces a ningún servidor.";
         listaServidores.innerHTML = datos.grupos
             .map((grupo) => plantillaTarjetaServidor(grupo))
             .join("");
@@ -4402,7 +4402,7 @@ const autorId = mensaje.autor_id;
            </div>`
         : "";
 
-    // separador de dí­a.
+    // separador de día.
     const conHora = separadorDiaVisible(mensaje);
     const horaHtml = conHora
         ? `<time class="hora-mensaje" datetime="${escapeHtml(mensaje.creado_en)}">${textoHora(mensaje.creado_en)}</time>`
@@ -4871,7 +4871,7 @@ function activarEdicionMensajeServidor(mensaje) {
     mensajeRespuestaChat = null;
     const entrada = document.getElementById("entrada-mensaje-servidor");
     entrada.value = mensaje.contenido ?? "";
-    entrada.placeholder = "Editando el mensaje. Enví­a para guardar...";
+    entrada.placeholder = "Editando el mensaje. Envía para guardar...";
     composerServidor?.refrescar();
     entrada.focus();
 }
@@ -5149,7 +5149,7 @@ document.getElementById("boton-foto-servidor").addEventListener("click", () => {
         if (esGestor) {
             abrirCambioFotoServidor();
         } else {
-            estadoServidores.textContent = "Este servidor todaví­a no tiene foto.";
+            estadoServidores.textContent = "Este servidor todavía no tiene foto.";
         }
         return;
     }
@@ -5952,7 +5952,7 @@ async function buscarPersonas(texto) {
             estadoBusquedaAmigos.textContent =
                 textoLimpio
                     ? "No se han encontrado personas."
-                    : "Todaví­a no hay más cuentas en la web.";
+                    : "Todavía no hay más cuentas en la web.";
 
             return;
         }
@@ -6531,7 +6531,7 @@ formularioLogin.addEventListener(
                 }
 
                 throw new Error(
-                    "El servidor devolvió una respuesta vací­a. Comprueba que Atuistas esté ejecutándose en http://127.0.0.1:3000."
+                    "El servidor devolvió una respuesta vacía. Comprueba que Atuistas esté ejecutándose en http://127.0.0.1:3000."
                 );
             }
 
@@ -8184,7 +8184,7 @@ async function cargarPublicaciones(seccion, contenedor) {
     try {
         const datos = await solicitarGrupo(`/api/publicaciones?seccion=${seccion}`);
         guardarPosicionesCarruselFoto(contenedor);
-        contenedor.innerHTML = datos.publicaciones.map((publicacion) => renderizarPublicacion(publicacion)).join("") || '<p class="estado-amigos">Todaví­a no hay publicaciones.</p>';
+        contenedor.innerHTML = datos.publicaciones.map((publicacion) => renderizarPublicacion(publicacion)).join("") || '<p class="estado-amigos">Todavía no hay publicaciones.</p>';
         restaurarPosicionesCarruselFoto(contenedor);
     } catch (error) {
         contenedor.innerHTML = `<p class="estado-amigos">${escapeHtml(error.message)}</p>`;
@@ -8878,9 +8878,9 @@ function configurarSelectorMedio(formId, fileLabelId, fileInputId, typeName, tex
                 : mode === "imagenes"
                     ? "Seleccionar hasta 10 fotos"
                     : mode === "video"
-                        ? "Seleccionar ví­deo"
+                        ? "Seleccionar vídeo"
                         : soloTexto
-                            ? "Subir fotos o ví­deo"
+                            ? "Subir fotos o vídeo"
                             : "Seleccionar foto";
         }
     };
@@ -9400,7 +9400,7 @@ async function abrirComentariosReel(reelId, contador) {
                 <strong style="${estiloNombre(comentario.color_nombre)}">${escapeHtml(nombreVisible(comentario.autor_id, comentario.autor_nombre))}</strong>
                 ${escapeHtml(comentario.texto)}
             </p>
-        `).join("") || `<p class="estado-amigos">Todaví­a no hay comentarios.</p>`;
+        `).join("") || `<p class="estado-amigos">Todavía no hay comentarios.</p>`;
     } catch (fallo) {
         lista.innerHTML = `<p class="estado-amigos">${escapeHtml(fallo.message)}</p>`;
     }
@@ -9483,7 +9483,7 @@ async function abrirComentariosEstado(estadoId) {
                 <strong style="${estiloNombre(comentario.color_nombre)}">${escapeHtml(nombreVisible(comentario.autor_id, comentario.autor_nombre))}</strong>
                 ${escapeHtml(comentario.texto)}
             </p>
-        `).join("") || `<p class="estado-amigos">Todaví­a no hay comentarios.</p>`;
+        `).join("") || `<p class="estado-amigos">Todavía no hay comentarios.</p>`;
         pintarCantidadComentariosEstado(datos.comentarios.length);
     } catch (fallo) {
         lista.innerHTML = `<p class="estado-amigos">${escapeHtml(fallo.message)}</p>`;
@@ -9802,7 +9802,7 @@ async function actualizarBurbujasHistorias() {
                     : `<span class="burbuja-historia-vacia" aria-hidden="true"></span>`}
                 <span class="nombre-historia-carpeta">${escapeHtml(historia.nombre)}</span>
             </button>
-        `).join("") || `<p class="estado-amigos">Todaví­a no tienes historias.</p>`;
+        `).join("") || `<p class="estado-amigos">Todavía no tienes historias.</p>`;
     } catch {
         contenedor.innerHTML = `<p class="estado-amigos">No se pudieron cargar tus historias.</p>`;
     }
@@ -9823,7 +9823,7 @@ async function actualizarPistaReelsCuenta() {
         const datos = await solicitarGrupo("/api/reels/mios");
         pintarPistaReels(pista, datos.reels || []);
     } catch {
-        pista.innerHTML = `<p class="estado-amigos">Todaví­a no hay reels.</p>`;
+        pista.innerHTML = `<p class="estado-amigos">Todavía no hay reels.</p>`;
     }
 }
 
@@ -9835,7 +9835,7 @@ async function actualizarListaPublicacionesCuenta() {
         // el feed de Entrar.
         const mias = (datos.publicaciones || []).filter((publicacion) => publicacion.es_mia);
         lista.innerHTML = mias.map((publicacion) => renderizarPublicacion(publicacion)).join("")
-            || `<p class="estado-amigos">Todaví­a no tienes publicaciones.</p>`;
+            || `<p class="estado-amigos">Todavía no tienes publicaciones.</p>`;
         conectarFeed(lista);
     } catch {
         lista.innerHTML = `<p class="estado-amigos">No se pudieron cargar tus publicaciones.</p>`;
@@ -9948,7 +9948,7 @@ async function pintarItemsHistoria() {
                     ? `<button type="button" data-borrar-item="${escapeHtml(item.id)}" aria-label="Borrar elemento">×</button>`
                     : ""}
             </div>
-        `).join("") || `<p class="estado-amigos">La historia todaví­a está vací­a.</p>`;
+        `).join("") || `<p class="estado-amigos">La historia todavía está vacía.</p>`;
     } catch (fallo) {
         lista.innerHTML = `<p class="estado-amigos">${escapeHtml(fallo.message)}</p>`;
     }
@@ -10054,10 +10054,10 @@ const ICONO_CAMARA = {
 const FILTROS_CAMARA = [
     { id: "ninguno", nombre: "Normal", css: "none" },
     { id: "calido", nombre: "Cálido", css: "sepia(0.35) saturate(1.25)" },
-    { id: "frio", nombre: "Frí­o", css: "saturate(1.1) hue-rotate(-12deg) brightness(1.03)" },
+    { id: "frio", nombre: "Frío", css: "saturate(1.1) hue-rotate(-12deg) brightness(1.03)" },
     { id: "byn", nombre: "B/N", css: "grayscale(1)" },
     { id: "vintage", nombre: "Vintage", css: "sepia(0.55) contrast(1.1) brightness(0.96)" },
-    { id: "vivido", nombre: "Ví­vido", css: "saturate(1.6) contrast(1.12)" },
+    { id: "vivido", nombre: "Vívido", css: "saturate(1.6) contrast(1.12)" },
     { id: "cine", nombre: "Cine", css: "contrast(1.2) saturate(0.9) brightness(1.05)" }
 ];
 
@@ -10232,7 +10232,7 @@ function dibujarFotograma() {
             ctx.drawImage(cam.video, 0, 0, cam.lienzo.width, cam.lienzo.height);
             ctx.restore();
         } catch (error) {
-            /* El ví­deo aún no tiene datos (p. ej. al cambiar de cámara): se reintenta en el próximo frame. */
+            /* El vídeo aún no tiene datos (p. ej. al cambiar de cámara): se reintenta en el próximo frame. */
         }
     }
     rafCamara = requestAnimationFrame(dibujarFotograma);
@@ -10283,7 +10283,7 @@ function actualizarBotonCentro() {
     } else if (estadoGrabacion === "parado") {
         b.innerHTML = ICONO_CAMARA.borrar;
         b.classList.add("peligro");
-        b.setAttribute("aria-label", "Borrar el ví­deo entero");
+        b.setAttribute("aria-label", "Borrar el vídeo entero");
     }
     b.disabled = false;
 }
@@ -10345,7 +10345,7 @@ function cuentaAtrasCamara(segundos) {
 
 async function iniciarGrabacionCamara() {
     if (!cam.lienzo || typeof cam.lienzo.captureStream !== "function") {
-        mostrarErrorCamara("Este navegador no permite grabar ví­deo.");
+        mostrarErrorCamara("Este navegador no permite grabar vídeo.");
         return;
     }
 
@@ -10527,7 +10527,7 @@ function pintarConfirmar() {
 
 function borrarVideoEntero() {
     if (estadoGrabacion !== "parado") return;
-    if (!window.confirm("¿Borrar el ví­deo entero? Se descartará la grabación.")) return;
+    if (!window.confirm("¿Borrar el vídeo entero? Se descartará la grabación.")) return;
     tramosGrabacion = [];
     blobFinal = null;
     estadoGrabacion = "inactivo";
@@ -10581,7 +10581,7 @@ function cambiarModoCamara(modo) {
     reflejarModoTipo();
     cam.panelTipo.hidden = true;
     cam.botonTipo.setAttribute("aria-expanded", "false");
-    avisoCamara(modo === "video" ? "Modo ví­deo" : modo === "foto" ? "Modo foto" : "Modo texto");
+    avisoCamara(modo === "video" ? "Modo vídeo" : modo === "foto" ? "Modo foto" : "Modo texto");
 }
 
 function actualizarLinternaDisponible() {
@@ -10693,7 +10693,7 @@ function reflejarHistoriaExtra() {
 function prepararConfirmacion() {
     const titulo = cam.enviarTitulo.value.trim();
     if (!titulo) {
-        cam.enviarError.textContent = "El tí­tulo es obligatorio.";
+        cam.enviarError.textContent = "El título es obligatorio.";
         cam.enviarTitulo.focus();
         return;
     }
@@ -10954,7 +10954,7 @@ document.getElementById("formulario-reel")?.addEventListener("submit", async (ev
     const archivo = document.getElementById("archivo-reel").files?.[0];
     error.textContent = "";
     if (!archivo) {
-        error.textContent = "Selecciona un ví­deo.";
+        error.textContent = "Selecciona un vídeo.";
         return;
     }
     const body = new FormData();
@@ -10976,7 +10976,7 @@ function pintarPistaReels(contenedor, reels) {
     if (!contenedor) return;
     contenedor.innerHTML = "";
     if (!reels.length) {
-        contenedor.innerHTML = `<p class="estado-amigos">Todaví­a no hay reels.</p>`;
+        contenedor.innerHTML = `<p class="estado-amigos">Todavía no hay reels.</p>`;
         return;
     }
     reels.forEach((reel) => {
@@ -11068,7 +11068,7 @@ function abrirVisorReels(reels, reelId) {
                     class="barra-reel-pista"
                     role="slider"
                     tabindex="0"
-                    aria-label="Avanzar o retroceder en el ví­deo"
+                    aria-label="Avanzar o retroceder en el vídeo"
                     aria-valuemin="0"
                     aria-valuemax="100"
                     aria-valuenow="0"
@@ -11859,7 +11859,7 @@ const listaApodos = document.getElementById("lista-apodos");
 function pintarListaApodos() {
     if (!listaApodos) return;
     if (apodosPorUsuario.size === 0) {
-        listaApodos.innerHTML = '<p class="sin-contenido">Todaví­a no le has puesto un apodo a nadie.</p>';
+        listaApodos.innerHTML = '<p class="sin-contenido">Todavía no le has puesto un apodo a nadie.</p>';
         return;
     }
 
@@ -12067,7 +12067,7 @@ async function cargarPublicacionesPerfil() {
             datos.publicaciones
                 .map((publicacion) => renderizarPublicacion(publicacion))
                 .join("") ||
-            '<p class="estado-amigos">Todaví­a no hay publicaciones.</p>';
+            '<p class="estado-amigos">Todavía no hay publicaciones.</p>';
 
         restaurarPosicionesCarruselFoto(contenedor);
 
@@ -12094,7 +12094,7 @@ async function abrirAmigosPerfil() {
         const amigos = datos.amigos || [];
 
         if (!amigos.length) {
-            estadoAmigosPerfil.textContent = "Todaví­a no tiene amistades.";
+            estadoAmigosPerfil.textContent = "Todavía no tiene amistades.";
             return;
         }
 
